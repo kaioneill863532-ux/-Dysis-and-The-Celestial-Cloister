@@ -1,0 +1,1250 @@
+<title>日月回廊 · 日1</title>
+<meta name="description" content="狄西斯的日月回廊，日1 开场的灰盒原型：水雾让光显形，沿圆周走改变太阳，踩着光路往上爬。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
+<style>
+  :root {
+    --ink: #0f0c09;
+    --panel: rgba(20, 16, 11, 0.68);
+    --line: rgba(196, 154, 90, 0.36);
+    --marble: #efe6d6;
+    --dim: #b1a38d;
+    --bronze: #c49a5a;
+    --gold: #f2c46a;
+    --serif: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+    --sans: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; background: var(--ink); color: var(--marble); font-family: var(--sans); overflow: hidden; }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+
+  .hud { position: fixed; inset: 0; pointer-events: none; }
+  #lvl { position: absolute; left: calc(16px + env(safe-area-inset-left, 0px)); top: calc(14px + env(safe-area-inset-top, 0px));
+    font-family: var(--serif); font-size: 15px; letter-spacing: 0.1em; text-shadow: 0 1px 10px rgba(0,0,0,0.7); }
+  #lvl small { display: block; margin-top: 3px; font-family: var(--sans); font-size: 11px; letter-spacing: 0.16em; color: var(--dim); }
+
+  #dial { position: absolute; right: calc(16px + env(safe-area-inset-right, 0px)); top: calc(14px + env(safe-area-inset-top, 0px));
+    width: 236px; padding: 10px 12px 9px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(6px); }
+  #dial svg { display: block; width: 100%; height: auto; overflow: visible; }
+  #dial .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  #dial .row b { color: var(--marble); font-weight: 500; }
+  #dial .greek { font-family: var(--serif); color: var(--gold); }
+
+  #prompt, #toast { position: absolute; left: 50%; transform: translateX(-50%); padding: 7px 14px; border-radius: 4px;
+    background: var(--panel); border: 1px solid var(--line); font-size: 14px; letter-spacing: 0.06em; white-space: nowrap; }
+  #prompt { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  #toast { top: calc(64px + env(safe-area-inset-top, 0px)); color: var(--dim); font-size: 13px; }
+  .kbd { display: inline-block; min-width: 1.5em; padding: 1px 5px; margin-right: 6px; border: 1px solid var(--line); border-radius: 3px;
+    font-size: 11px; line-height: 1.5; text-align: center; color: var(--marble); font-family: var(--sans); }
+
+  #keys { position: absolute; left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-wrap: wrap; gap: 6px 14px; max-width: min(760px, calc(100% - 32px)); font-size: 12px; color: var(--dim); transition: opacity 1.2s; }
+
+  /* 触屏控件 */
+  #touch { position: absolute; inset: 0; }
+  #stick { position: absolute; left: calc(22px + env(safe-area-inset-left, 0px)); bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+    width: 132px; height: 132px; border-radius: 50%; border: 1px solid var(--line); background: rgba(20,16,11,0.35); pointer-events: auto; touch-action: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%;
+    background: rgba(239,230,214,0.18); border: 1px solid rgba(239,230,214,0.4); }
+  #tbtns { position: absolute; right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+  #tbtns button { width: 64px; height: 44px; border-radius: 22px; }
+
+  button { font: inherit; color: var(--marble); background: rgba(20,16,11,0.72); border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
+  button:hover { border-color: var(--bronze); }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* 卡片 */
+  .card { position: fixed; inset: 0; display: flex; align-items: flex-end; padding-inline: 16px; padding-block: 16px;
+    background: linear-gradient(90deg, rgba(12,9,6,0.9) 0%, rgba(12,9,6,0.72) 42%, rgba(12,9,6,0) 78%); }
+  .card .inner { width: min(560px, 100%); margin-left: clamp(0px, 5vw, 64px); margin-bottom: clamp(16px, 8vh, 80px);
+    max-height: calc(100% - 32px); overflow-y: auto; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.24em; color: var(--bronze); }
+  h1 { margin: 10px 0 0; font-family: var(--serif); font-weight: 700; font-size: clamp(30px, 6vw, 48px); letter-spacing: 0.12em; text-wrap: balance; }
+  h1 .en { display: block; margin-top: 6px; font-family: var(--serif); font-weight: 500; font-size: 13px; letter-spacing: 0.3em; color: var(--dim); }
+  .lede { margin: 18px 0 0; font-family: var(--serif); font-size: 17px; line-height: 1.8; color: var(--marble); max-width: 34em; }
+  .card h2, .panel h2 { margin: 22px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.22em; color: var(--bronze); }
+  .card ol, .card ul, .panel ol, .panel ul { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; font-size: 14px; line-height: 1.7; color: var(--marble); }
+  .card p, .panel p { font-size: 14px; line-height: 1.75; color: var(--dim); max-width: 36em; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 16px; font-size: 13px; color: var(--dim); }
+  .go { margin-top: 24px; padding: 12px 28px; font-family: var(--serif); font-size: 17px; letter-spacing: 0.3em;
+    background: linear-gradient(180deg, rgba(196,154,90,0.3), rgba(196,154,90,0.12)); border-color: var(--bronze); }
+  .foot { margin-top: 12px; font-size: 12px; color: var(--dim); }
+  .panel { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 32px));
+    max-height: calc(100% - 48px); overflow-y: auto; padding: 22px 24px; background: rgba(16,12,8,0.9); border: 1px solid var(--line);
+    border-radius: 8px; backdrop-filter: blur(8px); }
+  .panel h1 { font-size: 26px; }
+  .panel .close { float: right; padding: 4px 10px; font-size: 13px; }
+
+  #fade { position: fixed; inset: 0; background: #0b0907; opacity: 0; pointer-events: none; transition: opacity 0.35s; }
+  #err { color: #f0a58a; }
+
+  @media (max-width: 640px) {
+    #dial { width: 176px; padding: 8px 9px 7px; }
+    #dial .row { font-size: 11px; }
+    #keys { display: none; }
+    .card { align-items: flex-end; background: linear-gradient(0deg, rgba(12,9,6,0.94) 0%, rgba(12,9,6,0.78) 60%, rgba(12,9,6,0.1) 100%); }
+    .card .inner { margin-left: 0; margin-bottom: 8px; }
+    .lede { font-size: 15px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #keys, #fade { transition: none; } }
+</style>
+
+<canvas id="c" tabindex="0" aria-label="游戏画面"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div id="lvl">日1 · 正午·起雾<small>灰盒原型</small></div>
+  <div id="dial" aria-live="off">
+    <svg id="dialSvg" viewBox="0 0 212 92" aria-hidden="true"></svg>
+    <div class="row"><span>太阳高度 <b id="rAlt">—</b></span><span>方位 <b id="rAz">—</b></span></div>
+    <div class="row"><span>时刻 <b id="rClock">—</b></span><span id="rHour">—</span></div>
+  </div>
+  <div id="prompt" hidden></div>
+  <div id="toast" hidden></div>
+  <div id="keys">
+    <span><span class="kbd">WASD</span>移动</span>
+    <span><span class="kbd">鼠标</span>视角</span>
+    <span><span class="kbd">Shift</span>快走</span>
+    <span><span class="kbd">E</span>互动</span>
+    <span><span class="kbd">T</span>等时线</span>
+    <span><span class="kbd">V</span>第一/第三人称</span>
+    <span><span class="kbd">H</span>说明</span>
+    <span><span class="kbd">M</span>静音</span>
+    <span><span class="kbd">R</span>重来</span>
+  </div>
+  <div id="touch" hidden>
+    <div id="stick"><div id="knob"></div></div>
+    <div id="tbtns">
+      <button id="bE" type="button">互动</button>
+      <button id="bT" type="button">等时线</button>
+      <button id="bV" type="button">视角</button>
+      <button id="bH" type="button">说明</button>
+    </div>
+  </div>
+</div>
+
+<section class="card" id="intro">
+  <div class="inner">
+    <div class="eyebrow">灰盒原型 · 日1 开场</div>
+    <h1>狄西斯的日月回廊<span class="en">DYSIS AND THE CELESTIAL CLOISTER</span></h1>
+    <p class="lede">正午，水庭里的空气还很干净。阳光从高窗照进来，只在水面上留下一块光斑。</p>
+    <h2>这一段验证三件事</h2>
+    <ol>
+      <li>水雾让光束显形，只有看得见的光才能走。</li>
+      <li>沿圆周走，太阳沿轨道移动，光路随之旋转；朝中心走，时间不动。</li>
+      <li>踩着光路，逆着光往上走。</li>
+    </ol>
+    <h2>操作</h2>
+    <div class="controls" id="ctrlDesk">
+      <span><span class="kbd">WASD</span>移动</span>
+      <span><span class="kbd">鼠标</span>转动视角</span>
+      <span><span class="kbd">E</span>互动</span>
+      <span><span class="kbd">T</span>显示等时线</span>
+      <span><span class="kbd">V</span>切换视角</span>
+      <span><span class="kbd">H</span>设计说明</span>
+    </div>
+    <div class="controls" id="ctrlTouch" hidden>
+      <span>左下摇杆移动</span>
+      <span>右侧拖动转视角</span>
+      <span>右下按钮互动</span>
+    </div>
+    <button class="go" id="go" type="button">进入水庭</button>
+    <div class="foot" id="foot">进入后会有声音，按 M 静音。</div>
+  </div>
+</section>
+
+<section class="panel" id="help" hidden>
+  <button class="close" id="helpClose" type="button">关闭</button>
+  <div class="eyebrow">设计说明</div>
+  <h1>这个原型在验证什么</h1>
+  <ol>
+    <li>水雾让光束显形，只有看得见的光才能走。</li>
+    <li>沿圆周走，太阳沿轨道移动，光路随之旋转；朝中心走，时间不动。</li>
+    <li>踩着光路往上爬的手感。</li>
+  </ol>
+  <h2>可以试试</h2>
+  <ul>
+    <li>沿回廊走，看水面上的光斑怎样跟着你滑动；朝池心走，光斑不动。</li>
+    <li>打开水闸前后，对比光束能不能看见、能不能踩上去。</li>
+    <li>光路成形后，走到南边的回廊上，背对太阳朝瀑布看，找一找第一道彩虹。彩虹只在光路照亮的那团水雾里出现。</li>
+    <li>按 T 打开等时线。地上的铜线越密，太阳走得越快；越稀，太阳几乎不动。</li>
+    <li>顺着回廊一直往南、往西走，看光路怎样变平、变长，最后落到 L1 的回廊上。</li>
+  </ul>
+  <h2>布局说明</h2>
+  <p>这是日1 的灰盒版本，尺寸和位置都是为了验证手感临时定的。东北方向那块实体是水钟竖井，它截断了回廊，是本关时间的首尾接缝。</p>
+  <h2>一个真实的细节</h2>
+  <p>地上刻的希腊字母是古希腊的时辰编号。古希腊有一首短诗说：正午之后的四个时辰写成字母是 Ζ Η Θ Ι，连起来读作 ζῆθι，意思是“活下去”。</p>
+</section>
+
+<section class="panel" id="done" hidden>
+  <div class="eyebrow">日1 · 完成</div>
+  <h1>抵达高窗</h1>
+  <p>按设计，这道窗台就是日1 与日2 的交界，日1 原型的流程到这里结束。可以继续在塔里走走，或者按 R 从头再来。</p>
+  <h2>试完之后可以想想</h2>
+  <ul>
+    <li>光斑朝你滑来的那一段，时间变化是否顺滑、看得懂？</li>
+    <li>约 32° 的光路坡度，走起来会不会太陡？</li>
+    <li>水雾从瀑布扩散开、光路一点点显形的节奏，快了还是慢了？</li>
+  </ul>
+  <button class="go" id="doneClose" type="button">继续探索</button>
+</section>
+
+<div id="fade"></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { Sky } from 'three/addons/objects/Sky.js';
+
+const DEG = Math.PI / 180;
+const $ = (id) => document.getElementById(id);
+const V3 = THREE.Vector3;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+// ────────────────────────────── 世界尺寸（米）与方位约定 ──────────────────────────────
+// 方位角 az：0 = 北，90 = 东，顺时针增加。世界坐标：x = 东，y = 上，-z = 北。
+const R_POOL = 9.75, R_WALK = 10.0, R_GAL = 12.2, R_PARA = 12.45, R_IN = 15.5, R_OUT = 16.3, R_EDGE = 23.4;
+const Y_L1 = 6.0, Y_L2 = 14.0, Y_TOP = 20.0, SILL = 10.8, LINTEL = 13.4, WATER_Y = -0.45, POOL_BOTTOM = -2.2;
+const SEAM = [14, 26];                      // 水钟竖井：本关回环的时间接缝
+const GATE = [40, 50], GATE_H = 4.2;         // 海门
+const KEY_WIN = { az: 160, half: (2.4 / R_IN) / DEG / 2 };
+const NORTH_WINS = [290, 320, 350], NORTH_HALF = (1.6 / R_IN) / DEG / 2;
+const CASCADE = { az: 93, r: 10.0, top: 5.9 };
+const SLUICE = { az: 104, r: 10.95 };
+const ARMILLARY = { az: 58, r: 14.2 };
+const SPAWN = { az: 45, r: 12.6, yaw: 198 };
+
+const P = (az, r, y = 0) => new V3(r * Math.sin(az * DEG), y, -r * Math.cos(az * DEG));
+const azOf = (x, z) => ((Math.atan2(x, -z) / DEG) % 360 + 360) % 360;
+const angDiff = (a, b) => ((a - b) % 360 + 540) % 360 - 180;
+
+// ────────────────────────────── 天象：固定的倾斜圆轨道 ──────────────────────────────
+// 用纬度和赤纬描述一条天球上的小圆；最高点约 34°，保证整天的光路坡度都能走。
+const LAT = 35 * DEG, DEC_SUN = -21 * DEG, DEC_MOON = 20 * DEG;
+function sunDir(Hdeg, out = new V3()) {
+  const H = Hdeg * DEG;
+  const E = -Math.cos(DEC_SUN) * Math.sin(H);
+  const N = Math.sin(DEC_SUN) * Math.cos(LAT) - Math.cos(DEC_SUN) * Math.cos(H) * Math.sin(LAT);
+  const U = Math.sin(DEC_SUN) * Math.sin(LAT) + Math.cos(DEC_SUN) * Math.cos(H) * Math.cos(LAT);
+  return out.set(E, U, -N);
+}
+const altOf = (v) => Math.asin(clamp(v.y, -1, 1)) / DEG;
+
+// ────────────────────────────── 时间映射：位置 → 时角 ──────────────────────────────
+// 只有沿圆周的位置决定时间。疏密由这些节点决定：45°→80° 很密（开场光斑明显滑动），
+// 80°→165° 很稀（太阳几乎不动，第一座光路很稳），之后均匀推进到本关末尾。
+const KNOTS = [[26, -26], [45, 6], [80, 19], [96, 19.7], [165, 21.5], [240, 28], [310, 37], [374, 45]];
+function monotone(xs, ys) {
+  const n = xs.length, d = [], m = new Array(n);
+  for (let i = 0; i < n - 1; i++) d.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+  m[0] = d[0]; m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+  for (let i = 0; i < n - 1; i++) {
+    const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+    if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+  }
+  return (x) => {
+    if (x <= xs[0]) return ys[0];
+    if (x >= xs[n - 1]) return ys[n - 1];
+    let i = 0; while (x > xs[i + 1]) i++;
+    const h = xs[i + 1] - xs[i], t = (x - xs[i]) / h, t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * m[i + 1];
+  };
+}
+const H_OF = monotone(KNOTS.map((k) => k[0]), KNOTS.map((k) => k[1]));
+const unwrap = (az) => clamp(az < SEAM[1] ? az + 360 : az, SEAM[1], SEAM[0] + 360);
+const hourAt = (az) => H_OF(unwrap(az));
+const H_MIN = KNOTS[0][1], H_MAX = KNOTS[KNOTS.length - 1][1];
+const INV = [];
+for (let t = SEAM[1]; t <= SEAM[0] + 360; t += 0.05) INV.push([t, H_OF(t)]);
+function azForHour(H) {
+  for (let i = 1; i < INV.length; i++) {
+    if (INV[i][1] >= H) {
+      const [t0, h0] = INV[i - 1], [t1, h1] = INV[i];
+      return (t0 + (t1 - t0) * (H - h0) / Math.max(1e-9, h1 - h0)) % 360;
+    }
+  }
+  return null;
+}
+
+// ────────────────────────────── 渲染器 ──────────────────────────────
+const canvas = $('c');
+const touch = matchMedia('(pointer: coarse)').matches;
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  if (!renderer.capabilities.isWebGL2) throw new Error('WebGL2');
+} catch (e) {
+  $('foot').innerHTML = '<span id="err">这台设备的浏览器不支持 WebGL2，原型无法运行。请换用较新的桌面浏览器打开。</span>';
+  $('go').disabled = true;
+  throw e;
+}
+const DPR = Math.min(window.devicePixelRatio || 1, touch ? 1.5 : 1.75);
+renderer.setPixelRatio(DPR);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x2b2620, 0);
+const camera = new THREE.PerspectiveCamera(62, 1, 0.05, 12000);
+
+// 场景先画进带深度的离屏目标，再由合成着色器叠加体积光、水雾与彩虹
+const rt = new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 });
+rt.depthTexture = new THREE.DepthTexture(2, 2);
+
+// ────────────────────────────── 天空与环境光 ──────────────────────────────
+const sunV = new V3();
+function makeSky() {
+  const s = new Sky();
+  s.scale.setScalar(10000);
+  const u = s.material.uniforms;
+  u.turbidity.value = 2.4; u.rayleigh.value = 1.05; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.82;
+  return s;
+}
+const sky = makeSky(); scene.add(sky);
+const envScene = new THREE.Scene(); const envSky = makeSky(); envScene.add(envSky);
+const pmrem = new THREE.PMREMGenerator(renderer);
+let envRT = null, envH = 1e9;
+function updateEnv(H) {
+  envSky.material.uniforms.sunPosition.value.copy(sunV);
+  const next = pmrem.fromScene(envScene, 0, 0.1, 100);
+  if (envRT) envRT.dispose();
+  const first = !envRT;
+  envRT = next; envH = H;
+  for (const m of ENV_MATS) { m.envMap = envRT.texture; if (first) m.needsUpdate = true; }
+}
+
+// ────────────────────────────── 材质 ──────────────────────────────
+const WARM = new THREE.Color(0xeadcc6), COOL = new THREE.Color(0xd2d8d7);
+const _col = new THREE.Color();
+function stoneColor(x, y, z, tint) {
+  const az = azOf(x, z);
+  const w = (1 - Math.cos((az - 270) * DEG)) / 2;          // 西暖东冷
+  const n = Math.sin(x * 1.7 + z * 0.9) * Math.cos(y * 2.3 - x * 0.4) * 0.035;
+  return _col.copy(WARM).lerp(COOL, w).multiplyScalar(tint * (1 + n));
+}
+// 每个材质单独挂环境图：scene.environment 会覆盖材质自己的 envMapIntensity，
+// 而室内必须比室外暗得多（环境光不会被墙挡住）。
+const ENV_MATS = [];
+const std = (o) => { const m = new THREE.MeshStandardMaterial(o); ENV_MATS.push(m); return m; };
+const IN_ENV = 0.055;
+const intStone = std({ vertexColors: true, roughness: 0.86, envMapIntensity: IN_ENV });
+const extStone = std({ vertexColors: true, roughness: 0.8, envMapIntensity: 0.3, fog: false });
+const plainInt = std({ color: 0xd9ccb6, roughness: 0.86, envMapIntensity: IN_ENV });
+const domeMat = std({ color: 0xe3d6c1, roughness: 0.78, envMapIntensity: 0.3, fog: false });
+const poolBed = std({ color: 0x8c8b80, roughness: 0.94, envMapIntensity: IN_ENV });
+const basalt = std({ color: 0x3a3a37, roughness: 0.9, envMapIntensity: IN_ENV });
+const waterMat = std({ color: 0x1f2528, roughness: 0.05, transparent: true, opacity: 0.34, envMapIntensity: 0.05, depthWrite: false });
+const bronze = std({ color: 0xa8773f, metalness: 1, roughness: 0.36, envMapIntensity: 0.08, emissive: 0x8a5a1c, emissiveIntensity: 0 });
+const bronzeExt = std({ color: 0xa8773f, metalness: 1, roughness: 0.32, envMapIntensity: 0.4, fog: false });
+const gold = std({ color: 0xe2b24f, metalness: 1, roughness: 0.22, envMapIntensity: 0.12, emissive: 0x7a5410, emissiveIntensity: 0.15 });
+const silver = std({ color: 0xcfd6dc, metalness: 1, roughness: 0.25, envMapIntensity: 0.1 });
+const rock = std({ color: 0x6d6153, roughness: 0.96, envMapIntensity: 0.3, fog: false });
+const seaMat = std({ color: 0x143645, roughness: 0.26, metalness: 0.12, envMapIntensity: 0.45, fog: false });
+const robe = std({ color: 0xf2e8d6, roughness: 0.7, envMapIntensity: 0.05, emissive: 0x4a3418, emissiveIntensity: 0.6 });
+const IS = [intStone, intStone], DW = [intStone, extStone], EX = [extStone, extStone];
+
+// ────────────────────────────── 几何：圆殿弧形实体 ──────────────────────────────
+// 一段圆环实体（内外表面、顶底、两端），外表面单独一组材质，用来区分室内与室外的环境光。
+function arcGeo(r0, r1, y0, y1, a0, a1, o = {}) {
+  const { top = true, bottom = true, inner = true, outer = true, ends = true, tint = 1 } = o;
+  const span = a1 - a0, n = Math.max(1, o.seg ?? Math.ceil(Math.abs(span) / 2.5));
+  const buckets = [{ pos: [], nor: [], col: [] }, { pos: [], nor: [], col: [] }];
+  const quad = (b, pts, nf) => {
+    for (const k of [0, 1, 2, 0, 2, 3]) {
+      const p = pts[k], nn = nf(p), c = stoneColor(p.x, p.y, p.z, tint);
+      b.pos.push(p.x, p.y, p.z); b.nor.push(nn.x, nn.y, nn.z); b.col.push(c.r, c.g, c.b);
+    }
+  };
+  const radial = (s) => (p) => { const l = Math.hypot(p.x, p.z) || 1; return new V3(s * p.x / l, 0, s * p.z / l); };
+  const up = () => new V3(0, 1, 0), dn = () => new V3(0, -1, 0);
+  for (let i = 0; i < n; i++) {
+    const t0 = a0 + span * i / n, t1 = a0 + span * (i + 1) / n;
+    if (outer) quad(buckets[1], [P(t0, r1, y0), P(t0, r1, y1), P(t1, r1, y1), P(t1, r1, y0)], radial(1));
+    if (inner) quad(buckets[0], [P(t0, r0, y0), P(t1, r0, y0), P(t1, r0, y1), P(t0, r0, y1)], radial(-1));
+    if (top) quad(buckets[0], [P(t0, r0, y1), P(t1, r0, y1), P(t1, r1, y1), P(t0, r1, y1)], up);
+    if (bottom) quad(buckets[0], [P(t0, r0, y0), P(t0, r1, y0), P(t1, r1, y0), P(t1, r0, y0)], dn);
+  }
+  if (ends) {
+    const nA = new V3(-Math.cos(a0 * DEG), 0, -Math.sin(a0 * DEG)), nB = new V3(Math.cos(a1 * DEG), 0, Math.sin(a1 * DEG));
+    quad(buckets[0], [P(a0, r0, y0), P(a0, r0, y1), P(a0, r1, y1), P(a0, r1, y0)], () => nA);
+    quad(buckets[0], [P(a1, r0, y0), P(a1, r1, y0), P(a1, r1, y1), P(a1, r0, y1)], () => nB);
+  }
+  const g = new THREE.BufferGeometry();
+  const cat = (k) => new Float32Array(buckets[0][k].concat(buckets[1][k]));
+  g.setAttribute('position', new THREE.BufferAttribute(cat('pos'), 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(cat('nor'), 3));
+  g.setAttribute('color', new THREE.BufferAttribute(cat('col'), 3));
+  const n0 = buckets[0].pos.length / 3, n1 = buckets[1].pos.length / 3;
+  g.addGroup(0, n0, 0); if (n1) g.addGroup(n0, n1, 1);
+  return g;
+}
+
+// 碰撞与光线查询用的列表
+const WALK = [], LIGHT_BLOCK = [], SUN_OCC = [], CAM_BLOCK = [];
+const world = new THREE.Group(); scene.add(world);
+function add(obj, lists = [], cast = true, receive = true) {
+  obj.castShadow = cast; obj.receiveShadow = receive;
+  world.add(obj); for (const l of lists) l.push(obj); return obj;
+}
+const mesh = (g, m) => new THREE.Mesh(g, m);
+
+// 圆殿外墙：实墙，光只能从窗进来
+add(mesh(arcGeo(R_IN, R_OUT, 0, GATE_H, GATE[1], GATE[0] + 360), DW), [LIGHT_BLOCK, SUN_OCC, CAM_BLOCK]);
+add(mesh(arcGeo(R_IN, R_OUT, GATE_H, SILL, 0, 360, { ends: false }), DW), [LIGHT_BLOCK, SUN_OCC, CAM_BLOCK, WALK]);
+{
+  const ops = [[KEY_WIN.az, KEY_WIN.half], ...NORTH_WINS.map((a) => [a, NORTH_HALF])].sort((a, b) => a[0] - b[0]);
+  for (let i = 0; i < ops.length; i++) {
+    const [a, ha] = ops[i], [b, hb] = ops[(i + 1) % ops.length];
+    const s = a + ha; let e = b - hb; if (e <= s) e += 360;
+    add(mesh(arcGeo(R_IN, R_OUT, SILL, LINTEL, s, e), DW), [LIGHT_BLOCK, SUN_OCC, CAM_BLOCK]);
+  }
+}
+add(mesh(arcGeo(R_IN, R_OUT, LINTEL, Y_TOP, 0, 360, { ends: false }), DW), [LIGHT_BLOCK, SUN_OCC, CAM_BLOCK]);
+
+// 顶：室内天花 + 关闭的天顶圆眼 + 外部穹顶
+{
+  const ceil = mesh(new THREE.CircleGeometry(R_IN + 0.01, 96), plainInt);
+  ceil.rotation.x = Math.PI / 2; ceil.position.y = Y_TOP;
+  add(ceil, [LIGHT_BLOCK, SUN_OCC, CAM_BLOCK]);
+  const ocu = mesh(new THREE.CircleGeometry(2.0, 48), bronze);
+  ocu.rotation.x = Math.PI / 2; ocu.position.y = Y_TOP - 0.02;
+  add(ocu, [], false, true);
+  for (let k = 0; k < 3; k++) {
+    const ring = mesh(new THREE.TorusGeometry(4.2 + k * 3.6, 0.09, 6, 96), plainInt);
+    ring.rotation.x = Math.PI / 2; ring.position.y = Y_TOP - 0.08; add(ring, [], false, true);
+  }
+  const dome = mesh(new THREE.SphereGeometry(R_OUT + 0.25, 72, 18, 0, Math.PI * 2, 0, Math.PI / 2), domeMat);
+  dome.scale.y = 0.42; dome.position.y = Y_TOP; add(dome, [SUN_OCC, LIGHT_BLOCK]);
+  const cap = mesh(new THREE.TorusGeometry(2.1, 0.22, 10, 48), bronzeExt);
+  cap.rotation.x = Math.PI / 2; cap.position.y = Y_TOP + (R_OUT + 0.25) * 0.42 - 0.05; add(cap, [SUN_OCC]);
+}
+
+// 楼层
+add(mesh(arcGeo(R_WALK, R_IN, -0.6, 0, 0, 360, { ends: false }), IS), [WALK, LIGHT_BLOCK, CAM_BLOCK]);
+add(mesh(arcGeo(R_POOL, R_WALK, POOL_BOTTOM, 0.12, 0, 360, { ends: false, tint: 0.93 }), IS), [WALK, LIGHT_BLOCK, CAM_BLOCK]);
+const L1FLOOR = add(mesh(arcGeo(R_GAL, R_IN, Y_L1 - 0.5, Y_L1, 0, 360, { ends: false }), IS), [WALK, LIGHT_BLOCK, CAM_BLOCK]);
+add(mesh(arcGeo(R_GAL, R_PARA, Y_L1, Y_L1 + 0.35, 0, 360, { ends: false, tint: 0.95 }), IS), [LIGHT_BLOCK, CAM_BLOCK]);
+add(mesh(arcGeo(R_GAL, R_IN, Y_L2 - 0.5, Y_L2, 0, 360, { ends: false }), IS), [LIGHT_BLOCK, CAM_BLOCK]);
+add(mesh(arcGeo(R_GAL, R_PARA, Y_L2, Y_L2 + 0.4, 0, 360, { ends: false, tint: 0.95 }), IS), [LIGHT_BLOCK, CAM_BLOCK]);
+
+// 水钟竖井：本关时间的接缝
+add(mesh(arcGeo(9.6, R_IN, POOL_BOTTOM, Y_TOP, SEAM[0], SEAM[1], { tint: 0.62 }), IS), [LIGHT_BLOCK, SUN_OCC, CAM_BLOCK]);
+for (const y of [3, 9.5, 16]) {
+  add(mesh(arcGeo(9.5, 9.62, y, y + 0.18, SEAM[0] + 0.5, SEAM[1] - 0.5, { tint: 0.5 }), IS), [], false, true);
+}
+
+// 黑石镜池（低潮）、石台、中心小亭
+const water = mesh(new THREE.CircleGeometry(R_POOL, 96), waterMat);
+water.rotation.x = -Math.PI / 2; water.position.y = WATER_Y; water.renderOrder = 1;
+add(water, [LIGHT_BLOCK], false, true);
+{
+  const bed = mesh(new THREE.CircleGeometry(R_POOL, 96), poolBed);
+  bed.rotation.x = -Math.PI / 2; bed.position.y = POOL_BOTTOM; add(bed, [], false, true);
+  const stones = [[6.4, 300, 1.0, 0.02], [7.6, 245, 0.85, 0.02], [4.6, 205, 0.8, 0.02], [6.9, 140, 0.95, 0.85], [4.3, 330, 0.7, 0.02], [7.8, 350, 0.8, 0.5]];
+  for (const [r, az, rad, topY] of stones) {
+    const h = topY - POOL_BOTTOM, s = mesh(new THREE.CylinderGeometry(rad, rad * 1.08, h, 32), basalt);
+    s.position.copy(P(az, r, POOL_BOTTOM + h / 2)); add(s, [LIGHT_BLOCK, CAM_BLOCK]);
+  }
+  const island = mesh(new THREE.CylinderGeometry(2.6, 2.7, 0.35 - POOL_BOTTOM, 64), plainInt);
+  island.position.y = (0.35 + POOL_BOTTOM) / 2; add(island, [LIGHT_BLOCK, CAM_BLOCK]);
+  for (let k = 0; k < 8; k++) {
+    const c = mesh(new THREE.CylinderGeometry(0.12, 0.14, 3.0, 16), plainInt);
+    c.position.copy(P(k * 45 + 22.5, 1.95, 0.35 + 1.5)); add(c, [LIGHT_BLOCK]);
+  }
+  const ent = mesh(new THREE.CylinderGeometry(2.22, 2.22, 0.34, 64), plainInt);
+  ent.position.y = 3.35 + 0.17; add(ent, [LIGHT_BLOCK]);
+  const pdome = mesh(new THREE.SphereGeometry(2.2, 48, 12, 0, Math.PI * 2, 0, Math.PI / 2), plainInt);
+  pdome.scale.y = 0.5; pdome.position.y = 3.69; add(pdome, [LIGHT_BLOCK]);
+  const ped = mesh(new THREE.CylinderGeometry(0.3, 0.38, 0.95, 24), plainInt);
+  ped.position.y = 0.35 + 0.475; add(ped, [LIGHT_BLOCK]);
+  const bowl = mesh(new THREE.SphereGeometry(0.26, 24, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), bronze);
+  bowl.position.y = 1.36; add(bowl, [], true, true);
+}
+
+// 室外：平台、外圈柱廊、檐口、海崖、海
+const COLS = [];
+add(mesh(arcGeo(R_OUT, 24, -0.8, 0, 0, 360, { ends: false, inner: false }), EX), [WALK, CAM_BLOCK]);
+for (let k = 0; k < 12; k++) {
+  const p = P(k * 30, 18.2, 0); COLS.push(p);
+  const shaft = mesh(new THREE.CylinderGeometry(0.46, 0.55, 19.2, 24), domeMat);
+  shaft.position.set(p.x, 9.6, p.z); add(shaft, [SUN_OCC, CAM_BLOCK]);
+  const base = mesh(new THREE.BoxGeometry(1.4, 0.4, 1.4), domeMat);
+  base.position.set(p.x, 0.2, p.z); base.rotation.y = -k * 30 * DEG; add(base, [SUN_OCC]);
+}
+add(mesh(arcGeo(17.4, 19.0, 19.2, 20.4, 0, 360, { ends: false }), EX), [SUN_OCC, CAM_BLOCK]);
+{
+  const cliff = mesh(new THREE.CylinderGeometry(24, 31, 45, 72, 1, true), rock);
+  cliff.position.y = -0.8 - 22.5; add(cliff, [], false, true);
+  const sea = mesh(new THREE.PlaneGeometry(9000, 9000), seaMat);
+  sea.rotation.x = -Math.PI / 2; sea.position.y = -45; add(sea, [], false, false);
+}
+
+// 狮首出水口、水帘、水闸
+const CASC_P = P(CASCADE.az, CASCADE.r, 0);
+{
+  const spout = mesh(new THREE.BoxGeometry(0.46, 0.32, R_GAL - 9.95), plainInt);
+  spout.position.copy(P(CASCADE.az, (R_GAL + 9.95) / 2, CASCADE.top + 0.1)); spout.rotation.y = -CASCADE.az * DEG; add(spout, [LIGHT_BLOCK]);
+  const head = mesh(new THREE.SphereGeometry(0.27, 20, 14), bronze);
+  head.position.copy(P(CASCADE.az, 10.05, CASCADE.top + 0.12)); add(head, []);
+}
+const curtainMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide,
+  uniforms: { uTime: { value: 0 }, uFlow: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    varying vec2 vUv; uniform float uTime; uniform float uFlow;
+    float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+    float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+      return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
+    void main(){
+      float fromTop = 1.0 - vUv.y;
+      if (fromTop > uFlow) discard;
+      float s = n(vec2(vUv.x*20.0, vUv.y*2.6 + uTime*3.4)) * 0.7 + n(vec2(vUv.x*47.0, vUv.y*5.0 + uTime*5.1)) * 0.3;
+      float edge = smoothstep(0.0,0.2,vUv.x) * smoothstep(1.0,0.8,vUv.x);
+      float a = (0.04 + 0.42*smoothstep(0.5,0.95,s)) * edge * smoothstep(0.0, 0.06, uFlow - fromTop);
+      gl_FragColor = vec4(vec3(0.16,0.18,0.19) * (0.7 + 1.2*s), a);
+    }`,
+});
+const curtain = mesh(new THREE.PlaneGeometry(1.1, CASCADE.top - WATER_Y), curtainMat);
+curtain.position.copy(P(CASCADE.az, 9.98, (CASCADE.top + WATER_Y) / 2)); curtain.rotation.y = -CASCADE.az * DEG;
+curtain.renderOrder = 2; add(curtain, [], false, false);
+
+const sluice = new THREE.Group();
+{
+  const post = mesh(new THREE.BoxGeometry(0.44, 1.0, 0.44), plainInt); post.position.y = 0.5; post.castShadow = post.receiveShadow = true; sluice.add(post);
+  const wheel = new THREE.Group(); wheel.position.y = 1.18;
+  const rim = mesh(new THREE.TorusGeometry(0.34, 0.035, 10, 40), bronze); wheel.add(rim);
+  for (let k = 0; k < 3; k++) { const sp = mesh(new THREE.BoxGeometry(0.66, 0.035, 0.035), bronze); sp.rotation.z = k * Math.PI / 3; wheel.add(sp); }
+  wheel.children.forEach((c) => { c.castShadow = true; });
+  sluice.add(wheel); sluice.userData.wheel = wheel;
+  sluice.position.copy(P(SLUICE.az, SLUICE.r, 0.12)); sluice.rotation.y = -SLUICE.az * DEG;
+  world.add(sluice);
+}
+
+// 青铜浑天仪：金环 = 太阳轨道，银环 = 月亮轨道，倾角与天空一致
+const armBead = mesh(new THREE.SphereGeometry(0.05, 16, 12), gold);
+{
+  const ped = mesh(new THREE.CylinderGeometry(0.28, 0.36, 1.05, 24), plainInt);
+  ped.position.copy(P(ARMILLARY.az, ARMILLARY.r, 0.525)); add(ped, [CAM_BLOCK]);
+  const g = new THREE.Group(); g.position.copy(P(ARMILLARY.az, ARMILLARY.r, 1.62)); world.add(g);
+  const R = 0.5, pole = new V3(0, Math.sin(LAT), -Math.cos(LAT));
+  const ring = (rad, mat, t = 0.012) => { const m = mesh(new THREE.TorusGeometry(rad, t, 8, 72), mat); m.castShadow = true; g.add(m); return m; };
+  const hz = ring(R, bronze, 0.016); hz.rotation.x = Math.PI / 2;
+  const mer = ring(R, bronze, 0.014); mer.rotation.y = Math.PI / 2;
+  const orbit = (dec, mat) => {
+    const m = ring(R * Math.cos(dec), mat, 0.011);
+    m.quaternion.setFromUnitVectors(new V3(0, 0, 1), pole); m.position.copy(pole).multiplyScalar(R * Math.sin(dec));
+  };
+  orbit(DEC_SUN, gold); orbit(DEC_MOON, silver);
+  const axis = mesh(new THREE.CylinderGeometry(0.008, 0.008, 1.2, 8), bronze);
+  axis.quaternion.setFromUnitVectors(new V3(0, 1, 0), pole); g.add(axis);
+  g.add(armBead); g.userData.R = R; armBead.userData.group = g;
+  const arm = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 8), bronze); arm.position.y = -0.55; g.add(arm);
+}
+
+// 地面青铜时刻线（等时线）与希腊时辰字母
+const hourLines = new THREE.Group(); world.add(hourLines);
+{
+  const box = new THREE.BoxGeometry(1, 1, 1), tmp = new THREE.Object3D();
+  const minor = [], major = [];
+  for (let H = Math.ceil(H_MIN / 2) * 2; H <= H_MAX; H += 2) {
+    const az = azForHour(H); if (az === null) continue;
+    if (H % 15 !== 0) minor.push(az);
+  }
+  for (let H = -15; H <= H_MAX; H += 15) { const az = azForHour(H); if (az !== null) major.push(az); }
+  const build = (list, w) => {
+    const im = new THREE.InstancedMesh(box, bronze, list.length);
+    list.forEach((az, i) => {
+      tmp.position.copy(P(az, 12.75, 0.006)); tmp.rotation.set(0, -az * DEG, 0); tmp.scale.set(w, 0.012, 4.8);
+      tmp.updateMatrix(); im.setMatrixAt(i, tmp.matrix);
+    });
+    im.receiveShadow = true; hourLines.add(im);
+  };
+  build(minor, 0.022); build(major, 0.06);
+  const letters = [[-7.5, 'ΣΤ'], [7.5, 'Ζ'], [22.5, 'Η'], [37.5, 'Θ']];
+  for (const [H, txt] of letters) {
+    const az = azForHour(H); if (az === null) continue;
+    const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+    const cx = cv.getContext('2d'); cx.fillStyle = 'rgba(176,124,62,0.92)'; cx.font = 'bold 150px serif';
+    cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(txt, 128, 136);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const m = std({ map: tex, transparent: true, metalness: 0.6, roughness: 0.4, envMapIntensity: 0.08, depthWrite: false });
+    const pl = mesh(new THREE.PlaneGeometry(0.95, 0.95), m); pl.rotation.x = -Math.PI / 2; pl.receiveShadow = true;
+    const holder = new THREE.Group(); holder.position.copy(P(az, 14.7, 0.008)); holder.rotation.y = -az * DEG; holder.add(pl); hourLines.add(holder);
+  }
+}
+
+// 等时线视图：天空中的太阳轨道
+const orbitSky = new THREE.Group(); orbitSky.visible = false; scene.add(orbitSky);
+{
+  const pts = []; const v = new V3();
+  for (let H = -110; H <= 110; H += 1) { sunDir(H, v); if (v.y > -0.02) pts.push(v.clone().multiplyScalar(8000)); }
+  orbitSky.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xf2c46a, transparent: true, opacity: 0.55, fog: false })));
+  const seg = []; for (let H = H_MIN; H <= H_MAX; H += 1) seg.push(sunDir(H, new V3()).multiplyScalar(8000));
+  const tube = mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(seg), 120, 16, 6), new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0.8, fog: false }));
+  orbitSky.add(tube);
+}
+
+// 狄西斯
+const avatar = new THREE.Group();
+{
+  const prof = [[0, 0], [0.33, 0], [0.31, 0.35], [0.24, 0.95], [0.18, 1.3], [0.12, 1.4], [0, 1.43]].map(([x, y]) => new THREE.Vector2(x, y));
+  const body = mesh(new THREE.LatheGeometry(prof, 28), robe); body.castShadow = true; avatar.add(body);
+  const head = mesh(new THREE.SphereGeometry(0.125, 20, 16), robe); head.position.y = 1.56; head.castShadow = true; avatar.add(head);
+  const veil = mesh(new THREE.ConeGeometry(0.2, 0.55, 20, 1, true), robe); veil.position.set(0, 1.46, 0.05); veil.castShadow = true; avatar.add(veil);
+  scene.add(avatar);
+}
+
+// ────────────────────────────── 光照 ──────────────────────────────
+const sun = new THREE.DirectionalLight(0xfff0da, 3.6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(touch ? 2048 : 4096, touch ? 2048 : 4096);
+Object.assign(sun.shadow.camera, { left: -27, right: 27, top: 27, bottom: -27, near: 1, far: 180 });
+sun.shadow.camera.updateProjectionMatrix();
+sun.shadow.bias = -0.00025; sun.shadow.normalBias = 0.04;
+sun.target.position.set(0, 4, 0);
+scene.add(sun, sun.target);
+const bounce = new THREE.PointLight(0xffd6a0, 0, 16, 2);
+scene.add(bounce);
+
+// ────────────────────────────── 水雾 ──────────────────────────────
+// 水动成雾：水闸打开后，瀑布脚下先起一团浓雾（大水滴，能出彩虹），
+// 细雾再以约 3 米/秒从瀑布向整座中庭扩散。
+const mist = { open: false, flow: 0, spray: 0, amt: 0, front: 0 };
+function sprayAt(p) {
+  const dx = p.x - CASC_P.x, dz = p.z - CASC_P.z;
+  return mist.spray * Math.exp(-(dx * dx + dz * dz) / (2 * 1.25 * 1.25)) * (1 - smoothstep(2.2, 5.5, p.y)) * (p.y > -0.6 ? 1 : 0);
+}
+function mistAt(p) {
+  if (Math.hypot(p.x, p.z) > R_IN || p.y < -0.6 || p.y > Y_TOP) return 0;
+  const d = Math.hypot(p.x - CASC_P.x, p.y - 1.5, p.z - CASC_P.z);
+  return sprayAt(p) + mist.amt * clamp((mist.front - d) / 5, 0, 1);
+}
+
+// ────────────────────────────── 光路 ──────────────────────────────
+const rc = new THREE.Raycaster();
+const beam = {
+  valid: false, walkable: false, lit: 0, H: 1e9,
+  O: new V3(), U: new V3(), V: new V3(), L: new V3(), c: [0, 0, 0, 0], M: new THREE.Matrix3(),
+  far: new V3(),
+};
+const walkGeo = new THREE.BufferGeometry();
+walkGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3));
+walkGeo.setIndex([0, 1, 2, 0, 2, 3]);
+const beamWalk = new THREE.Mesh(walkGeo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+beamWalk.visible = false; scene.add(beamWalk);
+
+function computeBeam() {
+  const L = beam.L.copy(sunV).negate();
+  beam.valid = false;
+  if (sunV.y < 0.02) return;
+  // 在窗洞内侧取样，向太阳发射线：墙厚、窗框、外圈柱子都会挡光
+  const NU = 11, NV = 7; let umin = 2, umax = -1, vmin = 2, vmax = -1, lit = 0;
+  for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {
+    const u = (i + 0.5) / NU, v = (j + 0.5) / NV;
+    const p = P(KEY_WIN.az - KEY_WIN.half + 2 * KEY_WIN.half * u, R_IN - 0.02, SILL + (LINTEL - SILL) * v);
+    rc.set(p, sunV); rc.near = 0.001; rc.far = 200;
+    if (rc.intersectObjects(SUN_OCC, false).length === 0) {
+      lit++;
+      umin = Math.min(umin, u - 0.5 / NU); umax = Math.max(umax, u + 0.5 / NU);
+      vmin = Math.min(vmin, v - 0.5 / NV); vmax = Math.max(vmax, v + 0.5 / NV);
+    }
+  }
+  beam.lit = lit / (NU * NV);
+  if (!lit) return;
+  const az0 = KEY_WIN.az - KEY_WIN.half + 2 * KEY_WIN.half * umin, az1 = KEY_WIN.az - KEY_WIN.half + 2 * KEY_WIN.half * umax;
+  const y0 = SILL + (LINTEL - SILL) * vmin, y1 = SILL + (LINTEL - SILL) * vmax;
+  const C = [P(az0, R_IN, y0), P(az1, R_IN, y0), P(az0, R_IN, y1), P(az1, R_IN, y1)];
+  beam.O.copy(C[0]); beam.U.subVectors(C[1], C[0]); beam.V.subVectors(C[2], C[0]);
+  for (let k = 0; k < 4; k++) {
+    rc.set(C[k].clone().addScaledVector(L, 0.05), L); rc.near = 0; rc.far = 90;
+    const h = rc.intersectObjects(LIGHT_BLOCK, false)[0];
+    beam.c[k] = h ? h.distance + 0.05 : 90;
+  }
+  const U = beam.U, V = beam.V;
+  beam.M.set(U.x, V.x, L.x, U.y, V.y, L.y, U.z, V.z, L.z).invert();
+  // 光路的"地面"：光束的下表面，两侧各收进一点
+  const f = Math.min(0.14, U.length() * 0.2) / U.length();
+  const b0 = C[0].clone().addScaledVector(U, f), b1 = C[0].clone().addScaledVector(U, 1 - f);
+  const c0 = beam.c[0] + (beam.c[1] - beam.c[0]) * f, c1 = beam.c[0] + (beam.c[1] - beam.c[0]) * (1 - f);
+  const e0 = b0.clone().addScaledVector(L, c0), e1 = b1.clone().addScaledVector(L, c1);
+  const a = walkGeo.attributes.position;
+  a.setXYZ(0, b0.x, b0.y, b0.z); a.setXYZ(1, b1.x, b1.y, b1.z); a.setXYZ(2, e1.x, e1.y, e1.z); a.setXYZ(3, e0.x, e0.y, e0.z);
+  a.needsUpdate = true; walkGeo.computeBoundingBox(); walkGeo.computeBoundingSphere();
+  beam.far.set(0, 0, 0);
+  for (let k = 0; k < 4; k++) beam.far.add(C[k].clone().addScaledVector(L, beam.c[k]));
+  beam.far.multiplyScalar(0.25);
+  beam.valid = true;
+}
+const _s = new V3();
+function beamIsWalkable() {
+  if (!beam.valid || altOf(sunV) > 35) return false;
+  const mid = beam.O.clone().addScaledVector(beam.U, 0.5), cm = (beam.c[0] + beam.c[1]) / 2;
+  for (let k = 0; k <= 10; k++) {
+    _s.copy(mid).addScaledVector(beam.L, 0.3 + (cm - 0.6) * k / 10).y += 0.3;
+    if (mistAt(_s) < 0.42) return false;
+  }
+  return true;
+}
+
+// ────────────────────────────── 合成：体积光、雾、彩虹 ──────────────────────────────
+const postMat = new THREE.ShaderMaterial({
+  depthTest: false, depthWrite: false,
+  uniforms: {
+    tColor: { value: rt.texture }, tDepth: { value: rt.depthTexture },
+    cNear: { value: camera.near }, cFar: { value: camera.far },
+    uProjInv: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() }, uCamPos: { value: new V3() },
+    uL: { value: new V3() }, uSunCol: { value: new V3(1.0, 0.93, 0.82) }, uTime: { value: 0 },
+    uCasc: { value: CASC_P.clone() }, uSpray: { value: 0 }, uMist: { value: 0 }, uFront: { value: 0 },
+    uBO: { value: [new V3(), new V3()] }, uBM: { value: [new THREE.Matrix3(), new THREE.Matrix3()] },
+    uBC: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uBOn: { value: [0, 0] },
+    uBeamK: { value: 0.24 }, uRainK: { value: 2.6 },
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: `
+    #include <common>
+    #include <packing>
+    varying vec2 vUv;
+    uniform sampler2D tColor; uniform sampler2D tDepth;
+    uniform float cNear; uniform float cFar;
+    uniform mat4 uProjInv; uniform mat4 uCamWorld; uniform vec3 uCamPos;
+    uniform vec3 uL; uniform vec3 uSunCol; uniform float uTime;
+    uniform vec3 uCasc; uniform float uSpray; uniform float uMist; uniform float uFront;
+    uniform vec3 uBO[2]; uniform mat3 uBM[2]; uniform vec4 uBC[2]; uniform float uBOn[2];
+    uniform float uBeamK; uniform float uRainK;
+
+    float hash3(vec3 p){ p = fract(p*0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+    float vnoise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f);
+      return mix(mix(mix(hash3(i),hash3(i+vec3(1,0,0)),f.x), mix(hash3(i+vec3(0,1,0)),hash3(i+vec3(1,1,0)),f.x), f.y),
+                 mix(mix(hash3(i+vec3(0,0,1)),hash3(i+vec3(1,0,1)),f.x), mix(hash3(i+vec3(0,1,1)),hash3(i+vec3(1,1,1)),f.x), f.y), f.z); }
+    float fbm(vec3 p){ return 0.62*vnoise(p) + 0.38*vnoise(p*2.17 + 7.3); }
+
+    float sprayAt(vec3 p){ vec2 d = p.xz - uCasc.xz;
+      return uSpray * exp(-dot(d,d)/(2.0*1.25*1.25)) * (1.0 - smoothstep(2.2, 5.5, p.y)) * step(-0.6, p.y); }
+    float mistAt(vec3 p){
+      if (length(p.xz) > 15.5 || p.y < -0.6 || p.y > 20.0) return 0.0;
+      float d = length(p - vec3(uCasc.x, 1.5, uCasc.z));
+      return sprayAt(p) + uMist * clamp((uFront - d) / 5.0, 0.0, 1.0);
+    }
+    float hg(float c, float g){ float g2 = g*g; return (1.0-g2) / (4.0*PI*pow(1.0 + g2 - 2.0*g*c, 1.5)); }
+    // x: 0 = 紫，1 = 红
+    vec3 spectral(float x){
+      vec3 c = vec3(smoothstep(0.42, 0.78, x) + 0.4*smoothstep(0.0, 0.1, x)*(1.0 - smoothstep(0.1, 0.28, x)),
+                    smoothstep(0.18, 0.45, x) * (1.0 - smoothstep(0.62, 0.88, x)),
+                    1.0 - smoothstep(0.22, 0.5, x));
+      return c * smoothstep(0.0, 0.1, x) * (1.0 - smoothstep(0.9, 1.0, x));
+    }
+    // 彩虹：主虹 40.6°–42.3°（外红内紫），副虹 50.3°–53.4°（色序相反、较暗），主虹内侧略亮
+    vec3 bow(float ang){
+      float x1 = (ang - 40.6) / 1.7, x2 = (ang - 50.3) / 3.1;
+      vec3 c = spectral(clamp(x1, 0.0, 1.0)) * step(0.0, x1) * step(x1, 1.0);
+      c += 0.3 * spectral(1.0 - clamp(x2, 0.0, 1.0)) * step(0.0, x2) * step(x2, 1.0);
+      c += vec3(0.06) * smoothstep(28.0, 40.6, ang) * step(ang, 40.6);
+      return c;
+    }
+    void main(){
+      vec3 col = texture2D(tColor, vUv).rgb;
+      vec4 vp = uProjInv * vec4(vUv*2.0 - 1.0, 1.0, 1.0);
+      vec3 dv = normalize(vp.xyz / vp.w);
+      vec3 dir = normalize((uCamWorld * vec4(dv, 0.0)).xyz);
+      float dep = texture2D(tDepth, vUv).x;
+      float tMax = 1e4;
+      if (dep < 1.0) tMax = perspectiveDepthToViewZ(dep, cNear, cFar) / dv.z;
+      float phase = 0.4 + 6.0 * hg(dot(uL, -dir), 0.5);
+      vec3 bowC = bow(degrees(acos(clamp(dot(dir, uL), -1.0, 1.0))));
+      float jit = fract(sin(dot(gl_FragCoord.xy + fract(uTime)*97.0, vec2(12.9898, 78.233))) * 43758.5453);
+      vec3 add = vec3(0.0);
+      for (int i = 0; i < 2; i++) {
+        if (uBOn[i] <= 0.0) continue;
+        vec3 q0 = uBM[i] * (uCamPos - uBO[i]);
+        vec3 qd = uBM[i] * dir + vec3(1e-7);
+        vec4 C = uBC[i];
+        float cmax = max(max(C.x, C.y), max(C.z, C.w));
+        vec3 t0 = (vec3(0.0) - q0) / qd, t1 = (vec3(1.0, 1.0, cmax) - q0) / qd;
+        vec3 tn = min(t0, t1), tf = max(t0, t1);
+        float te = max(max(tn.x, tn.y), max(tn.z, 0.0));
+        float tx = min(min(tf.x, tf.y), min(tf.z, tMax));
+        if (tx <= te) continue;
+        float dt = (tx - te) / 20.0, scat = 0.0, spr = 0.0;
+        for (int k = 0; k < 20; k++) {
+          float t = te + (float(k) + jit) * dt;
+          vec3 q = q0 + qd * t;
+          float cl = mix(mix(C.x, C.y, q.x), mix(C.z, C.w, q.x), q.y);
+          if (q.z > cl) continue;
+          vec3 p = uCamPos + dir * t;
+          float edge = smoothstep(0.0, 0.07, q.x) * smoothstep(1.0, 0.93, q.x) * smoothstep(0.0, 0.07, q.y) * smoothstep(1.0, 0.93, q.y);
+          float n = fbm(p * 0.85 + vec3(uTime*0.05, -uTime*0.08, uTime*0.03));
+          scat += mistAt(p) * (0.3 + 1.1*n) * edge * dt;
+          spr += sprayAt(p) * (0.6 + 0.8*n) * edge * dt;
+        }
+        add += uBOn[i] * (uSunCol * scat * phase * uBeamK + bowC * spr * uRainK);
+      }
+      col += add;
+      vec2 v = vUv - 0.5; col *= 1.0 - 0.45 * dot(v, v);
+      gl_FragColor = vec4(col, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+});
+const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+{ const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat); q.frustumCulled = false; postScene.add(q); }
+
+// 水闸脚下的细小水沫
+const sprayPts = (() => {
+  const N = 160, pos = new Float32Array(N * 3), seed = [];
+  for (let i = 0; i < N; i++) seed.push([Math.random() * Math.PI * 2, Math.random() * 1.3, Math.random() * 3.2, 0.25 + Math.random() * 0.6]);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const cx = cv.getContext('2d'); const gr = cx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
+  const m = new THREE.PointsMaterial({ size: 0.2, map: new THREE.CanvasTexture(cv), color: 0x8e9496, transparent: true, opacity: 0, depthWrite: false });
+  const pts = new THREE.Points(g, m); pts.frustumCulled = false; pts.renderOrder = 3; scene.add(pts);
+  return { pts, seed, pos, m };
+})();
+
+// ────────────────────────────── 声音：音乐就是时间 ──────────────────────────────
+const CHORDS = [
+  [146.83, 220.0, 261.63, 329.63], [174.61, 261.63, 329.63, 440.0], [110.0, 164.81, 196.0, 261.63],
+  [98.0, 146.83, 220.0, 261.63], [130.81, 196.0, 246.94, 329.63], [116.54, 174.61, 220.0, 293.66],
+];
+const score = {
+  ctx: null, muted: false, k: null,
+  start(H) {
+    if (this.ctx) return;
+    try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    const ctx = this.ctx, t = ctx.currentTime;
+    this.master = ctx.createGain(); this.master.gain.value = 0; this.master.connect(ctx.destination);
+    this.lp = ctx.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 1200; this.lp.Q.value = 0.3;
+    const dly = ctx.createDelay(1.0), fb = ctx.createGain(), wet = ctx.createGain();
+    dly.delayTime.value = 0.37; fb.gain.value = 0.38; wet.gain.value = 0.32;
+    this.lp.connect(this.master); this.lp.connect(dly); dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(this.master);
+    this.k = Math.floor((H + 90) / 15);
+    const ch = CHORDS[((this.k % CHORDS.length) + CHORDS.length) % CHORDS.length];
+    this.voices = ch.map((f, i) => {
+      const o = ctx.createOscillator(); o.type = i % 2 ? 'triangle' : 'sine'; o.frequency.value = f;
+      const g = ctx.createGain(); g.gain.value = i === 0 ? 0.05 : 0.03;
+      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.045 + 0.027 * i; lg.gain.value = 0.011;
+      lfo.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(this.lp); o.start(); lfo.start(); return o;
+    });
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 950; bp.Q.value = 0.6;
+    this.wg = ctx.createGain(); this.wg.gain.value = 0; src.connect(bp); bp.connect(this.wg); this.wg.connect(this.master); src.start();
+    this.master.gain.setTargetAtTime(this.muted ? 0 : 0.9, t, 1.2);
+  },
+  update(H, water) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime, k = Math.floor((H + 90) / 15);
+    if (k !== this.k) {  // 跨过时辰主线：和声滑向下一个和弦
+      this.k = k; const ch = CHORDS[((k % CHORDS.length) + CHORDS.length) % CHORDS.length];
+      this.voices.forEach((o, i) => o.frequency.setTargetAtTime(ch[i], t, 0.55));
+    }
+    this.lp.frequency.setTargetAtTime(750 + 850 * Math.cos(H * DEG * 1.5), t, 0.4);  // 音色随时间连续变化
+    this.wg.gain.setTargetAtTime(water * 0.09, t, 0.3);
+  },
+  toggle() {
+    this.muted = !this.muted;
+    if (this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.9, this.ctx.currentTime, 0.2);
+    return this.muted;
+  },
+};
+
+// ────────────────────────────── 玩家与相机 ──────────────────────────────
+const player = {
+  pos: P(SPAWN.az, SPAWN.r, 0), vy: 0, grounded: true, ground: null,
+  yaw: SPAWN.yaw, pitch: 0.4, dist: 4.6, mode: 'third', lastSafe: P(SPAWN.az, SPAWN.r, 0), safeT: 0, heading: SPAWN.yaw,
+};
+const state = { started: false, won: false, iso: false, H: hourAt(SPAWN.az), t: 0, respawning: false };
+const keys = {};
+const touchMove = { x: 0, y: 0 };
+const DOWN = new V3(0, -1, 0), _p = new V3();
+const STEP = 0.55, SNAP = 0.42, BODY_R = 0.3;
+
+const polar = (az, r) => [r * Math.sin(az * DEG), -r * Math.cos(az * DEG)];
+const PROPS = [
+  { p: P(SLUICE.az, SLUICE.r, 0), r: 0.34 },
+  { p: P(ARMILLARY.az, ARMILLARY.r, 0), r: 0.4 },
+];
+function collide(nx, nz, ox, oz, y) {
+  let r = Math.hypot(nx, nz), az = azOf(nx, nz);
+  const ro = Math.hypot(ox, oz);
+  const margin = (BODY_R / Math.max(r, 1)) / DEG;
+  const inWin = Math.abs(angDiff(az, KEY_WIN.az)) < KEY_WIN.half - margin && y >= SILL - 0.4 && y < SILL + 1.2;
+  const inGate = Math.abs(angDiff(az, (GATE[0] + GATE[1]) / 2)) < (GATE[1] - GATE[0]) / 2 - margin && y < 1.0;
+  if (r > R_IN - BODY_R && r < R_OUT + BODY_R && !inWin && !inGate) {
+    if (ro <= R_IN - BODY_R + 1e-3) r = R_IN - BODY_R;
+    else if (ro >= R_OUT + BODY_R - 1e-3) r = R_OUT + BODY_R;
+    else return [ox, oz];
+    [nx, nz] = polar(az, r);
+  }
+  if (inWin && r > R_OUT - 0.35) { r = R_OUT - 0.35; [nx, nz] = polar(az, r); }
+  if (r > R_EDGE) { r = R_EDGE; [nx, nz] = polar(az, r); }
+  if (r > 9.3 && r < R_IN + 0.1 && angDiff(az, SEAM[0]) > -margin && angDiff(az, SEAM[1]) < margin) {
+    const a = Math.abs(angDiff(az, SEAM[0] - margin)) < Math.abs(angDiff(az, SEAM[1] + margin)) ? SEAM[0] - margin : SEAM[1] + margin;
+    [nx, nz] = polar(a, r);
+  }
+  if (y > Y_L1 - 0.4 && y < Y_L1 + 0.3 && r < R_PARA + BODY_R && ro >= R_PARA + BODY_R - 1e-3) {
+    [nx, nz] = polar(az, R_PARA + BODY_R); r = R_PARA + BODY_R;
+  }
+  if (r > R_OUT) for (const c of COLS) {
+    const dx = nx - c.x, dz = nz - c.z, d = Math.hypot(dx, dz), m = 0.55 + BODY_R;
+    if (d < m) { nx = c.x + dx / d * m; nz = c.z + dz / d * m; }
+  }
+  if (y < 1.5) for (const o of PROPS) {
+    const dx = nx - o.p.x, dz = nz - o.p.z, d = Math.hypot(dx, dz), m = o.r + BODY_R;
+    if (d < m && d > 1e-6) { nx = o.p.x + dx / d * m; nz = o.p.z + dz / d * m; }
+  }
+  return [nx, nz];
+}
+function walkList() { return beam.walkable ? [...WALK, beamWalk] : WALK; }
+function probe(x, y, z, down) {
+  rc.set(_p.set(x, y + STEP, z), DOWN); rc.near = 0; rc.far = STEP + down;
+  return rc.intersectObjects(walkList(), false)[0] || null;
+}
+
+function updatePlayer(dt) {
+  let mx = 0, mz = 0;
+  if (keys.KeyW || keys.ArrowUp) mz += 1;
+  if (keys.KeyS || keys.ArrowDown) mz -= 1;
+  if (keys.KeyD || keys.ArrowRight) mx += 1;
+  if (keys.KeyA || keys.ArrowLeft) mx -= 1;
+  mx += touchMove.x; mz += touchMove.y;
+  const len = Math.hypot(mx, mz); if (len > 1) { mx /= len; mz /= len; }
+  const speed = (keys.ShiftLeft || keys.ShiftRight) ? 5.2 : 3.1;
+  const fx = Math.sin(player.yaw * DEG), fz = -Math.cos(player.yaw * DEG);
+  const rx = Math.cos(player.yaw * DEG), rz = Math.sin(player.yaw * DEG);
+  const vx = (fx * mz + rx * mx) * speed, vz = (fz * mz + rz * mx) * speed;
+  const p = player.pos;
+  if (len > 0.05) player.heading = azOf(vx, vz);
+  let [nx, nz] = collide(p.x + vx * dt, p.z + vz * dt, p.x, p.z, p.y);
+  let y = p.y;
+  if (player.grounded) {
+    const h = probe(nx, y, nz, SNAP);
+    if (h) { y = h.point.y; player.ground = h.object; }
+    else { player.grounded = false; player.vy = 0; player.ground = null; }
+  }
+  if (!player.grounded) {
+    player.vy = Math.max(player.vy - 22 * dt, -30);
+    const dy = player.vy * dt;
+    const h = probe(nx, y, nz, Math.max(0, -dy) + 0.02);
+    if (h && h.point.y >= y + dy - 0.02) { y = h.point.y; player.vy = 0; player.grounded = true; player.ground = h.object; }
+    else y += dy;
+  }
+  p.set(nx, y, nz);
+
+  if (player.grounded && player.ground !== beamWalk) {
+    player.safeT += dt;
+    const r = Math.hypot(p.x, p.z);
+    if (player.safeT > 0.4 && (r > R_WALK + 0.6 || p.y > 1)) { player.lastSafe.copy(p); player.safeT = 0; }
+  }
+  if (p.y < WATER_Y - 0.5 && !state.respawning) respawn();
+  if (!state.won && player.grounded) {
+    const onSill = p.y > SILL - 0.05 && Math.hypot(p.x, p.z) > R_IN - 0.2 && Math.abs(angDiff(azOf(p.x, p.z), KEY_WIN.az)) < KEY_WIN.half;
+    if (onSill || player.ground === L1FLOOR) win();
+  }
+}
+
+function respawn() {
+  state.respawning = true;
+  $('fade').style.opacity = '1';
+  setTimeout(() => {
+    player.pos.copy(player.lastSafe); player.vy = 0; player.grounded = true;
+    $('fade').style.opacity = '0'; state.respawning = false; toast('落回岸边');
+  }, 380);
+}
+
+const camTarget = new V3(), camF = new V3();
+function updateCamera(dt) {
+  if (!state.started) {
+    const a = (236 + state.t * 2.4) * DEG;
+    camera.position.set(Math.sin(a) * 78, 18, -Math.cos(a) * 78);
+    const f = new V3(0, 9, 0).sub(camera.position).normalize();
+    const right = new V3().crossVectors(f, camera.up).normalize();
+    const narrow = camera.aspect < 0.9;
+    camera.lookAt(new V3(0, narrow ? 2 : 9, 0).addScaledVector(right, narrow ? 0 : -20));
+    avatar.visible = false;
+    return;
+  }
+  const p = player.pos;
+  camF.set(Math.sin(player.yaw * DEG) * Math.cos(player.pitch), -Math.sin(player.pitch), -Math.cos(player.yaw * DEG) * Math.cos(player.pitch));
+  if (player.mode === 'first') {
+    camera.position.set(p.x, p.y + 1.62, p.z);
+    camera.lookAt(camera.position.clone().add(camF));
+    avatar.visible = false;
+  } else {
+    // 越肩视角：目标点偏向右肩，人物不会挡住她正在看的光
+    camTarget.set(p.x + Math.cos(player.yaw * DEG) * 0.6, p.y + 1.5, p.z + Math.sin(player.yaw * DEG) * 0.6);
+    const back = camF.clone().negate();
+    rc.set(camTarget, back); rc.near = 0; rc.far = player.dist;
+    const h = rc.intersectObjects(CAM_BLOCK, false)[0];
+    const d = h ? Math.max(0.45, h.distance - 0.3) : player.dist;
+    camera.position.copy(camTarget).addScaledVector(back, d);
+    camera.lookAt(camTarget);
+    avatar.visible = d > 0.9;
+  }
+  avatar.position.copy(p);
+  const want = -player.heading * DEG;
+  let dr = want - avatar.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr));
+  avatar.rotation.y += dr * Math.min(1, dt * 10);
+}
+
+// ────────────────────────────── HUD ──────────────────────────────
+const svgNS = 'http://www.w3.org/2000/svg';
+const DW_ = 212, DH_ = 92;
+const dx = (az) => 10 + (az - 90) / 180 * (DW_ - 20);
+const dy = (alt) => DH_ - 18 - alt / 40 * (DH_ - 30);
+let sunDot;
+(function buildDial() {
+  const svg = $('dialSvg');
+  const el = (tag, attrs, parent = svg) => { const e = document.createElementNS(svgNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+  el('line', { x1: 6, y1: dy(0), x2: DW_ - 6, y2: dy(0), stroke: 'rgba(239,230,214,0.35)', 'stroke-width': 1 });
+  el('line', { x1: 6, y1: dy(35), x2: DW_ - 6, y2: dy(35), stroke: 'rgba(196,154,90,0.55)', 'stroke-width': 1, 'stroke-dasharray': '3 3' });
+  el('text', { x: DW_ - 6, y: dy(35) - 4, fill: '#c49a5a', 'font-size': 9, 'text-anchor': 'end' }).textContent = '35° 光路坡度上限';
+  const v = new V3(); let d = '', dSeg = '';
+  for (let H = -110; H <= 110; H += 1) {
+    sunDir(H, v); const alt = altOf(v); if (alt < 0) continue;
+    const s = `${dx(azOf(v.x, v.z)).toFixed(1)},${dy(alt).toFixed(1)}`;
+    d += (d ? ' L' : 'M') + s;
+    if (H >= H_MIN && H <= H_MAX) dSeg += (dSeg ? ' L' : 'M') + s;
+  }
+  el('path', { d, fill: 'none', stroke: 'rgba(242,196,106,0.35)', 'stroke-width': 1.2 });
+  el('path', { d: dSeg, fill: 'none', stroke: '#c49a5a', 'stroke-width': 2.6, 'stroke-linecap': 'round' });
+  for (const [az, t] of [[90, '东'], [180, '南'], [270, '西']]) el('text', { x: dx(az), y: DH_ - 3, fill: 'rgba(239,230,214,0.6)', 'font-size': 10, 'text-anchor': 'middle' }).textContent = t;
+  el('text', { x: dx(135), y: DH_ - 3, fill: 'rgba(239,230,214,0.4)', 'font-size': 9, 'text-anchor': 'middle' }).textContent = '日1';
+  el('circle', { id: 'sunGlow', r: 9, fill: 'rgba(242,196,106,0.18)' });
+  sunDot = el('circle', { r: 4.2, fill: '#f2c46a' });
+})();
+const GREEK = { 5: ['第五时', 'Ε'], 6: ['第六时', 'ΣΤ'], 7: ['第七时', 'Ζ'], 8: ['第八时', 'Η'], 9: ['第九时', 'Θ'], 10: ['第十时', 'Ι'] };
+let hudT = 0;
+function updateHud(dt) {
+  hudT += dt; if (hudT < 0.08) return; hudT = 0;
+  const alt = altOf(sunV), az = azOf(sunV.x, sunV.z);
+  const x = dx(az), y = dy(alt);
+  sunDot.setAttribute('cx', x); sunDot.setAttribute('cy', y);
+  const g = $('sunGlow'); g.setAttribute('cx', x); g.setAttribute('cy', y);
+  $('rAlt').textContent = alt.toFixed(1) + '°';
+  $('rAz').textContent = Math.round(az) + '°';
+  const hrs = 12 + state.H / 15, hh = Math.floor(hrs), mm = Math.floor((hrs - hh) * 60);
+  $('rClock').textContent = `${hh}:${String(mm).padStart(2, '0')}`;
+  const gk = GREEK[Math.floor(state.H / 15) + 7];
+  $('rHour').innerHTML = gk ? `${gk[0]} <span class="greek">${gk[1]}</span>` : '';
+  // 互动提示
+  const near = player.pos.distanceTo(P(SLUICE.az, SLUICE.r, player.pos.y)) < 1.9 && player.pos.y < 1.5;
+  const pr = $('prompt');
+  if (near && state.started) { pr.hidden = false; pr.innerHTML = `<span class="kbd">${touch ? '互动' : 'E'}</span>${mist.open ? '关闭水闸' : '打开水闸'}`; }
+  else pr.hidden = true;
+}
+let toastTimer = 0;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2200); }
+
+// ────────────────────────────── 互动 ──────────────────────────────
+function interact() {
+  const near = player.pos.distanceTo(P(SLUICE.az, SLUICE.r, player.pos.y)) < 1.9 && player.pos.y < 1.5;
+  if (!near) return;
+  mist.open = !mist.open;
+  if (mist.open && mist.amt < 0.01) mist.front = 0;
+}
+function setIso(on) {
+  state.iso = on; orbitSky.visible = on;
+  bronze.emissiveIntensity = on ? 1.4 : 0;
+}
+function setMode(m) { player.mode = m; if (m === 'first') player.pitch = clamp(player.pitch, -1.3, 1.3); }
+function openHelp(open) {
+  $('help').hidden = !open;
+  if (open && document.pointerLockElement) document.exitPointerLock();
+}
+function win() {
+  state.won = true;
+  $('done').hidden = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+}
+function reset() {
+  mist.open = false; mist.flow = mist.spray = mist.amt = mist.front = 0;
+  player.pos.copy(P(SPAWN.az, SPAWN.r, 0)); player.lastSafe.copy(player.pos);
+  player.vy = 0; player.grounded = true; player.yaw = SPAWN.yaw; player.pitch = 0.4; player.heading = SPAWN.yaw;
+  state.won = false; $('done').hidden = true;
+}
+
+addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (!state.started || e.repeat) return;
+  if (e.code === 'KeyE') interact();
+  else if (e.code === 'KeyT') setIso(!state.iso);
+  else if (e.code === 'KeyV') setMode(player.mode === 'third' ? 'first' : 'third');
+  else if (e.code === 'KeyH') openHelp($('help').hidden);
+  else if (e.code === 'KeyM') toast(score.toggle() ? '已静音' : '声音已打开');
+  else if (e.code === 'KeyR') reset();
+});
+addEventListener('keyup', (e) => { keys[e.code] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+let dragging = false, lastX = 0, lastY = 0, lookId = null;
+function look(dxp, dyp, k = 1) {
+  player.yaw = (player.yaw + dxp * 0.14 * k + 360) % 360;
+  const lim = player.mode === 'first' ? [-1.3, 1.3] : [-0.4, 1.25];
+  player.pitch = clamp(player.pitch + dyp * 0.0024 * k, lim[0], lim[1]);
+}
+canvas.addEventListener('click', () => {
+  if (!state.started || touch || document.pointerLockElement === canvas) return;
+  try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* 拖动视角作为后备 */ }
+});
+document.addEventListener('mousemove', (e) => {
+  if (!state.started) return;
+  if (document.pointerLockElement === canvas) look(e.movementX, e.movementY);
+  else if (dragging) { look(e.clientX - lastX, e.clientY - lastY); lastX = e.clientX; lastY = e.clientY; }
+});
+canvas.addEventListener('pointerdown', (e) => {
+  if (!state.started) return;
+  if (e.pointerType === 'mouse') { dragging = true; lastX = e.clientX; lastY = e.clientY; }
+  else if (lookId === null) { lookId = e.pointerId; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); }
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.pointerId === lookId) { look(e.clientX - lastX, e.clientY - lastY, 1.3); lastX = e.clientX; lastY = e.clientY; }
+});
+const endLook = (e) => { if (e.pointerType === 'mouse') dragging = false; if (e.pointerId === lookId) lookId = null; };
+canvas.addEventListener('pointerup', endLook); canvas.addEventListener('pointercancel', endLook);
+canvas.addEventListener('wheel', (e) => { player.dist = clamp(player.dist + e.deltaY * 0.004, 2.2, 9); e.preventDefault(); }, { passive: false });
+
+// 触屏摇杆
+{
+  const stick = $('stick'), knob = $('knob'); let sid = null;
+  const setK = (x, y) => { knob.style.transform = `translate(${x}px, ${y}px)`; };
+  const move = (e) => {
+    const b = stick.getBoundingClientRect(), R = b.width / 2;
+    let x = e.clientX - (b.left + R), y = e.clientY - (b.top + R); const l = Math.hypot(x, y);
+    if (l > R) { x *= R / l; y *= R / l; }
+    setK(x, y); touchMove.x = x / R; touchMove.y = -y / R;
+  };
+  stick.addEventListener('pointerdown', (e) => { sid = e.pointerId; stick.setPointerCapture(sid); move(e); });
+  stick.addEventListener('pointermove', (e) => { if (e.pointerId === sid) move(e); });
+  const end = (e) => { if (e.pointerId !== sid) return; sid = null; setK(0, 0); touchMove.x = touchMove.y = 0; };
+  stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
+  $('bE').addEventListener('click', interact);
+  $('bT').addEventListener('click', () => setIso(!state.iso));
+  $('bV').addEventListener('click', () => setMode(player.mode === 'third' ? 'first' : 'third'));
+  $('bH').addEventListener('click', () => openHelp($('help').hidden));
+}
+$('helpClose').addEventListener('click', () => openHelp(false));
+$('doneClose').addEventListener('click', () => { $('done').hidden = true; });
+
+function start() {
+  if (state.started) return;
+  state.started = true;
+  $('intro').hidden = true; $('hud').hidden = false;
+  if (touch) $('touch').hidden = false;
+  score.start(state.H);
+  if (!touch) { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* 忽略 */ } }
+  canvas.focus();
+  setTimeout(() => { $('keys').style.opacity = '0.55'; }, 20000);
+}
+$('go').addEventListener('click', start);
+if (touch) { $('ctrlDesk').hidden = true; $('ctrlTouch').hidden = false; }
+
+// ────────────────────────────── 主循环 ──────────────────────────────
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  rt.setSize(Math.max(1, Math.floor(w * DPR)), Math.max(1, Math.floor(h * DPR)));
+}
+addEventListener('resize', resize); resize();
+
+function setTime(H) {
+  state.H = H;
+  sunDir(H, sunV);
+  sky.material.uniforms.sunPosition.value.copy(sunV);
+  sun.position.copy(sunV).multiplyScalar(90).add(sun.target.position);
+  const arm = armBead.userData.group; armBead.position.copy(sunV).multiplyScalar(arm.userData.R);
+  if (Math.abs(H - envH) > 1.5) updateEnv(H);
+  if (Math.abs(H - beam.H) > 0.005) { computeBeam(); beam.H = H; }
+}
+
+function updateMist(dt) {
+  const toward = (v, target, rate) => v + clamp(target - v, -rate * dt, rate * dt);
+  if (mist.open) {
+    mist.flow = toward(mist.flow, 1, 1.3);
+    mist.spray = toward(mist.spray, mist.flow > 0.95 ? 1 : 0, 0.9);
+    mist.amt = toward(mist.amt, mist.flow > 0.95 ? 1 : 0, 0.35);
+    if (mist.flow > 0.95) mist.front = Math.min(60, mist.front + 3.0 * dt);
+  } else {
+    mist.flow = toward(mist.flow, 0, 1.6);
+    mist.spray = toward(mist.spray, 0, 0.7);
+    mist.amt = toward(mist.amt, 0, 0.11);
+    if (mist.amt <= 0) mist.front = 0;
+  }
+  if (mist.flow > 0 && mist.flow < 1) sluice.userData.wheel.rotation.z += dt * (mist.open ? 2.4 : -2.4);
+  curtainMat.uniforms.uFlow.value = mist.flow;
+  curtain.visible = mist.flow > 0.001;
+  scene.fog.density = 0.016 * mist.amt * clamp(mist.front / 22, 0, 1);
+  // 水沫
+  const sp = sprayPts; sp.m.opacity = 0.16 * mist.spray;
+  for (let i = 0; i < sp.seed.length; i++) {
+    const s = sp.seed[i]; s[2] += dt * s[3]; if (s[2] > 3.4) { s[2] = 0; s[0] = Math.random() * Math.PI * 2; s[1] = Math.random() * 1.3; }
+    const rr = s[1] + s[2] * 0.22;
+    sp.pos[i * 3] = CASC_P.x + Math.cos(s[0]) * rr; sp.pos[i * 3 + 1] = WATER_Y + s[2] * 0.9; sp.pos[i * 3 + 2] = CASC_P.z + Math.sin(s[0]) * rr;
+  }
+  sp.pts.geometry.attributes.position.needsUpdate = true;
+}
+
+const clock = new THREE.Clock();
+function tick(dt) {
+  state.t += dt;
+  if (state.started && !state.respawning) updatePlayer(dt);
+  updateMist(dt);
+  setTime(state.started ? hourAt(azOf(player.pos.x, player.pos.z)) : hourAt(SPAWN.az));
+  beam.walkable = beamIsWalkable();
+  updateCamera(dt);
+  // 光斑周围的反光
+  bounce.intensity = beam.valid ? 55 * beam.lit : 0;
+  if (beam.valid) bounce.position.copy(beam.far).addScaledVector(beam.L, -0.6);
+  // 合成参数
+  const u = postMat.uniforms;
+  camera.updateMatrixWorld();
+  u.uProjInv.value.copy(camera.projectionMatrixInverse); u.uCamWorld.value.copy(camera.matrixWorld); u.uCamPos.value.copy(camera.position);
+  u.uL.value.copy(sunV).negate(); u.uTime.value = state.t;
+  u.uSpray.value = mist.spray; u.uMist.value = mist.amt; u.uFront.value = mist.front;
+  u.uBOn.value[0] = beam.valid ? Math.min(1, beam.lit * 3) : 0;
+  if (beam.valid) { u.uBO.value[0].copy(beam.O); u.uBM.value[0].copy(beam.M); u.uBC.value[0].set(beam.c[0], beam.c[1], beam.c[2], beam.c[3]); }
+  curtainMat.uniforms.uTime.value = state.t;
+  score.update(state.H, mist.flow * clamp(1.4 - player.pos.distanceTo(CASC_P) / 14, 0, 1));
+  updateHud(dt);
+}
+function frame() {
+  tick(Math.min(clock.getDelta(), 0.05));
+  renderer.setRenderTarget(rt);
+  renderer.render(scene, camera);
+  renderer.setRenderTarget(null);
+  renderer.render(postScene, postCam);
+  requestAnimationFrame(frame);
+}
+scene.updateMatrixWorld(true);
+beam.H = 1e9;
+setTime(hourAt(SPAWN.az));
+updateEnv(state.H);
+requestAnimationFrame(frame);
+
+// 测试与调试用的小接口
+window.__dysis = {
+  azOf,
+  state, mist, beam, player,
+  start,
+  teleport(az, r, y = 0, yaw = player.yaw, pitch = player.pitch) { player.pos.copy(P(az, r, y)); player.yaw = yaw; player.pitch = pitch; player.vy = 0; player.grounded = true; },
+  simulate(sec, dt = 1 / 60) { for (let t = 0; t < sec; t += dt) tick(dt); },
+  openNow() { mist.open = true; mist.flow = 1; mist.spray = 1; mist.amt = 1; mist.front = 60; },
+  setMode, setIso,
+};
+</script>
