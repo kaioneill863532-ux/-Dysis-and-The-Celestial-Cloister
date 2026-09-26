@@ -113,6 +113,7 @@
     <span><span class="kbd">WASD</span>移动</span>
     <span><span class="kbd">鼠标</span>视角</span>
     <span><span class="kbd">Shift</span>快走</span>
+    <span><span class="kbd">空格</span>跳</span>
     <span><span class="kbd">E</span>互动</span>
     <span><span class="kbd">T</span>等时线</span>
     <span><span class="kbd">V</span>第一/第三人称</span>
@@ -123,6 +124,7 @@
   <div id="touch" hidden>
     <div id="stick"><div id="knob"></div></div>
     <div id="tbtns">
+      <button id="bJ" type="button">跳</button>
       <button id="bE" type="button">互动</button>
       <button id="bT" type="button">等时线</button>
       <button id="bV" type="button">视角</button>
@@ -152,6 +154,7 @@
     <div class="controls" id="ctrlDesk">
       <span><span class="kbd">WASD</span>移动</span>
       <span><span class="kbd">鼠标</span>转动视角</span>
+      <span><span class="kbd">空格</span>跳</span>
       <span><span class="kbd">E</span>互动</span>
       <span><span class="kbd">T</span>显示等时线</span>
       <span><span class="kbd">V</span>切换视角</span>
@@ -257,7 +260,9 @@ const WIN = {
   key: { az: 160, half: halfOf(2.4), y0: 10.8, y1: 13.4, walk: true },
   low: { az: 249, half: halfOf(2.4), y0: 17.6, y1: 19.5, walk: true },
   high: { az: 249, half: halfOf(2.4), y0: 20.4, y1: 22.2, walk: true },
-  bridge: { az: 176, half: halfOf(3.4), y0: 25.6, y1: 28.0, walk: true },
+  bridge: { az: 176, half: halfOf(3.4), y0: 25.6, y1: 28.0, walk: true, grille: true },   // 光阶的第一束：窗口有铜栅，人进不去
+  harpB: { az: 194, half: halfOf(2.2), y0: 26.6, y1: 28.2, walk: true },                   // 光阶的第二束：比第一束高 0.7 米，隔着一道空；窗台通往 L3 西段
+  harpC: { az: 208.5, half: halfOf(2.4), y0: 27.3, y1: 28.9, walk: true },                   // 光阶的第三束：再高一些，窗里是日之龛
   door: { az: 264, half: 4, y0: Y_L3, y1: 26.6, walk: false },   // 甲门
 };
 const BLIND = [                              // 北侧的窗，晒不到太阳
@@ -787,6 +792,22 @@ const BOW7 = [0xff3a2a, 0xff8a1c, 0xffe03a, 0x46d86a, 0x3aa8ff, 0x4a4cff, 0xa24a
   RB.shard.position.set(0, 0.78, 0.0); nz.add(RB.shard);
   RB.nicheG = nz;
 }
+// ── 光阶：三扇错落的高窗投下三束平行的光。第一束的窗口装着铜栅；第三束的窗里是日之龛 ──
+const SUNN = { open: false, t: 0 };
+{
+  const w = WIN.bridge, wm = (w.y0 + w.y1) / 2;
+  for (const u of [0.2, 0.4, 0.6, 0.8]) {   // 竖栅避开窗口取样的那几列，光照样进来，只在光路上留下几道细影
+    const bar = mesh(new THREE.CylinderGeometry(0.035, 0.035, w.y1 - w.y0, 8), bronzeExt); bar.position.copy(P(w.az - w.half + 2 * w.half * u + 0.4, (R_IN + R_OUT) / 2, wm)); add(bar, [SUN_OCC, LIGHT_BLOCK]);
+  }
+  const c = WIN.harpC, a = c.az - c.half + 0.9;
+  const g = new THREE.Group(); g.position.copy(P(a, (R_IN + R_OUT) / 2 + 0.05, c.y0)); g.rotation.y = -(a + 90) * DEG; world.add(g);
+  const box = mesh(new THREE.BoxGeometry(0.46, 0.56, 0.3), plainExt); box.position.y = 0.28; box.castShadow = box.receiveShadow = true; g.add(box);
+  SUNN.lid = new THREE.Group(); SUNN.lid.position.set(0, 0.56, -0.15); g.add(SUNN.lid);
+  const lid = mesh(new THREE.BoxGeometry(0.5, 0.05, 0.34), bronzeExt); lid.position.z = 0.17; SUNN.lid.add(lid);
+  SUNN.shard = mesh(new THREE.OctahedronGeometry(0.1, 0), new THREE.MeshStandardMaterial({ color: 0xffe2a0, metalness: 0.5, roughness: 0.1, emissive: 0xffb040, emissiveIntensity: 1.2 }));
+  SUNN.shard.position.y = 0.5; g.add(SUNN.shard);
+  SUNN.pos = P(c.az, R_IN - 0.1, 0);
+}
 // 顶层：天花板和环道是一体的。每一级踏步带着一片光圈叶片。
 const crown = { up: 0, dn: 0, iris: 0, pieces: [], gate: 0 };
 {
@@ -1224,7 +1245,7 @@ function makeBeam(id, win) {
   walk.userData.beam = b;
   return b;
 }
-const BEAMS = [makeBeam('key', WIN.key), makeBeam('low', WIN.low), makeBeam('high', WIN.high), makeBeam('bridge', WIN.bridge), makeBeam('door', WIN.door), makeBeam('mirror', null), makeBeam('rainbow', WIN.rainbow)];
+const BEAMS = [makeBeam('key', WIN.key), makeBeam('low', WIN.low), makeBeam('high', WIN.high), makeBeam('bridge', WIN.bridge), makeBeam('harpB', WIN.harpB), makeBeam('harpC', WIN.harpC), makeBeam('door', WIN.door), makeBeam('mirror', null), makeBeam('rainbow', WIN.rainbow)];
 const beamById = Object.fromEntries(BEAMS.map((b) => [b.id, b]));
 
 // 光束几何：O 为光在开口处的一角，U、V 张成开口，沿 L 走 c 米落到物体上
@@ -1874,7 +1895,7 @@ function openingAt(az, y, r) {   // 在这个高度、方位上，外墙是否�
   const m = (BODY_R / Math.max(r, 1)) / DEG;
   if (Math.abs(angDiff(az, GATE.az)) < GATE.half - m && y < 1.0) return 'through';
   if (Math.abs(angDiff(az, WIN.door.az)) < WIN.door.half - m && y > Y_L3 - 0.4 && y < Y_L3 + 1.5) return 'through';
-  for (const w of [WIN.key, WIN.low, WIN.high, WIN.bridge]) if (Math.abs(angDiff(az, w.az)) < w.half - m && y >= w.y0 - 0.4 && y < w.y0 + 1.2) return 'sill';
+  for (const w of [WIN.key, WIN.low, WIN.high, WIN.harpB, WIN.harpC]) if (Math.abs(angDiff(az, w.az)) < w.half - m && y >= w.y0 - 0.4 && y < w.y0 + 1.2) return 'sill';
   if (y >= Y_ROOF - 0.25) return 'through';
   return null;
 }
@@ -1931,7 +1952,8 @@ function collide(nx, nz, ox, oz, y) {
   // 各层回廊的栏杆：拦住从回廊一侧往中庭走的人；从空中落到栏杆脚下的人也推回回廊一侧
   const onBeamNow = player.ground && player.ground.userData.beam;
   for (const F of PARAPETS) {
-    if (y > F.lo && y < F.y + 0.3 && F.arcs.some((a) => inArc(az, a)) && r < R_PARA + BODY_R && (ro >= R_PARA + BODY_R - 1e-3 || (!onBeamNow && r > R_GAL - 0.35))) {
+    const hi = F.y + (player.grounded ? 0.3 : 1.3);   // 跳起来也翻不过栏杆
+    if (y > F.lo && y < hi && F.arcs.some((a) => inArc(az, a)) && r < R_PARA + BODY_R && (ro >= R_PARA + BODY_R - 1e-3 || (!onBeamNow && y < F.y + 0.3 && r > R_GAL - 0.35))) {
       [nx, nz] = polar(az, R_PARA + BODY_R); r = R_PARA + BODY_R;
     }
   }
@@ -1975,12 +1997,15 @@ function walkList() {
 // 光路两侧是深渊时有一道看不见的护栏：往边上走会顺着光滑过去，而不是掉下去。
 // 下面不远处有地面（摔不疼的高度）就照常走下去，比如从光路上跳到回廊。
 function beamRail(b, nx, nz, y) {
-  const q = beamLocal(b, _p.set(nx, y, nz));
-  if (q.a >= 0 && q.a <= 1) return [nx, nz];
+  // 光路的宽度方向和光的前进方向不一定垂直（窗和光是斜的），所以只拦住水平面上和光垂直的那个分量，顺着光走不受影响
+  const nH = _s.set(-b.L.z, 0, b.L.x); if (nH.lengthSq() < 1e-8) return [nx, nz]; nH.normalize();
+  const l1 = (b.b1.x - b.b0.x) * nH.x + (b.b1.z - b.b0.z) * nH.z, lo = Math.min(0, l1) + 0.06, hi = Math.max(0, l1) - 0.06;
+  const l = (nx - b.b0.x) * nH.x + (nz - b.b0.z) * nH.z;
+  if (l >= lo && l <= hi) return [nx, nz];
   rc.set(_p.set(nx, y + STEP, nz), DOWN); rc.near = 0; rc.far = STEP + 6.2;
   if (rc.intersectObjects(WALK, false).length) return [nx, nz];
-  const w = beamWorld(b, clamp(q.a, 0.02, 0.98), q.s);
-  return [w.x, w.z];
+  const lc = clamp(l, lo, hi);
+  return [nx - nH.x * (l - lc), nz - nH.z * (l - lc)];
 }
 function probe(x, y, z, down) {
   rc.set(_p.set(x, y + STEP, z), DOWN); rc.near = 0; rc.far = STEP + down;
@@ -2040,6 +2065,12 @@ function applyCarry() {
   const [nx, nz] = collide(np.x, np.z, player.pos.x, player.pos.z, player.pos.y);
   if (Math.hypot(nx - np.x, nz - np.z) > 0.05) return;
   player.pos.set(nx, np.y, nz);
+}
+// 跳：从一束光跳到另一束光。刚踏空的一小会儿里也还能起跳。
+function jump() {
+  if (!state.started || state.respawning || !(player.grounded || player.coyote > 0)) return;
+  player.grounded = false; player.ground = null; player.carry = null; player.coyote = 0;
+  player.vy = 7.6; player.fallFrom = player.pos.y;
 }
 function respawn() {
   state.respawning = true;
@@ -2161,6 +2192,7 @@ const INTERACTS = [
     label: () => (Math.abs(shaft.level - shaft.target) > 0.05 ? '水在往下走' : shaft.level < L1_LVL - 0.5 ? '水已经放到底了' : '拉动铜链'), act: pullChain },
   { p: P(VALVE1.az, 14.6), y: [Y_L1 - 0.6, Y_L1 + 1.6], r: 1.8, label: () => (valve1.open ? '竖井通往水庭的闸开着' : '打开竖井通往水庭的闸'), act: () => { if (!valve1.open) { valve1.open = true; toast('闸开了。竖井里的水可以一直放到水庭。', 3200); } } },
   { p: new V3(0, 0, 0), y: [0, 1.6], r: 1.7, when: () => state.caught && !state.placed, label: () => '把金苹果放进铜碗', act: placeApple },
+  { p: SUNN.pos, y: [WIN.harpC.y0 - 0.5, WIN.harpC.y0 + 1.5], r: 1.2, label: () => (SUNN.open ? '日之龛已经打开' : '打开日之龛'), act: () => { if (!SUNN.open) { SUNN.open = true; SUNN.t = 0.001; toast('日之龛打开了。', 2400); } } },
   { p: P(67.5, 11.25, 0), y: [RELIEF.floor - 0.6, RELIEF.floor + 1.6], r: 1.6, label: () => (RB.shutterOpen ? '对面虹窗的铜百叶开着' : '转动闸轮，打开对面虹窗的铜百叶'), act: () => { if (!RB.shutterOpen) { RB.shutterOpen = true; toast('对面西南墙上，一扇细格窗的铜百叶滑开了。', 3200); } } },
   { p: P(RELIEF.az, 11.4, 0), y: [RELIEF.floor - 0.6, RELIEF.floor + 1.6], r: 1.3, when: () => !RB.active, label: () => '看看浮雕', act: reliefHint },
   { p: P(RW.az + 7.8, R_IN - 0.9, 0), y: [SILL.y - 0.6, SILL.y + 1.6], r: 1.3, label: () => (RB.nicheOpen ? '虹之龛已经打开' : '打开虹之龛'), act: openNiche },
@@ -2228,12 +2260,14 @@ function reset() {
   { const i = WALK.indexOf(PRISM.slab); if (i >= 0) WALK.splice(i, 1); }
   PRISM.yaw = PRISM.slots[0]; PRISM.lastYaw = null; SELENE.on = false; SELENE.lit = 0; openTalk(false);
   state.shards = { sun: false, rainbow: false, moon: false }; updateShardHud();
+  SUNN.open = false; SUNN.t = 0; SUNN.lid.rotation.x = 0; SUNN.shard.scale.setScalar(1); SUNN.shard.position.y = 0.5;
 }
 
 addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (!state.started || e.repeat) return;
   if (e.code === 'KeyE') interact();
+  else if (e.code === 'Space') { jump(); e.preventDefault(); }
   else if (e.code === 'KeyT') setIso(!state.iso);
   else if (e.code === 'KeyV') setMode(player.mode === 'third' ? 'first' : 'third');
   else if (e.code === 'KeyH') openHelp($('help').hidden);
@@ -2283,6 +2317,7 @@ canvas.addEventListener('wheel', (e) => { player.dist = clamp(player.dist + e.de
   const end = (e) => { if (e.pointerId !== sid) return; sid = null; setK(0, 0); touchMove.x = touchMove.y = 0; };
   stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
   $('bE').addEventListener('click', interact);
+  $('bJ').addEventListener('click', jump);
   $('bT').addEventListener('click', () => setIso(!state.iso));
   $('bV').addEventListener('click', () => setMode(player.mode === 'third' ? 'first' : 'third'));
   $('bH').addEventListener('click', () => openHelp($('help').hidden));
@@ -2472,6 +2507,11 @@ function setBridge(on) {
 }
 const _q = new V3();
 function updateRainbow(dt) {
+  if (SUNN.t > 0) {   // 日之龛：盖子掀开，一片金色的碎片升起来
+    const a0 = SUNN.t; SUNN.t += dt; const T = SUNN.t;
+    SUNN.lid.rotation.x = -1.9 * smoothstep(0, 1, T); SUNN.shard.rotation.y += dt * 2; SUNN.shard.position.y = 0.5 + 0.4 * smoothstep(1, 2, T); SUNN.shard.scale.setScalar(1 - 0.999 * smoothstep(2, 2.6, T));
+    if (a0 < 2.6 && T >= 2.6) { state.shards.sun = true; updateShardHud(); toast('你得到了一片太阳碎片。', 3200); }
+  }
   // 虹窗的铜百叶
   const sh = RB.shutter; RB.shutter = toward(RB.shutter, RB.shutterOpen ? 1 : 0, 0.6, dt);
   if (sh !== RB.shutter) { RB.shutterPos(RB.shutter); beamH = 1e9; }
@@ -2649,7 +2689,7 @@ requestAnimationFrame(frame);
 window.__dysis = {
   azOf, P, ZONES, ZONES_N, BEAMS, MIST, slider, mirror, state, player, H_TOP, crown, shaft, inflow, BODIES, TILES, psiOf, moonV, sunV, altarPos, timeAt,
   valve1, tileMat, CROWN_DAY, CROWN_NIGHT, poolLit, BOWL, catchLight, placeApple, pullChain, THREE, occNear, WALK, LIGHT_BLOCK, SUN_OCC,
-  start, RB, PRISM, SELENE, BRIDGE, RELIEF, reliefEye, reliefF, RW, SILL, setBridge, beamById,
+  start, jump, SUNN, RB, PRISM, SELENE, BRIDGE, RELIEF, reliefEye, reliefF, RW, SILL, setBridge, beamById,
   teleport(az, r, y = 0, yaw = player.yaw, pitch = player.pitch, zone) {
     player.pos.copy(P(az, r, y)); player.yaw = yaw; player.pitch = pitch; player.vy = 0; player.grounded = true; player.carry = null; player.ground = null;
     player.zone = zone ?? zoneOfContact(player.pos); player.lastSafe = { pos: player.pos.clone(), zone: player.zone };
