@@ -292,7 +292,7 @@ const CATCH = { psi: 174, r: 13.0 };             // 接光台（浑天仪）在�
 const SLUICE3 = { az: 167, r: 15.3, y: Y_L3 + 1.25 };   // 天池进水口的阀门，装在墙上
 const SPOUT3 = { az: 160, y: Y_L3 + 1.1 };
 const SH_BOT = 2.6;   // 竖井的井底悬在水庭上方：底下留空，白天的第一道光路和人都能从下面过
-const L3_LVL = Y_L3 - 0.03, L1_LVL = Y_L1 - 0.03, L0_LVL = SH_BOT;   // 水面都满到池沿：天池、L1 环渠；竖井的三个停靠水位
+const L3_LVL = Y_L3 - 0.03, L2_LVL = Y_L2 - 0.03, L1_LVL = Y_L1 - 0.03, L0_LVL = SH_BOT;   // 水面都满到池沿：天池、L1 环渠；竖井的三个停靠水位
 const VALVE1 = { az: 100, r: 15.3, y: Y_L1 + 1.25 };                  // L1 东段墙上的闸轮：打开竖井通往水庭的闸
 
 const P = (az, r, y = 0) => new V3(r * Math.sin(az * DEG), y, -r * Math.cos(az * DEG));
@@ -371,10 +371,10 @@ const ZONE_DEF = [
     night: [[26, 182], [33, 179], [40, 175], [48, 167], [60, 152], [74, 134], [86, 133], [104, 131], [133, 128], [200, 125], [300, 122], [374, 121]] },
   { name: 'L1', seam: [135, 150], from: 0, hand: [150, 155, 165, 178],
     knots: [[249, 30.2], [300, 32.3], [359, 34], [420, 37], [480, 40]], step: 1, major: 15,
-    nseam: [74, 86], night: [[86, 134], [110, 132], [135, 130], [150, 127.5], [180, 123], [240, 117], [300, 113], [360, 110], [430, 108.05], [434, 108]] },
+    nseam: [74, 86], night: [[86, 134], [110, 132], [135, 130], [150, 127.5], [180, 126.4], [240, 125.2], [300, 124], [360, 123], [430, 122.05], [434, 122]] },
   { name: 'L2', seam: [226, 238], from: 1, hand: [238, 244, 249, 256, 262],
     knots: [[300, 43], [340, 51], [375, 56], [M_U - 3, 57.8], [M_U, 58], [440, 58.35], [473, 58.62], [488, 58.72], [498, 58.85], [508, 58.98], [560, 60.2], [586, 61]], step: 2, major: 15,
-    night: [[238, 121], [586, 120]] },
+    nseam: [74, 86], night: [[86, 122], [150, 121], [226, 120.2], [238, 120], [300, 119.6], [360, 119.2], [398, 118.6], [434, 118]] },
   { name: 'L3', seam: [335, 355], from: 2, hand: [118, 126, 134, 141, 148],
     knots: [[355, 50], [420, 55.5], [465, 58.45], [530, 59.6], [536, 59.9], [624, 62.5], [695, 63.6]], step: 0.5, major: 5,
     nseam: [74, 86], night: [[86, 108], [90, 107.5], [100, 105], [120, 99], [148, 92.5], [160, 91], [170, 90], [180, 89.8], [335, 89], [434, 88]] },
@@ -451,6 +451,14 @@ const reliefEye = reliefF.clone().addScaledVector(reliefSun, (reliefEyeY - relie
 }
 const RW = WIN.rainbow;
 FLOORS[1].para = [[238, 360 + RELIEF.a0], [446, 586]];   // L2 回廊在虹台那一头没有栏杆
+// 月窗（L2）：开在东北墙上。月2 时刚升起的月亮从这里照到托镜石像的脸上。白天太阳永远到不了东北，这扇窗白天是暗的。
+{
+  const Hm = ZONES_N[2].f(MIRROR.az), m = moonDir(Hm, new V3());
+  const yaw = (MIRROR.yaw0 - 90) * DEG, f = new V3(Math.sin(yaw), 0, -Math.cos(yaw));   // 第 1 格朝向
+  const face = P(MIRROR.az, MIRROR.r, MIRROR.y + 1.6).addScaledVector(f, 0.12), w = face.clone();
+  for (let t = 0; t < 30; t += 0.01) { w.copy(face).addScaledVector(m, t); if (Math.hypot(w.x, w.z) > R_IN) break; }
+  WIN.moon2 = { az: azOf(w.x, w.z), half: halfOf(1.8), y0: w.y - 0.8, y1: w.y + 0.8, walk: false };
+}
 const SILL = { a0: RW.az - 9, a1: RW.az + 10, r0: 13.6, y: RW.y0 - 0.6 };   // 虹窗下面的窗台：虹桥的另一头，虹之龛在它右手的墙里
 
 // ────────────────────────────── 渲染器 ──────────────────────────────
@@ -669,7 +677,7 @@ let spout3, valve3, valve1W;   // 天池的进水口与墙上的阀门（在下�
 // 水钟竖井：两侧和内侧是墙，只在 L3（顺时针一侧）和 L1（逆时针一侧）开门
 const SH_TOP = Y_CEIL, DOOR_H = 2.3;
 // L3 顺时针一侧进；L1 逆时针一侧出；绕 L1 一圈回来，从顺时针一侧再进（要先打开闸）；最后在水庭逆时针一侧出
-const SH_DOORS = [{ face: SHAFT.a1, y: Y_L3, lvl: L3_LVL }, { face: SHAFT.a0, y: Y_L1, lvl: L1_LVL }, { face: SHAFT.a1, y: Y_L1, lvl: L1_LVL, valve: true }, { face: SHAFT.a0, y: SH_BOT, lvl: L0_LVL }];
+const SH_DOORS = [{ face: SHAFT.a1, y: Y_L3, lvl: L3_LVL }, { face: SHAFT.a0, y: Y_L2, lvl: L2_LVL }, { face: SHAFT.a0, y: Y_L1, lvl: L1_LVL }, { face: SHAFT.a1, y: Y_L1, lvl: L1_LVL, valve: true }, { face: SHAFT.a0, y: SH_BOT, lvl: L0_LVL }];
 {
   const rm = (SHAFT.r0 + SHAFT.r1) / 2, rw = SHAFT.r1 - SHAFT.r0;
   const slab = (az, r, w, y0, y1) => {
@@ -1009,32 +1017,105 @@ function placePanel() {
   panel.updateMatrixWorld(true);
 }
 placePanel();
-// 托镜的石像：转动底座，铜镜跟着转
-const mirror = { k: 0, center: new V3(), n: new V3(), group: new THREE.Group() };
+// 托镜的石像：转动底座，铜镜跟着转。她是一尊三相像，形态由照在她脸上的光决定：
+// 脸上有阳光时是日相，举着镜子迎向太阳，把光反射出去；脸上没有光时是暗相，把镜子垂下来；
+// 夜里脸上有月光时是月相，把镜子递向前方，把月光递给你。
+const mirror = { k: 0, center: new V3(), n: new V3(), group: new THREE.Group(), form: 'dark', w: { sun: 0, moon: 0, dark: 1 } };
 const statuePos = P(MIRROR.az, MIRROR.r, MIRROR.y);
+const statueStone = std({ color: 0xd9ccb6, roughness: 0.86, envMapIntensity: IN_ENV, emissive: 0x000000, emissiveIntensity: 1 });
+function limb(parent, r0, r1, mat) { const m = mesh(new THREE.CylinderGeometry(r1, r0, 1, 10), mat); m.castShadow = true; parent.add(m); return m; }
+function setLimb(m, a, b) {   // 让一段圆柱从 a 伸到 b（局部坐标）
+  const d = new V3().subVectors(b, a), l = d.length();
+  m.position.copy(a).addScaledVector(d, 0.5); m.scale.set(1, Math.max(0.01, l), 1); m.quaternion.setFromUnitVectors(new V3(0, 1, 0), d.normalize());
+}
 {
   const g = mirror.group; g.position.copy(statuePos); world.add(g);
   const ped = mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.3, 24), plainInt); ped.position.y = 0.15; ped.castShadow = ped.receiveShadow = true; g.add(ped);
-  const body = mesh(new THREE.LatheGeometry([[0, 0], [0.2, 0], [0.18, 0.5], [0.14, 0.95], [0.1, 1.2], [0.0, 1.26]].map(([x, y]) => new THREE.Vector2(x, y)), 20), plainInt);
+  const body = mesh(new THREE.LatheGeometry([[0, 0], [0.2, 0], [0.18, 0.5], [0.14, 0.95], [0.1, 1.2], [0.0, 1.26]].map(([x, y]) => new THREE.Vector2(x, y)), 20), statueStone);
   body.position.y = 0.3; body.castShadow = true; g.add(body);
+  mirror.head = mesh(new THREE.SphereGeometry(0.11, 16, 12), statueStone); mirror.head.castShadow = true; g.add(mirror.head);
+  mirror.arms = [limb(g, 0.035, 0.03, statueStone), limb(g, 0.035, 0.03, statueStone)];
   const disc = mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.04, 40), mirrorMat); disc.castShadow = true; g.add(disc);
   const back = mesh(new THREE.CylinderGeometry(0.66, 0.66, 0.05, 40), bronze); back.castShadow = true; g.add(back);
   mirror.disc = disc; mirror.back = back;
   add(ped, [LIGHT_BLOCK]); g.add(ped); LIGHT_BLOCK.push(body, disc, back); CAM_BLOCK.push(ped, body);
 }
+const mirrorNormal = (k, out = new V3(), tilt = MIRROR.tilt) => {
+  const yaw = MIRROR.yaw0 + 30 * (k - 4), el = tilt;
+  return out.set(Math.sin(yaw * DEG) * Math.cos(el * DEG), Math.sin(el * DEG), -Math.cos(yaw * DEG) * Math.cos(el * DEG));
+};
 function placeMirror() {
-  const yaw = MIRROR.yaw0 + 30 * (mirror.k - 4), el = MIRROR.tilt;
-  mirror.n.set(Math.sin(yaw * DEG) * Math.cos(el * DEG), Math.sin(el * DEG), -Math.cos(yaw * DEG) * Math.cos(el * DEG));
-  const off = new V3(mirror.n.x, 0, mirror.n.z).normalize().multiplyScalar(0.34);   // 镜子托在石像身前
-  const local = new V3(0, 0.8, 0).add(off);
+  mirrorNormal(mirror.k, mirror.n);
+  const f = new V3(mirror.n.x, 0, mirror.n.z).normalize(), w = mirror.w;
+  // 三种姿势：日相举镜（光路按这个位置算）、暗相垂镜、月相递镜
+  const cSun = new V3(0, 0.8, 0).addScaledVector(f, 0.34), cDark = new V3(0, 0.42, 0).addScaledVector(f, 0.3), cMoon = new V3(0, 0.95, 0).addScaledVector(f, 0.46);
+  const local = cSun.clone().multiplyScalar(w.sun).addScaledVector(cDark, w.dark).addScaledVector(cMoon, w.moon);
+  const nDark = f.clone().multiplyScalar(Math.cos(0.9)).add(new V3(0, -Math.sin(0.9), 0));
+  mirror.nMoon = mirrorNormal(mirror.k, mirror.nMoon || new V3(), MIRROR.moonTilt ?? MIRROR.tilt);   // 递镜时镜面的倾角和举镜时不同
+  const n = mirror.n.clone().multiplyScalar(w.sun).addScaledVector(mirror.nMoon, w.moon).addScaledVector(nDark, w.dark).normalize();
   mirror.center.copy(statuePos).add(local);
-  const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 1, 0), mirror.n);
+  const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 1, 0), n);
   mirror.disc.quaternion.copy(q); mirror.back.quaternion.copy(q);
-  mirror.disc.position.copy(local).addScaledVector(mirror.n, 0.02);
-  mirror.back.position.copy(local).addScaledVector(mirror.n, -0.03);
+  mirror.disc.position.copy(local).addScaledVector(n, 0.02);
+  mirror.back.position.copy(local).addScaledVector(n, -0.03);
+  // 头：暗相时低下去
+  mirror.head.position.set(0, 1.62 - 0.1 * w.dark, 0).addScaledVector(f, 0.05 + 0.08 * w.dark);
+  // 两只手托着镜子的两边
+  const side = new V3(-f.z, 0, f.x);
+  for (const [i, s] of [[0, -1], [1, 1]]) setLimb(mirror.arms[i], new V3(0, 1.42, 0).addScaledVector(side, 0.15 * s), local.clone().addScaledVector(side, 0.5 * s).addScaledVector(n, -0.06));
+  mirror.faceLocal = new V3(0, 1.45, 0).addScaledVector(f, 0.12);   // 取在下巴一带：人站在她身前一米多，就能用身体挡住照到脸上的光
+  mirror.f = f;
   mirror.group.updateMatrixWorld(true);
 }
 placeMirror();
+// 三相像的通用做法：一个站着的人像，身体、头、两只手。暗相跪坐，日相双手上举，月相双手前伸。
+function makeFigure(pos, faceAz, mat, h = 1) {
+  const g = new THREE.Group(); g.position.copy(pos); g.rotation.y = -faceAz * DEG; world.add(g);   // 局部 +z 朝着她看的方向（反过来算：rotation.y = -az 时局部 -z 朝 az）
+  const ped = mesh(new THREE.CylinderGeometry(0.34, 0.38, 0.3, 24), plainInt); ped.position.y = 0.15; ped.castShadow = ped.receiveShadow = true; g.add(ped);
+  const torso = new THREE.Group(); g.add(torso);
+  const body = mesh(new THREE.LatheGeometry([[0, 0], [0.22, 0], [0.2, 0.5], [0.15, 0.95], [0.1, 1.2], [0.0, 1.26]].map(([x, y]) => new THREE.Vector2(x * h, y * h)), 20), mat); body.position.y = 0.3; body.castShadow = true; torso.add(body);
+  const head = mesh(new THREE.SphereGeometry(0.12 * h, 16, 12), mat); head.castShadow = true; torso.add(head);
+  const arms = [limb(torso, 0.04, 0.034, mat), limb(torso, 0.04, 0.034, mat)];
+  const fig = { g, torso, body, head, arms, h, w: { sun: 0, moon: 0, dark: 1 }, form: 'dark', faceAz };
+  poseFigure(fig); return fig;
+}
+function poseFigure(fig) {   // 局部坐标：-z 是前方
+  const { w, h } = fig, crouch = w.dark;
+  fig.torso.scale.set(1, 1 - 0.3 * crouch, 1); fig.torso.position.z = 0.06 * crouch;
+  fig.head.position.set(0, (1.62 - 0.08 * crouch) * h, -0.05 - 0.1 * crouch);
+  const sh = 1.42 * h;
+  for (const [i, sgn] of [[0, -1], [1, 1]]) {
+    const hand = new V3(sgn * 0.3, 0.75 * h, -0.12).multiplyScalar(w.dark)
+      .add(new V3(sgn * 0.26, 2.2 * h, -0.1).multiplyScalar(w.sun))
+      .add(new V3(sgn * 0.2, 1.45 * h, -0.75).multiplyScalar(w.moon));
+    setLimb(fig.arms[i], new V3(sgn * 0.17, sh, 0), hand);
+  }
+  fig.g.updateMatrixWorld(true);
+}
+const figFace = (fig) => fig.g.localToWorld(new V3(0, 1.58 * fig.h * (1 - 0.3 * fig.w.dark), -0.14));
+const figFront = (fig) => new V3(Math.sin(fig.faceAz * DEG), 0, -Math.cos(fig.faceAz * DEG));
+// 月锁：竖井铜链在 L2 这一站被一根刹杆卡着，刹杆穿过井壁，外头嵌着一弯银月。夜里托镜石像递出镜子、转到第二格时，
+// 反射的月光正好落在这弯银月上，刹杆松开。位置按反射光算出来。
+function mirrorRay(k, light, pose, tilt) {   // 从镜心出发的反射光（pose：'sun' 举镜 / 'moon' 递镜）
+  const n = mirrorNormal(k, new V3(), tilt ?? (pose === 'moon' ? MIRROR.moonTilt : MIRROR.tilt)), f = new V3(n.x, 0, n.z).normalize();
+  const c = statuePos.clone().add(pose === 'sun' ? new V3(0, 0.8, 0).addScaledVector(f, 0.34) : new V3(0, 0.95, 0).addScaledVector(f, 0.46));
+  const L = light.clone().negate(), R = L.clone().addScaledVector(n, -2 * L.dot(n));
+  return { c, R };
+}
+const LOCKS = {};
+{
+  // 月锁：刹杆穿过竖井的井壁，银色弯月嵌在井门外侧的门框上。位置就是第二格反射的月光第一次碰到东西的地方。
+  MIRROR.moonTilt = 12;   // 递镜时镜面比举镜时立得直一些
+  world.updateMatrixWorld(true);
+  const { c, R } = mirrorRay(1, moonDir(ZONES_N[2].f(MIRROR.az), new V3()), 'moon');
+  const ray = new THREE.Raycaster(c.clone().addScaledVector(R, 0.6), R, 0, 30);
+  const h = ray.intersectObjects(LIGHT_BLOCK, false)[0], p = h ? h.point.clone() : c.clone().addScaledVector(R, 8);
+  const g = new THREE.Group(); g.position.copy(p).addScaledVector(R, -0.05); g.lookAt(c); world.add(g);
+  LOCKS.moonMat = new THREE.MeshStandardMaterial({ color: 0xc9d2de, metalness: 1, roughness: 0.25, emissive: 0x9fb8ff, emissiveIntensity: 0 });
+  const moon = mesh(new THREE.TorusGeometry(0.16, 0.045, 10, 32, Math.PI * 1.25), LOCKS.moonMat); moon.rotation.z = -0.6; g.add(moon);
+  const bar = mesh(new THREE.BoxGeometry(0.06, 0.06, 0.5), bronze); bar.position.set(0, -0.22, -0.2); g.add(bar);   // 刹杆从这里穿进井壁
+  LOCKS.moon = p.clone().addScaledVector(R, -0.05);
+}
 
 // 青铜浑天仪：金环是太阳轨道，银环是月亮轨道
 function armillary(p, R, pedH, parent = world) {
@@ -1320,7 +1401,7 @@ function insidePrism(b, p, tol = 0.15) {
 // 铜镜：上窗的光落在镜面上时，按反射定律再射出去
 function computeMirrorBeam(b) {
   const inc = beamById.high; b.valid = false; b.lit = 0;
-  if (!inc.valid) return;
+  if (!inc.valid || mirror.form !== 'sun' || mirror.w.sun < 0.95) return;   // 只有日相（举着镜子）时才把光反射出去
   const n = mirror.n, C = mirror.center, L = inc.L;
   if (n.dot(L) >= 0) return;                        // 光照在镜子背面
   const U = new V3().crossVectors(new V3(0, 1, 0), n).normalize();
@@ -1860,8 +1941,16 @@ const player = {
   lastSafe: { pos: P(SPAWN.az, SPAWN.r, 0), zone: 0 }, safeT: 0, carry: null, coyote: 0,
 };
 const state = { started: false, iso: false, H: ZONES[0].f(SPAWN.az), t: 0, respawning: false, level: 0, seenLevel: 0, caught: false, cine: 0, sticky: 0, placed: false, fin: 0, shards: { sun: false, rainbow: false, moon: false } };
-// 此刻的时间：由站在哪一层、哪个方位决定。竖井里和中心小岛上沿用进去时的时间（沿半径走，时间不变）。
+// 此刻的时间：由站在哪一层、哪个方位决定。中心小岛上（白天还有竖井里）沿用进去时的时间（沿半径走，时间不变）。
+// 竖井是一座水钟：夜里水每往下放一层，时间也往前走一截（从 L3 放到 L2 走 10，从 L2 放到 L1 走 4）。
+// 井里的时刻 = 进井时的时刻 + 这一趟水位下降走过的时间
+const SHAFT_T = [[L3_LVL, 108], [L2_LVL, 118], [L1_LVL, 122], [L0_LVL, 122]];
+function shaftTime(lvl) {
+  for (let i = 0; i < SHAFT_T.length - 1; i++) { const [a, ha] = SHAFT_T[i], [b, hb] = SHAFT_T[i + 1]; if (lvl >= b) return lerp(ha, hb, clamp((a - lvl) / (a - b), 0, 1)); }
+  return SHAFT_T[SHAFT_T.length - 1][1];
+}
 function timeAt(zone, pos) {
+  if (zone === 6 && state.caught) return state.shaftBase + shaftTime(shaft.level) - shaftTime(state.shaftLvl0);
   if (zone === 6 || zone === 7) return state.sticky;
   const az = azOf(pos.x, pos.z);
   if (zone === 5) { const psi = psiOf(az); return state.caught ? CROWN_NIGHT.g(clamp(psi, -170, 180)) : CROWN_DAY.g(clamp(psi, 0, 180)); }
@@ -2185,7 +2274,7 @@ const INTERACTS = [
   { p: P(SLUICE1.az, SLUICE1.r, 0), y: [-1, 1.5], r: 1.9, label: () => (MIST[0].open ? '关闭水闸' : '打开水闸'), act: () => toggleMist(0) },
   { p: P(LEVER.az, LEVER.r, 0), y: [Y_L2 - 0.5, Y_L2 + 1.5], r: 1.7, label: () => (slider.target ? '让石板挡住上窗' : '让石板挡住下窗'), act: () => { slider.target = 1 - slider.target; } },
   { p: P(SLUICE2.az, SLUICE2.r, 0), y: [Y_L2 - 0.5, Y_L2 + 1.5], r: 1.8, label: () => (MIST[1].open ? '关闭狮首的水闸' : '打开狮首的水闸'), act: () => toggleMist(1) },
-  { p: statuePos.clone(), y: [Y_L2 - 0.5, Y_L2 + 1.5], r: 1.8, label: () => '转动石像', act: () => { mirror.k = (mirror.k + 1) % 5; placeMirror(); beamH = 1e9; } },   // 底座上只有五个卡槽
+  { p: statuePos.clone(), y: [Y_L2 - 0.5, Y_L2 + 1.5], r: 1.8, label: () => '转动石像', act: turnMirror },   // 底座上只有五个卡槽
   { p: altarPos.clone(), y: () => [Y_ROOF + topPiece.z - 0.5, Y_ROOF + topPiece.z + 2], r: 1.7, label: () => (state.caught ? '金苹果在你手里' : '举起金苹果'), act: () => catchLight() },
   { p: P(SLUICE3.az + 1.5, 14.9), y: [Y_L3 - 0.6, Y_L3 + 1.6], r: 1.8, label: () => (inflow.open ? '关上天池的进水口' : '打开天池的进水口'), act: () => { inflow.open = !inflow.open; } },
   { p: CHAIN_AT, y: () => [shaft.level - 0.6, shaft.level + 1.8], r: 2.2, when: () => player.grounded && player.ground?.userData.tile?.b.id === 'shaft',
@@ -2224,8 +2313,12 @@ function catchLight() {
 }
 function pullChain() {
   if (Math.abs(shaft.level - L3_LVL) < 0.05) {
-    shaft.target = L1_LVL;
+    shaft.target = L2_LVL;
     toast('铜链拉开了竖井里的闸。水往下走，脚下的月光也跟着往下走。', 4200);
+  } else if (Math.abs(shaft.level - L2_LVL) < 0.05) {
+    if (!state.brake2) { toast('铜链拉不动：闸上有一根刹杆卡着，刹杆上嵌着一弯银色的月亮。', 4200); return; }
+    shaft.target = L1_LVL;
+    toast('刹杆松开了，水继续往下走。', 3000);
   } else if (Math.abs(shaft.level - L1_LVL) < 0.05) {
     if (!valve1.open) { toast('铜链拉不动：竖井通往水庭的闸还关着。', 3600); return; }
     shaft.target = L0_LVL;
@@ -2260,6 +2353,7 @@ function reset() {
   { const i = WALK.indexOf(PRISM.slab); if (i >= 0) WALK.splice(i, 1); }
   PRISM.yaw = PRISM.slots[0]; PRISM.lastYaw = null; SELENE.on = false; SELENE.lit = 0; openTalk(false);
   state.shards = { sun: false, rainbow: false, moon: false }; updateShardHud();
+  mirror.w = { sun: 0, moon: 0, dark: 1 }; mirror.form = 'dark'; state.brake2 = false; placeMirror();
   SUNN.open = false; SUNN.t = 0; SUNN.lid.rotation.x = 0; SUNN.shard.scale.setScalar(1); SUNN.shard.position.y = 0.5;
 }
 
@@ -2479,6 +2573,53 @@ function updateLevel() {
   }
 }
 
+// ── 三相像：看脸上是阳光、月光，还是什么都没有 ──
+function shadedByPlayer(face, dir) {   // 人挡在脸和光之间吗（把人的上半身看成一根半径 0.25 米的竖柱）
+  const p = player.pos;
+  for (let t = 0.25; t < 7; t += 0.1) {
+    const x = face.x + dir.x * t, y = face.y + dir.y * t, z = face.z + dir.z * t;
+    if (y > p.y + 0.3 && y < p.y + 1.72 && Math.hypot(x - p.x, z - p.z) < 0.25) return true;
+  }
+  return false;
+}
+const facing = (front, dir, deg = 80) => (front.x * dir.x + front.z * dir.z) / Math.max(1e-6, Math.hypot(dir.x, dir.z)) > Math.cos(deg * DEG);
+let mirrorOcc = null;
+function rayClear(from, dir, far, list) { rc.set(from, dir); rc.near = 0.05; rc.far = far; return rc.intersectObjects(list, false).length === 0; }
+function mirrorForm() {
+  const face = statuePos.clone().add(mirror.faceLocal), f = mirror.f;
+  if (!state.caught && sunV.y > 0.003 && facing(f, sunV) && beamById.high.valid && insidePrism(beamById.high, face, 0.25)) return 'sun';
+  if (state.caught && moonV.y > 0.02 && facing(f, moonV)) {
+    if (!mirrorOcc) mirrorOcc = [...new Set([...SUN_OCC, ...LIGHT_BLOCK])].filter((o) => o !== occluder && o !== mirror.disc && o !== mirror.back && o.geometry && (o.geometry.boundingSphere || o.geometry.computeBoundingSphere(), _sph.copy(o.geometry.boundingSphere).applyMatrix4(o.matrixWorld).center.distanceTo(face) - _sph.radius < 8));
+    if (rayClear(face, moonV, 30, mirrorOcc)) return 'moon';
+  }
+  return 'dark';
+}
+function moonLockLit() {   // 月锁有没有被铜镜反射的月光照到
+  if (!state.caught || mirror.form !== 'moon' || mirror.w.moon < 0.9 || moonV.y < 0.02) return false;
+  const R = moonV.clone().negate(), n = mirror.nMoon; R.addScaledVector(n, -2 * R.dot(n));   // 月光在镜面上的反射
+  const d = new V3().subVectors(LOCKS.moon, mirror.center), t = d.dot(R);
+  if (t < 0.5 || mirror.center.clone().addScaledVector(R, t).distanceTo(LOCKS.moon) > 0.5) return false;
+  rc.set(mirror.center.clone().addScaledVector(R, 0.6), R); rc.near = 0; rc.far = t - 0.9;
+  return rc.intersectObjects(LIGHT_BLOCK, false).length === 0 && !shadedByPlayer(LOCKS.moon, R.clone().negate());
+}
+function blendForm(obj, form, dt) {
+  obj.form = form; let changed = false;
+  for (const k of ['sun', 'moon', 'dark']) { const v = toward(obj.w[k], k === form ? 1 : 0, 1.4, dt); if (v !== obj.w[k]) { obj.w[k] = v; changed = true; } }
+  return changed;
+}
+function turnMirror() {
+  mirror.k = (mirror.k + 1) % 5; placeMirror(); beamH = 1e9;
+}
+function updateStatues(dt) {
+  const mf = mirrorForm(), before = mirror.form;
+  if (blendForm(mirror, mf, dt)) placeMirror();
+  if (mf !== before || (mf === 'sun' && mirror.w.sun >= 0.95 && !beamById.mirror.valid)) beamH = 1e9;
+  statueStone.emissive.setRGB(0.22 * mirror.w.sun, 0.2 * mirror.w.sun + 0.16 * mirror.w.moon, 0.14 * mirror.w.sun + 0.3 * mirror.w.moon);
+  const ml = moonLockLit();
+  LOCKS.moonMat.emissiveIntensity = toward(LOCKS.moonMat.emissiveIntensity, ml || state.brake2 ? 1.8 : 0, 2, dt);
+  if (ml && !state.brake2) { state.brake2 = true; toast('反射的月光穿过竖井的门，落在井里的银色弯月上。铜链的刹杆松开了。', 4200); }
+}
+
 // ── 虹：对齐、虹桥、虹之龛、棱镜 ──
 function reliefHint() {
   if (state.caught || sunV.y <= 0) { toast('天黑了，浮雕前的水帘里没有光，照不出虹。', 3200); return; }
@@ -2640,6 +2781,8 @@ function tick(dt) {
   updateWater(dt);
   updateSlider(dt);
   const zone = state.started ? player.zone : 0;
+  if (zone === 6 && state.prevZone !== 6) { state.shaftBase = state.sticky; state.shaftLvl0 = shaft.level; }
+  state.prevZone = zone;
   const H = state.started ? timeAt(zone, player.pos) : ZONES[0].f(SPAWN.az);
   if (zone !== 6 && zone !== 7) state.sticky = H;
   setTime(H);
@@ -2651,6 +2794,7 @@ function tick(dt) {
   updateCamera(dt);
   moonDisc.quaternion.copy(camera.quaternion); moonHalo.quaternion.copy(camera.quaternion);
   updateCatch(dt);
+  updateStatues(dt);
   updateRainbow(dt);
   // 离人最近的光斑周围的反光
   let best = null, bd = 1e9;
@@ -2689,7 +2833,7 @@ requestAnimationFrame(frame);
 window.__dysis = {
   azOf, P, ZONES, ZONES_N, BEAMS, MIST, slider, mirror, state, player, H_TOP, crown, shaft, inflow, BODIES, TILES, psiOf, moonV, sunV, altarPos, timeAt,
   valve1, tileMat, CROWN_DAY, CROWN_NIGHT, poolLit, BOWL, catchLight, placeApple, pullChain, THREE, occNear, WALK, LIGHT_BLOCK, SUN_OCC,
-  start, jump, SUNN, RB, PRISM, SELENE, BRIDGE, RELIEF, reliefEye, reliefF, RW, SILL, setBridge, beamById,
+  start, jump, SUNN, LOCKS, moonLockLit, mirrorForm, RB, PRISM, SELENE, BRIDGE, RELIEF, reliefEye, reliefF, RW, SILL, setBridge, beamById,
   teleport(az, r, y = 0, yaw = player.yaw, pitch = player.pitch, zone) {
     player.pos.copy(P(az, r, y)); player.yaw = yaw; player.pitch = pitch; player.vy = 0; player.grounded = true; player.carry = null; player.ground = null;
     player.zone = zone ?? zoneOfContact(player.pos); player.lastSafe = { pos: player.pos.clone(), zone: player.zone };
