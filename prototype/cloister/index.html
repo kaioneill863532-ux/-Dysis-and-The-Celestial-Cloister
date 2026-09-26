@@ -1168,7 +1168,7 @@ function mirrorRay(k, light, pose, tilt) {   // 从镜心出发的反射光（po
 const LOCKS = {};
 {
   // 月锁：刹杆穿过竖井的井壁，银色弯月嵌在井门外侧的门框上。位置就是第二格反射的月光第一次碰到东西的地方。
-  MIRROR.moonTilt = 12;   // 递镜时镜面比举镜时立得直一些
+  MIRROR.moonTilt = MIRROR.tilt;   // 递镜时镜面的倾角和举镜时一样，只是托得更高、更往前
   world.updateMatrixWorld(true);
   const { c, R } = mirrorRay(1, moonDir(ZONES_N[2].f(MIRROR.az), new V3()), 'moon');
   const ray = new THREE.Raycaster(c.clone().addScaledVector(R, 0.6), R, 0, 30);
@@ -3023,7 +3023,7 @@ requestAnimationFrame(frame);
 window.__dysis = {
   azOf, P, ZONES, ZONES_N, BEAMS, MIST, slider, mirror, state, player, H_TOP, crown, shaft, inflow, BODIES, TILES, psiOf, moonV, sunV, altarPos, timeAt,
   valve1, tileMat, CROWN_DAY, CROWN_NIGHT, poolLit, BOWL, catchLight, placeApple, pullChain, THREE, occNear, WALK, LIGHT_BLOCK, SUN_OCC,
-  start, jump, GLINT, PHOS, WELL, TRENCH, SUNN, LOCKS, moonLockLit, mirrorForm, RB, PRISM, SELENE, BRIDGE, RELIEF, reliefEye, reliefF, RW, SILL, setBridge, beamById,
+  start, jump, WIN, GLINT, PHOS, WELL, TRENCH, SUNN, LOCKS, moonLockLit, mirrorForm, RB, PRISM, SELENE, BRIDGE, RELIEF, reliefEye, reliefF, RW, SILL, setBridge, beamById,
   teleport(az, r, y = 0, yaw = player.yaw, pitch = player.pitch, zone) {
     player.pos.copy(P(az, r, y)); player.yaw = yaw; player.pitch = pitch; player.vy = 0; player.grounded = true; player.carry = null; player.ground = null;
     player.zone = zone ?? zoneOfContact(player.pos); player.lastSafe = { pos: player.pos.clone(), zone: player.zone };
