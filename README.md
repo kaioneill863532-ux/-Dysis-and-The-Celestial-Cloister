@@ -7,3 +7,9 @@
 - 设计文档：[docs/game-design.md](docs/game-design.md)
 - 美术资产清单（场景、角色、道具、机关）：[docs/systems.md](docs/systems.md)
 - 可玩的灰盒原型（日月十关）：[prototype/cloister/index.html](prototype/cloister/index.html)，说明见 [prototype/README.md](prototype/README.md)
+
+## 新圆殿试玩与进度
+
+重构版见 [`prototype/rotunda/`](prototype/rotunda/)；旧版 `prototype/cloister/` 保持原样。可以直接打开 [`prototype/rotunda/play.html`](prototype/rotunda/play.html) 试玩离线单文件，也可以在仓库根目录运行 `npm ci && npm run serve`，访问 `http://localhost:4173/prototype/rotunda/index.html`。
+
+这是供关卡、建筑与光路验证的浏览器原型，不是 Unreal Engine 工程。当前验证的证据、局限和操作键位在 [`docs/rotunda-playtest.md`](docs/rotunda-playtest.md)。

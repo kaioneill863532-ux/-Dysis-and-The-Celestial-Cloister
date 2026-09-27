@@ -116,7 +116,8 @@ const stairN1=world.stairs(18,327,250,18,12,2.0);
 world.quad(radial(18,250,12),radial(14.1,250,12),2.5);
 const n1Bridge=world.quad(radial(13.8,330,18),radial(18,327,18),2.25,moonStone,{solid:false});n1Bridge.mesh.visible=false;
 const n1Door=world.box([2.3,3.5,.24],radial(18,326.5,19.65),art.materials.relief);n1Door.rotation.y=-326.5*DEG;
-for(let i=0;i<15;i++)for(const r of [16.96,19.04])world.rail(radial(r,lerp(327,250,i/15),lerp(18,12,i/15)),radial(r,lerp(327,250,(i+1)/15),lerp(18,12,(i+1)/15)));
+// Leave the first stair bay open so the moon bridge can join the stair centre.
+for(let i=1;i<15;i++)for(const r of [16.96,19.04])world.rail(radial(r,lerp(327,250,i/15),lerp(18,12,i/15)),radial(r,lerp(327,250,(i+1)/15),lerp(18,12,(i+1)/15)));
 world.annulus(14.5,18.9,18,336,344);
 const n2BridgeFixed=world.quad(radial(9.2,moonTheta,12),radial(11.3,moonTheta,12),2.3,moonStone,{solid:false});
 const n2BridgeMoving=world.quad(radial(11.3,moonTheta,12),radial(14.3,moonTheta,12),2.3,moonStone,{solid:false});
@@ -277,7 +278,7 @@ function load(){
  try{
   const data=JSON.parse(localStorage.getItem(SAVE)||'null');
   if(data?.version!==1||!Number.isInteger(data.stage)||data.stage<0||data.stage>9||!Array.isArray(data.checkpoint?.position)||data.checkpoint.position.length!==3||!data.checkpoint.position.every(Number.isFinite))return false;
-  stage=data.stage;night=Boolean(data.night);apple=Boolean(data.apple);
+  stage=data.stage;night=Boolean(data.night);apple=Boolean(data.apple);iris=stage>=5?1:0;
   checkpoint={stage,phase:data.checkpoint.phase,position:[...data.checkpoint.position]};
   for(const k of ['sunYaw','moonYaw','swanYaw','poolYaw','railT'])if(Number.isFinite(data[k])){
    if(k==='railT')railT=clamp(data[k]);else if(Math.abs(data[k])<2)({sunYaw:()=>sunYaw=data[k],moonYaw:()=>moonYaw=data[k],swanYaw:()=>swanYaw=data[k],poolYaw:()=>poolYaw=data[k]})[k]();
@@ -293,7 +294,7 @@ function setStage(next,position){
  if(next<=stage)return;
  stage=next;checkpoint={stage:next,position:[...position],phase};
  player.teleport(position);fallPeak=position[1];
- if(next>=5)night=true;
+ if(next>=5){night=true;iris=1;}
  save();toast(chapters[next][0]+' · '+chapters[next][1],6);
 }
 function respawn(){
@@ -389,7 +390,10 @@ function advance(){
  else if(stage===6&&p[1]<6.21&&r<10.4&&a>201&&a<214)setStage(7,radial(12,207,6));
  else if(stage===7&&p[1]<.21&&r>15.8&&Math.abs(a-(oldAngle-41))<8)setStage(8,radial(16.3,oldAngle-41,0));
  else if(stage===8&&r<2.25&&poolReady)setStage(9,[0,0,1.8]);
- if(p[1]<checkpoint.position[1]-1.65||r>20.3||p[1]<-2)respawn();
+ // A descending chapter deliberately travels a full storey below its save
+ // platform. Compare with that chapter's *destination*, not the save height.
+ const bottom=[-1.8,4.2,10.2,16.2,17.3,11.3,5.3,-1.4,-1.4,-1.4][stage];
+ if(p[1]<bottom||r>20.3)respawn();
 }
 function markAndAct(kind){
  if(kind==='apple'){
@@ -514,7 +518,8 @@ function frame(now){
   phase=activePhase();
   if(stage===4&&player.position[1]>=23.8&&radialLength(player.position)>15.6)iris=clamp(iris+dt*.23);
   if(stage===4&&player.position[1]<21.1&&angle(player.position)>305)night=true;
-  art.update(elapsed,night,iris);updateCelestial();updateSolar();updateMoon(dt);interactions(dt);advance();updateHUD();
+  art.update(elapsed,night,iris);scene.updateMatrixWorld(true);
+  updateCelestial();updateSolar();updateMoon(dt);interactions(dt);advance();updateHUD();
   if(!$('#map').classList.contains('hidden'))drawMap();
  }
  if(lastToast&&elapsed>lastToast){$('#toast').classList.remove('show');lastToast=0;}
@@ -523,7 +528,7 @@ function frame(now){
 }
 // A test hook only for isolated visual fixtures; real route QA uses key input.
 if(debug)window.__dysisQA={get state(){return{stage,phase,night,apple,position:[...player.position],grounded:player.grounded,ready:{swan:n1Bridge.enabled,pair:pairReady,old:oldReady,pool:poolReady},exposure:{n1Exposure,n2Direct,n2Reflected,poolAExposure,poolBExposure}};},
-  fixture(n,pos){if(!Number.isInteger(n)||n<0||n>9||!Array.isArray(pos)||pos.length!==3)return;stage=n;night=n>=5;player.teleport(pos);checkpoint={stage:n,position:[...pos],phase:0};},
+  fixture(n,pos){if(!Number.isInteger(n)||n<0||n>9||!Array.isArray(pos)||pos.length!==3)return;stage=n;night=n>=5;iris=n>=5?1:0;player.teleport(pos);checkpoint={stage:n,position:[...pos],phase:0};},
   phaseAt:p=>{const prior=[...player.position];player.teleport(p);const value=activePhase();player.teleport(prior);return value;}
 };
 requestAnimationFrame(frame);
