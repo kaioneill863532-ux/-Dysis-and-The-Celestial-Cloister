@@ -1,4 +1,5 @@
 /** Authored geometry seed. See docs/rotunda-geometry.md for required floor voids. */
+import {MODULE} from './proportions.js';
 import {
   DEG, add, sub, scale, dot, normalize, polar, sunDirection, moonDirection,
   reflect, mirrorNormal, uniformPhase, unwrapAngle, rayPlane, segmentDistanceXZ, length,
@@ -51,7 +52,7 @@ function solveDirectFoot(top, bottomY, fieldIndex, initialPhase) {
 
 const d1Top = polar(14.8, 55 * DEG, 6);
 const d2Top = polar(14.8, 165 * DEG, 12);
-const mirror = polar(13, 230 * DEG, 14.5);
+const mirror = polar(17, 230 * DEG, 14.5);
 const d3Top = polar(15, 270 * DEG, 18);
 const d3TargetPhase = phaseAtPosition(2, d3Top);
 
@@ -72,7 +73,7 @@ export const DAY_RAMPS = [
     foot: solveDirectFoot(d1Top, 0, 0, 0) },
   { id: 'D2', kind: 'direct', fieldIndex: 1, width: 2.8, top: d2Top,
     foot: solveDirectFoot(d2Top, 6, 1, 14) },
-  { id: 'D3', kind: 'reflected', fieldIndex: 2, width: 2.8, top: d3Top,
+  { id: 'D3', kind: 'reflected', fieldIndex: 2, width: 2.5, top: d3Top,
     foot: mirror, mirror,
     mirrorNormal: mirrorNormal(scale(sunDirection(d3TargetPhase), -1), sub(d3Top, mirror)) },
   { id: 'roof', kind: 'direct', fixedPhase: ROOF_PHASE, width: 2.8,
@@ -126,19 +127,23 @@ export function rampStats(ramp, count = 101) {
   };
 }
 
-const nightMirror = polar(19, 280 * DEG, 14.5);
-const nightNormal = mirrorNormal(scale(moonDirection(105), -1), polar(1, 108 * DEG, 0));
+const nightMirror = polar(19, 290 * DEG, 14.5);
+const nightNormal = mirrorNormal(scale(moonDirection(105), -1), polar(1, 110 * DEG, 0));
 const nightRevealDirection = reflect(scale(moonDirection(145), -1), nightNormal);
+const nightTargetY = 6 + 4 * MODULE.unit;
+const nightTarget = rayPlane(nightMirror, nightRevealDirection, [0, nightTargetY, 0], [0, 1, 0]).point;
 export const NIGHT_REFLECTION = {
   mirror: nightMirror,
   initialPhase: 105,
-  initialRailHeading: 108 * DEG,
+  initialRailHeading: 110 * DEG,
   revealPhase: 145,
   mirrorNormal: nightNormal,
   revealDirection: nightRevealDirection,
-  target: rayPlane(nightMirror, nightRevealDirection, [0, 6, 0], [0, 1, 0]).point,
+  target: nightTarget,
+  targetPlaneY: nightTargetY,
+  entrance: {theta: Math.atan2(nightTarget[2],nightTarget[0]),innerRadius:12,outerRadius:17.2,y:6},
   maxBeamHalfWidth: 0.2,
-  note: 'Revealing light, not a walkable beam. Requires an L2 floor light well.',
+  note: 'Light reaches the high entrance crown before the columns and seam. Requires an L2 light well.',
 };
 
 const RAY_EPSILON = 1e-10;

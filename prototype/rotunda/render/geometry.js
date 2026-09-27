@@ -1,5 +1,6 @@
 import * as THREE from '../vendor/three.module.js';
 import {DEG, polar, segmentDistanceXZ, clamp} from '../core/math.js';
+import {MODULE} from '../core/proportions.js';
 
 const V = a => new THREE.Vector3(...a);
 export function makeWorld(scene, materials) {
@@ -23,7 +24,7 @@ export function makeWorld(scene, materials) {
       heightAt(x,z){ const q=segmentDistanceXZ([x,0,z],this.a,this.b);
         const dot=(x-this.a[0])*(this.b[0]-this.a[0])+(z-this.a[2])*(this.b[2]-this.a[2]);
         const len2=(this.b[0]-this.a[0])**2+(this.b[2]-this.a[2])**2;
-        return dot>=-.02&&dot<=len2+.02&&q.distance<=this.width/2?q.y:null; }};
+        return dot>=-.02&&dot<=len2+.02&&q.distance<=this.width/2+1e-5?q.y:null; }};
     surfaces.push(surface);
     surface.update=(aa,bb,enabled=true)=>{
       surface.a=[...aa];surface.b=[...bb];surface.enabled=enabled;mesh.visible=enabled;
@@ -86,6 +87,12 @@ export function makeWorld(scene, materials) {
     const g=new THREE.BufferGeometry().setFromPoints(points.map(V));
     return add(new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity})),false);
   }
+  function rail(a,b,height=MODULE.railingHeight){
+    const curve=new THREE.LineCurve3(V(a).add(new THREE.Vector3(0,height,0)),V(b).add(new THREE.Vector3(0,height,0)));
+    const rod=add(new THREE.Mesh(new THREE.TubeGeometry(curve,1,.035,6,false),materials.bronze),false);
+    for(const p of [a,b]){const post=add(new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,height,8),materials.bronze),false);post.position.set(p[0],p[1]+height/2,p[2]);}
+    blockers.push({kind:'rail',a,b,height,mesh:rod});return rod;
+  }
   function support(x,z,fromY,maxDrop){
     let best=null;
     for(const s of surfaces){if(!s.enabled||!s.mesh.visible)continue;const y=s.heightAt(x,z);
@@ -96,12 +103,19 @@ export function makeWorld(scene, materials) {
     if(Math.hypot(p[0],p[2])>20.15)return true;
     // The full-height carved wall closes the zero-degree seam. The center is
     // not a way around it on any gallery.
-    if(p[0]>8.7&&Math.abs(p[2])<.85+r&&p[1]<24.2)return true;
+    if(p[0]>8.7&&Math.abs(p[2])<.85+r&&p[1]<27.2)return true;
     return blockers.some(o=>{if(o.mesh&&!o.mesh.visible)return false;
-      if(o.kind==='box')return Math.abs(p[0]-o.position[0])<o.size[0]/2+r&&Math.abs(p[2]-o.position[2])<o.size[2]/2+r&&p[1]+h>o.position[1]-o.size[1]/2+.02&&p[1]<o.position[1]+o.size[1]/2-.02;
+      if(o.kind==='box'){
+        const dx=p[0]-o.position[0],dz=p[2]-o.position[2],a=o.mesh.rotation.y,c=Math.cos(a),s=Math.sin(a);
+        return Math.abs(c*dx-s*dz)<o.size[0]/2+r&&Math.abs(s*dx+c*dz)<o.size[2]/2+r&&p[1]+h>o.position[1]-o.size[1]/2+.02&&p[1]<o.position[1]+o.size[1]/2-.02;
+      }
+      if(o.kind==='rail'){
+        const q=segmentDistanceXZ(p,o.a,o.b);
+        return q.distance<r+.045&&p[1]<q.y+o.height+.035&&p[1]+h>q.y;
+      }
       return false;});
   }
-  return {surfaces,occluders,blockers,add,quad,annulus,box,disk,stairs,straightStairs,line,support,blocked};
+  return {surfaces,occluders,blockers,add,quad,annulus,box,disk,stairs,straightStairs,line,rail,support,blocked};
 }
 
 export function stripHole(a,b,width){return p=>segmentDistanceXZ(p,a,b).distance<width/2;}

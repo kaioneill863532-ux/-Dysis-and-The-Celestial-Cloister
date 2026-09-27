@@ -1,4 +1,5 @@
 import * as THREE from '../vendor/three.module.js';
+import {MODULE} from '../core/proportions.js';
 
 const TAU = Math.PI * 2;
 const DEG = Math.PI / 180;
@@ -11,7 +12,7 @@ export const ROTUNDA_PROPORTIONS = Object.freeze({
   bayCount: 12,
   bayAngle: 30,
   innerColumnAxisRadius: 10.5,
-  columnShaftDiameter: 0.7,
+  columnShaftDiameter: MODULE.columnDiameter,
   columnShaftHeight: 4.7,
   columnBaseHeight: 0.44,
   capitalHeight: 0.49,
@@ -24,10 +25,10 @@ export const ROTUNDA_PROPORTIONS = Object.freeze({
   facadeArchSpringHeight: 3.48,
   facadeArchRise: 1.98,
   facadeArchRingThickness: 0.26,
-  nicheFrameWidth: 2.78,
-  nicheFrameHeight: 4.5,
-  nicheFrameAspect: 4.5 / 2.78,
-  proportionNotes: 'Inner columns carry a flat entablature; outer piers carry arches. The 4.5:2.78 niche frame is near phi; the plan and structure use circular bay modules and simple ratios.',
+  nicheFrameWidth: MODULE.nicheWidth,
+  nicheFrameHeight: MODULE.nicheHeight,
+  nicheFrameAspect: MODULE.nicheHeight / MODULE.nicheWidth,
+  proportionNotes: 'The inner columns carry a lintel, the outer piers carry arches; the 4.52:2.80 niche frame is near phi. The plan uses twelve circular bay modules.',
   entablatureHeight: 0.29,
   galleryInnerRadius: 11.2,
   galleryOuterRadius: 14.5,
@@ -220,6 +221,7 @@ function smoothstep(a, b, value) {
 export function createArchitecture(scene, {
   floorHeights = [0, 6, 12, 18], radius = 20, roofAngle = 2.45,
   decorateFloors = true, createSeam = true, createWater = true,
+  facadeSlotFloors = [12], facadeSlotDegrees = 12,
 } = {}) {
   const group = new THREE.Group();
   group.name = 'Dysis · architectural dressing';
@@ -268,14 +270,14 @@ export function createArchitecture(scene, {
   const waterCourt = new THREE.Group();
   waterCourt.name = 'Water court trim';
   group.add(waterCourt);
-  band(4.49, 4.74, 0.035, materials.lightStone, waterCourt, 0, TAU, 0.14);
-  band(4.74, 4.79, 0.039, materials.bronze, waterCourt);
+  band(7.99, 8.15, 0.035, materials.lightStone, waterCourt, 0, TAU, 0.14);
+  band(8.15, 8.20, 0.039, materials.bronze, waterCourt);
   let water = null;
   if (createWater) {
-    water = add(new THREE.CircleGeometry(4.47, 96), materials.water, waterCourt, [0, -0.045, 0], false, 'Water court surface');
+    water = add(new THREE.CircleGeometry(7 * MODULE.unit, 96), materials.water, waterCourt, [0, -0.045, 0], false, 'Water court surface');
     water.rotation.x = -Math.PI / 2;
     water.castShadow = false;
-    const bottom = add(new THREE.CircleGeometry(4.46, 64), materials.darkStone, waterCourt, [0, -0.34, 0]);
+    const bottom = add(new THREE.CircleGeometry(7 * MODULE.unit, 64), materials.darkStone, waterCourt, [0, -0.34, 0]);
     bottom.rotation.x = -Math.PI / 2;
     for (let i = 0; i < 3; i += 1) {
       const ripple = band(1.3 + i * 0.91, 1.315 + i * 0.91, -0.039, materials.lightStone, waterCourt);
@@ -288,7 +290,7 @@ export function createArchitecture(scene, {
   const colonnades = new THREE.Group();
   colonnades.name = 'Twelve-bay inner colonnade';
   group.add(colonnades);
-  const shaftGeometry = flutedShaft(4.7, 0.35);
+  const shaftGeometry = flutedShaft(4.7, MODULE.columnDiameter / 2);
   const baseCubeGeometry = new THREE.BoxGeometry(0.95, 0.16, 0.95);
   const capitalCubeGeometry = new THREE.BoxGeometry(0.97, 0.16, 0.97);
   floorHeights.forEach((floor, level) => {
@@ -339,6 +341,13 @@ export function createArchitecture(scene, {
   const facade = new THREE.Group();
   facade.name = 'Outer facade piers — open bays';
   group.add(facade);
+  const facadeSlotSpecs = [];
+  function facadeCourse(inner,outer,y,material,floor,depth,solid,label){
+    const width=facadeSlotFloors.includes(floor)?THREE.MathUtils.clamp(facadeSlotDegrees,0,24):0;
+    if(width<=0){const course=band(inner,outer,y,material,facade,0,TAU,depth,solid);course.name=`${label} at ${floor+6}m`;return;}
+    const course=new THREE.Group();course.name=`${label} · twelve clerestory slots at ${floor+6}m`;facade.add(course);
+    for(let bay=0;bay<12;bay++)band(inner,outer,y,material,course,(bay*30+width/2)*DEG,(30-width)*DEG,depth,solid);
+  }
   for (let bay = 0; bay < 12; bay += 1) {
     const a = (15 + 30 * bay) * DEG;
     const p = new THREE.Group();
@@ -356,6 +365,7 @@ export function createArchitecture(scene, {
     obstacles.push({type: 'orientedBox', x: p.position.x, z: p.position.z, halfX: 0.59, halfZ: 0.7, rotationY: -a, bottom: 0, top: 24, source: p.name});
   }
   for (const floor of floorHeights) {
+    if(facadeSlotFloors.includes(floor)&&facadeSlotDegrees>0)facadeSlotSpecs.push({baseFloor:floor,boundaryHeight:floor+6,gapDegrees:facadeSlotDegrees,centersDegrees:Array.from({length:12},(_,i)=>i*30)});
     for (let bay = 0; bay < 12; bay += 1) {
       const a = (15 + 30 * bay) * DEG;
       const b = a + 30 * DEG;
@@ -367,9 +377,9 @@ export function createArchitecture(scene, {
       const key = add(new THREE.BoxGeometry(0.3, 0.33, 0.68), materials.lightStone, facade, [x, floor + 5.535, z]);
       key.rotation.y = arch.rotation.y;
     }
-    band(radius - 0.92, radius + 0.05, floor + 5.93, materials.stone, facade, 0, TAU, 0.25, true);
-    band(radius - 1.02, radius + 0.13, floor + 5.97, materials.lightStone, facade, 0, TAU, 0.065);
-    band(radius - 0.92, radius + 0.03, floor + 5.64, materials.warmStone, facade, 0, TAU, 0.045);
+    facadeCourse(radius-.92,radius+.05,floor+5.93,materials.stone,floor,.25,true,'Exterior cornice');
+    facadeCourse(radius-1.02,radius+.13,floor+5.97,materials.lightStone,floor,.065,false,'Exterior cornice lip');
+    facadeCourse(radius-.92,radius+.03,floor+5.64,materials.warmStone,floor,.045,false,'Exterior cornice lower moulding');
   }
 
   const niches = new THREE.Group();
@@ -391,7 +401,7 @@ export function createArchitecture(scene, {
         add(new THREE.BoxGeometry(0.45, 0.16, 0.4), materials.stone, niche, [side * 1.18, 3.325, 0], true);
       }
       add(ellipticalArch(1.03, 0.87, 0.2, 0.3), materials.lightStone, niche, [0, 3.29, 0], true);
-      add(new THREE.BoxGeometry(2.78, 0.14, 0.52), materials.lightStone, niche, [0, 4.43, 0]);
+      add(new THREE.BoxGeometry(MODULE.nicheWidth, 0.16, 0.52), materials.lightStone, niche, [0, 4.44, 0]);
       nicheSpecs.push({angle: a, floor, radius: radius - 2.15, width: 1.96, name: niche.name});
     }
   }
@@ -621,7 +631,7 @@ export function createArchitecture(scene, {
   return {
     group, occluders, obstacles, update, dispose, materials,
     proportions: {...ROTUNDA_PROPORTIONS, diameter: radius * 2},
-    floorDecorations, colonnades, facade, niches, nicheSpecs, seam,
+    floorDecorations, colonnades, facade, facadeSlotSpecs, niches, nicheSpecs, seam,
     roof, irisLeaves, observationSpecs, waterCourt, water, sea,
   };
 }

@@ -44,19 +44,24 @@ test('the changing day phase stays continuous along each path; the roof connecti
   }
 });
 
-test('the revised moon mirror reveals an L1 target inside the rotunda', () => {
+test('the revised moon mirror reaches the high entrance crown before a column or seam', () => {
   const cfg = NIGHT_REFLECTION;
   const initial = reflect(scale(moonDirection(cfg.initialPhase), -1), cfg.mirrorNormal);
   assert.ok(Math.abs(initial[1]) < 1e-10);
+  const inward = normalize([-cfg.mirror[0],0,-cfg.mirror[2]]);
+  assert.ok(dot(initial,inward)>1-1e-10);
   assert.ok(cfg.revealDirection[1] < 0);
-  assert.ok(Math.abs(cfg.target[1] - 6) < 1e-10);
+  assert.ok(Math.abs(cfg.target[1] - (6+4*1.13)) < 1e-10);
   const radius = Math.hypot(cfg.target[0], cfg.target[2]);
-  assert.ok(radius > WORLD.ringRadii[0] && radius < WORLD.ringRadii[1]);
+  assert.ok(radius > 10.5 && radius < WORLD.ringRadii[0]);
   const minDistance = Math.min(...WORLD.columns.map((column) =>
     segmentDistanceXZ(column, cfg.mirror, cfg.target).distance));
-  assert.ok(minDistance > WORLD.columnRadius + cfg.maxBeamHalfWidth);
+  assert.ok(minDistance > .49 + cfg.maxBeamHalfWidth);
   const floorPass = rayPlane(cfg.mirror, cfg.revealDirection, [0, 12, 0], [0, 1, 0]);
   assert.ok(floorPass, 'the L2 slab must include an actual light well at this crossing');
+  assert.ok(Math.abs(floorPass.point[0] - 8.52733128673989)<1e-8);
+  assert.ok(Math.abs(floorPass.point[2] + 9.763182010462254)<1e-8);
+  assert.ok(cfg.target[2]<-.86-cfg.maxBeamHalfWidth);
 });
 
 test('adjacent day fields agree at the actual stone landings with no catch-up clock', () => {
