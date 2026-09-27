@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#16262d"><title>Dysis · 日月回廊</title><link rel="stylesheet" href="./style.css"></head>
+<body>
+<canvas id="scene" aria-label="日月回廊三维游戏画面"></canvas>
+<div id="vignette"></div><div id="passage" aria-hidden="true"></div>
+<header id="identity"><span class="seal">☼</span><div><b>DYSIS</b><small>THE CELESTIAL CLOISTER</small></div></header>
+<section id="journey" class="hidden"><span id="chapter"></span><h2 id="objective"></h2><p id="detail"></p><div id="phase"><i id="phase-fill"></i></div><small id="phase-label"></small></section>
+<aside id="actions" class="hidden"><p id="interaction"></p><div id="alignment"></div></aside>
+<div id="toast" role="status"></div>
+<footer id="controls" class="hidden"><span><kbd>W A S D</kbd> 行走</span><span>拖动鼠标 · 环视</span><span><kbd>空格</kbd> 轻跃</span><span><kbd>E</kbd> 观察 / 拾取</span><span><kbd>Q / R</kbd> 调整</span><span><kbd>H</kbd> 提示</span><span><kbd>X</kbd> 回安全台</span><span><kbd>Tab</kbd> 图纸</span></footer>
+<section id="welcome" class="veil"><div class="welcome-copy"><span class="eyebrow">一座可以用光走过的建筑</span><h1>狄西斯<br><em>的日月回廊</em></h1><p>沿圆廊行走，天体随你的脚步移动。<br>径向而行，片刻便为你停留。</p><p class="subtle">借日光上升，让月光显露归途。<br>把最后一枚金苹果送回水的中央。</p><button id="start">走入回廊 <span>↗</span></button><button id="resume" class="quiet hidden">从上次的安全台继续</button><small>关卡原型 · 建议键盘与鼠标 / 桌面浏览器</small></div></section>
+<section id="map" class="sheet hidden" aria-label="建筑图纸"><button id="close-map" class="close" aria-label="关闭图纸">×</button><span class="eyebrow">回廊测绘 · 同心而不同路</span><h2>日升，月归。</h2><canvas id="plan" width="560" height="560"></canvas><div id="map-legend"></div><p>青金线是等时线：绕行改变光位，径向行走保持光位。<br>中央光坡与层间石梯有独立、连续的连接带。</p></section>
+<section id="ending" class="veil hidden"><div class="welcome-copy"><span class="eyebrow">你我沉默在时间之前</span><h1>光已归来。</h1><p>水亭没有回答。<br>一枚小小的月亮，替它照亮了回廊。</p><p id="ending-journal" class="subtle"></p><button id="return">留在此刻</button><button id="restart" class="quiet">重新出发</button></div></section>
+<div id="error" class="veil hidden"><div class="welcome-copy"><h2>暂时无法打开回廊</h2><p id="error-text"></p><button onclick="location.reload()">重试</button></div></div>
+<script type="module" src="./main.js"></script></body></html>
