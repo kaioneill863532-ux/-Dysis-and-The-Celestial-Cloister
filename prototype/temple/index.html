@@ -317,7 +317,7 @@ const H_TOP = hourForShadow(TOP_Y + 1.4);   // 接光：岛影刚好漫过架上
 // 楼层之间的光路和楼梯按高度在两端的时刻之间均匀插值；沿半径的光（开场、圆眼）和镜子的反射光时间不动。
 function lineZone(seam, pts) {
   // pts: [[az, H], [az, H]]，两点定一条直线；方位按从接缝的顺时针一端展开
-  const lo = seam[1], hi = seam[0] + 360;
+  const lo = seam[1], hi = seam[0] > seam[1] ? seam[0] : seam[0] + 360;
   const un = (az) => { let t = wrap360(az); if (t < lo) t += 360; return t; };
   const [[a0, h0], [a1, h1]] = pts.map(([a, h]) => [un(a), h]);
   const k = (h1 - h0) / (a1 - a0);
@@ -402,7 +402,7 @@ function updateEnv(H) {
   envRT = next; envH = H;
   for (const m of ENV_MATS) { m.envMap = envRT.texture; if (first) m.needsUpdate = true; }
 }
-const IN_ENV = 0.06, EXT_ENV = 0.32;
+const IN_ENV = 0.1, EXT_ENV = 0.32;
 const M = {
   stone: std({ color: 0xded3c2, roughness: 0.84, envMapIntensity: IN_ENV }),
   stoneDark: std({ color: 0xb9ae9c, roughness: 0.88, envMapIntensity: IN_ENV }),
@@ -1472,7 +1472,7 @@ function moonstoneLitFrac(ms) { let n = 0; for (const p of ms.samples) if (sampl
 
 // ────────────────────────────── 关卡布置：雕像的位置和朝向按光反推 ──────────────────────────────
 // 托镜像 M（L2 西）：白天把日常窗的阳光反射成一条能踩的光路，通到东墙上的日之龛石台；夜里把月光反射进双子后面的龛。
-const M_DEF = { az: 270, r: 13.6, w: 2.6, h: 1.6, dais: [0.45, 0.9], daisR: [0.95, 0.62], offset: 0.62 };
+const M_DEF = { az: 274, r: 13.6, w: 2.6, h: 1.6, dais: [0.45, 0.9], daisR: [0.95, 0.62], offset: 0.62 };
 const LEDGE = { y: F[2] + 3.4, r0: 13.6, half: 5 };
 const H_M = ZD.L2.f(M_DEF.az);
 const H_TW = 119;                                    // 双子合拢的时刻（L2 西北，站在断口前）
@@ -1528,7 +1528,7 @@ LEDGE.az = MPLAN.az;
 {
   const s = sunDir(H_M), c = MPLAN.a.center.clone(); let p = c.clone();
   for (let t = 0; t < 20; t += 0.02) { p = c.clone().addScaledVector(s, t); if (rOf(p) >= R_IN) break; }
-  M_DEF.win = opening('mwin', azOf(p.x, p.z), 3.2, p.y - 1.2, p.y + 2.0, azV(s), 'daily');
+  M_DEF.win = opening('mwin', azOf(p.x, p.z), 3.0, p.y - 1.2, p.y + 2.0, azV(s), 'daily');
 }
 // 夜里：把月光反射进双子后面的龛（波吕丢刻斯）
 const TWIN_DEF = { castor: { az: TWINS.az - 1.9, r: 13.75 }, pollux: { az: TWINS.az + 1.6, r: 16.2 } };
@@ -1888,7 +1888,7 @@ for (const ms of MOONSTONES) setMoonstoneState(ms, 0);
 
 // 金苹果（接住以后跟着人走）
 const apple = new THREE.Mesh(new THREE.SphereGeometry(0.12, 24, 18), M.apple); apple.visible = false; apple.castShadow = true; scene.add(apple);
-const appleLight = new THREE.PointLight(0xffc070, 0, 9, 2); scene.add(appleLight);
+const appleLight = new THREE.PointLight(0xffc070, 0, 6, 2); scene.add(appleLight);
 
 // ────────────────────────────── 等时线（按 T） ──────────────────────────────
 const hourLines = new THREE.Group(); hourLines.visible = false; scene.add(hourLines);
@@ -2075,6 +2075,9 @@ function tunnelTime(T, y) {
 }
 function timeAt(zone, pos) {
   if (state.forceH != null) return state.forceH;
+  const h = timeAt0(zone, pos); return state.caught ? clamp(h, H_TOP, 182) : h;
+}
+function timeAt0(zone, pos) {
   const az = azOf(pos.x, pos.z), Z = state.caught ? ZN : ZD;
   if (zone.startsWith('beam:')) {
     const b = beamById[zone.slice(5)];
@@ -2280,7 +2283,7 @@ function updateCatch(dt) {
     return;
   }
   M.apple.emissiveIntensity = 1.1;
-  appleLight.intensity = 6;
+  appleLight.intensity = 0.8;
   const right = new V3(Math.cos(player.yaw * DEG), 0, Math.sin(player.yaw * DEG));
   const held = player.mode === 'first' ? camera.position.clone().add(camF.clone().multiplyScalar(0.95)).addScaledVector(right, 0.5).add(new V3(0, -0.36, 0)) : player.pos.clone().add(new V3(0.35 * right.x, 1.25, 0.35 * right.z));
   apple.position.lerp(held, Math.min(1, dt * 6)); appleLight.position.copy(apple.position);
@@ -2331,6 +2334,7 @@ const avatar = new THREE.Group();
 }
 function showAvatar(on) { if (avatar.userData.shown === on) return; avatar.userData.shown = on; M.robe.colorWrite = M.robe.depthWrite = on; }
 function updateCamera(dt) {
+  if (state.freeCam) { camera.position.fromArray(state.freeCam.pos); camera.lookAt(new V3().fromArray(state.freeCam.look)); if (state.freeCam.fov && camera.fov !== state.freeCam.fov) { camera.fov = state.freeCam.fov; camera.updateProjectionMatrix(); } avatar.visible = !!state.freeCam.avatar; avatar.position.copy(player.pos); return; }
   if (!state.started) {
     const a = (200 + state.t * 2.4) * DEG;
     camera.position.set(Math.sin(a) * 105, 22, -Math.cos(a) * 105);
@@ -2593,6 +2597,86 @@ window.__dysis = {
   go(az, r, y, yaw) { const p = P(az, r, y); player.pos.copy(p); player.vy = 0; player.grounded = true; player.carry = null; if (yaw != null) player.yaw = yaw; refreshNear(); const h = probe(p.x, p.y + 0.4, p.z, 3); if (h) { player.pos.y = h.point.y; player.ground = h.object; player.zone = zoneOf(h.object, player.pos) || player.zone; } return { ground: h ? (h.object.userData.zone || (h.object.userData.beam && 'beam:' + h.object.userData.beam.id)) : null, y: player.pos.y }; },
   step(n = 1, dt = 1 / 30) { for (let i = 0; i < n; i++) tick(dt); },
   beam(id) { const b = beamById[id]; return b && { valid: b.valid, walkable: b.walkable, clean: b.clean, lit: +b.lit.toFixed(2), edge: b.edge && b.edge.map((x) => +x.toFixed(2)), need: b.need && +b.need.toFixed(2), c: b.c.map((x) => +x.toFixed(2)), slope: +(Math.asin(clamp(b.L.y, -1, 1)) / DEG).toFixed(1), s0: b.s0, s1: b.s1, b0: b.b0.toArray().map((x) => +x.toFixed(2)), b1: b.b1.toArray().map((x) => +x.toFixed(2)) }; },
+};
+
+
+// ────────────────────────────── 导出：给数据表用的全部设计数据 ──────────────────────────────
+window.__dysis.exportSpec = function () {
+  const r3 = (x) => (typeof x === 'number' ? +x.toFixed(3) : x), v3 = (v) => v && [r3(v.x), r3(v.y), r3(v.z)];
+  const polar = (v) => v && { az: r3(azOf(v.x, v.z)), r: r3(rOf(v)), y: r3(v.y) };
+  const sunAt = (H) => { const v = sunDir(H); return { az: r3(azV(v)), alt: r3(altOf(v)) }; };
+  const moonAt = (H) => { const v = moonDir(H); return { az: r3(azV(v)), alt: r3(altOf(v)) }; };
+  const out = { dims: { R_POOL, R_A, R_PARA, R_IN, R_OUT, R_PERI, R_STYLO, F, SLAB, PARA_H, CEIL, IRIS_TOP, CROWN_Y, WALL_TOP, OC_R, IRIS_R, CROWN_R1, WATER_Y, POOL_BOTTOM, TERR_Y, TERR_C, TERR_R, SEA_Y, ISLAND, WALL_TH, TERR_EDGE_N, R_COL, TUN_R0, TUN_R1, TUN_HEAD } };
+  out.sky = { lat: 35, decSun: -21, decMoon: 20, farIsle: FAR_ISLE };
+  out.keyH = { H_I, H_OC, AZ_OC, J_AZ, T_AZ, TOP_Y, H_TOP, H_M, H_TW, H_SW, H_BR, R_STEP, H_NIGHT };
+  for (const k of ['H_I', 'H_OC', 'H_TOP', 'H_M']) out.keyH[k + '_sun'] = sunAt(out.keyH[k]);
+  for (const k of ['H_TW', 'H_SW', 'H_BR']) out.keyH[k + '_moon'] = moonAt(out.keyH[k]);
+  out.sunTable = []; for (let H = 0; H <= 74; H += 1) out.sunTable.push({ H, ...sunAt(H), shadowY: r3(shadowY(sunDir(H))) });
+  out.moonTable = []; for (let H = 75; H <= 182; H += 1) out.moonTable.push({ H, ...moonAt(H) });
+  const zone = (z) => ({ seam: z.seam, a0: r3(z.a0), h0: r3(z.h0), k: r3(z.k), lo: r3(z.lo), hi: r3(z.hi), Hlo: r3(z.f(z.lo + 1e-6)), Hhi: r3(z.f(z.hi - 1e-6)) });
+  out.zonesDay = Object.fromEntries(Object.entries(ZD).map(([k, z]) => [k, zone(z)]));
+  out.zonesNight = Object.fromEntries(Object.entries(ZN).map(([k, z]) => [k, zone(z)]));
+  out.crown = { J: J_AZ, T: T_AZ, upTop: UP_TOP, nightStair: NIGHT_STAIR, treads: TREADS.map((t) => ({ kind: t.kind, k: t.k, a0: r3(t.a0), a1: r3(t.a1), zEnd: r3(t.zEnd ?? 0), yNight: r3(t.yNight ?? 0) })), stairMs: STAIR1.firstMs, arch: { az: ARCH.az, r0: ARCH.r0, r1: ARCH.r1, h: ARCH.h, span: r3(ARCH.span) }, armTop: ARM_TOP ? { az: ARM_TOP.az, r: ARM_TOP.r } : null };
+  out.iris = []; for (let H = 44; H <= 50; H += 0.5) out.iris.push({ H, a: r3(irisApertureAt(H, false)) });
+  out.openings = OPENINGS.filter((o) => o.kind !== 'tunnel').map((o) => ({ id: o.id, kind: o.kind, az: r3(o.az), w: r3(o.w), a0: r3(o.a0), a1: r3(o.a1), b0: r3(o.b0), b1: r3(o.b1), y0: r3(o.y0), y1: r3(o.y1), axisAz: r3(o.axisAz) }));
+  out.moonWin = Object.fromEntries(Object.entries(MOONWIN).map(([k, w]) => [k, { az: w.az, y0: w.y0, h: w.h, w: w.w, axisH: w.axisH, mullions: w.mullions || null, axisAz: r3(moonAzAt(w.axisH)) }]));
+  out.win = Object.fromEntries(Object.entries(WIN).map(([k, w]) => [k, { name: w.name, az: w.az, y0: w.y0, h: w.h, w: w.w, axisH: r3(w.axisH), axisAz: r3(sunAzAt(w.axisH)), footAz: r3(w.footAz), H: r3(w.H), timeY: w.timeY && w.timeY.map(r3) }]));
+  out.tunnels = TUNNELS.map((T) => ({ id: T.id, name: T.name, aTop: T.aTop, aBot: T.aBot, yTop: T.yTop, yBot: T.yBot, topDoor: r3(T.topDoor), botDoor: r3(T.botDoor), dir: T.dir, steps: Math.max(4, Math.round((T.yTop - T.yBot) / 0.3)), riser: r3((T.yTop - T.yBot) / Math.max(4, Math.round((T.yTop - T.yBot) / 0.3))) }));
+  out.slabCuts = SLAB_CUTS; out.paraGaps = PARA_GAPS; out.pNotch = P_NOTCH; out.serliana = SERLIANA;
+  out.columns = COLUMNS; out.colSkipped = COL_SKIPPED; out.colSpec = COL_SPEC;
+  // 每根柱子离主光路最近的距离（允许的最大直径）
+  const beamsForCols = [[WIN.b1, [WIN.b1.H - 0.5, WIN.b1.H + 1]], [WIN.b2, [WIN.b2.H - 0.5, WIN.b2.H + 1]], [WIN.p, [WIN.p.H, WIN.p.H + 1.5]], [WIN.r, [WIN.p.H + 0.5, R_STEP.H]], [WIN.isle, [H_I]]];
+  out.colClear = COLUMNS.map((c) => {
+    const spec = COL_SPEC[c.floor], C = P(c.az, R_COL); let best = 99, who = '';
+    for (const [w, Hs] of beamsForCols) for (const H of Hs) for (let ui = 0; ui <= 6; ui++) for (let vi = 0; vi <= 2; vi++) {
+      const s = sunDir(H), hw = halfOf(w.w), W0 = P(w.az - hw + 2 * hw * ui / 6, R_IN, w.y0 + w.h * vi / 2);
+      for (let t = 0; t < 45; t += 0.1) { const p = W0.clone().addScaledVector(s, -t); if (p.y < spec.y0 - 0.5) break; if (p.y > spec.y1) continue; const dd = Math.hypot(p.x - C.x, p.z - C.z); if (dd < best) { best = dd; who = w.name; } }
+    }
+    return { floor: c.floor, az: c.az, D: c.D, h: r3(c.h), order: c.order, nearest: r3(best), maxD: r3(Math.max(0, 2 * (best - 0.12))), beam: who };
+  });
+  // 光路（在设计时刻）
+  out.beams = {};
+  const snapBeam = (id, H) => { state.forceH = H; setTime(H); computeBeams(); const b = beamById[id]; b.walkable = beamIsWalkable(b);
+    const hz = Math.hypot(b.L.x, b.L.z), w0 = b.U.length();
+    const foot = b.b0.clone().lerp(b.b1, 0.5).addScaledVector(b.L, b.s1);
+    return { H: r3(H), sun: sunAt(H), valid: b.valid, walkable: b.walkable, clean: b.clean, lit: r3(b.lit), slope: r3(Math.asin(clamp(-b.L.y, -1, 1)) / DEG), dirAz: r3(azOf(b.L.x, b.L.z)), stripW: r3(w0), walkW: r3(w0 + 2 * BEAM_PAD), len: r3(b.s1 - (b.s0 ?? 0)), start: polar(b.b0.clone().lerp(b.b1, 0.5).addScaledVector(b.L, b.s0 ?? 0)), foot: polar(foot), edge: b.edge && b.edge.map(r3) }; };
+  out.beams.isle = snapBeam('isle', H_I);
+  out.beams.b1 = snapBeam('b1', WIN.b1.H);
+  out.beams.b2 = snapBeam('b2', WIN.b2.H);
+  out.beams.p = snapBeam('p', WIN.p.H); out.beams.r = snapBeam('r', WIN.p.H);
+  setIris(OC_R); out.beams.oculus = snapBeam('oculus', H_OC); setIris(0.4);
+  { const S = MIRRORS.M, k0 = S.k; S.k = S.daySlot; S.yawNow = S.slots[S.k]; S.w3 = { sun: 1, moon: 0, dark: 0 }; S.form = 'sun'; placeMirror(S); out.beams.mirror = snapBeam('mirror', H_M); S.k = k0; S.yawNow = S.slots[k0]; }
+  // 光阶 P、R 的相对位置
+  { state.forceH = WIN.p.H + 0.8; setTime(state.forceH); computeBeams(); const P_ = beamById.p, R_ = beamById.r; const n = new V3(-P_.L.z, 0, P_.L.x).normalize();
+    const pm = P_.b0.clone().lerp(P_.b1, 0.5), rm = R_.b0.clone().lerp(R_.b1, 0.5), Lh = new V3(P_.L.x, 0, P_.L.z).normalize();
+    const lat = rm.clone().sub(pm).dot(n), lon = rm.clone().sub(pm).dot(Lh);
+    out.jump = { H: r3(state.forceH), lateral: r3(Math.abs(lat)), gapEdge: r3(Math.abs(lat) - (P_.U.length() + R_.U.length()) / 2), gapWalk: r3(Math.abs(lat) - (P_.U.length() + R_.U.length()) / 2 - 2 * BEAM_PAD), dh: r3(lon * Math.tan(Math.asin(-P_.L.y)) * -1) }; }
+  state.forceH = null;
+  // 雕像与机关
+  const ms = (S) => ({ name: S.name, az: S.az, r: S.r, y: S.y, w: S.w, h: S.h, top: r3(S.top), dais: S.dais, plinth: S.plinth, mirrorY: r3(S.mirrorY), offset: S.mirrorOffset, slots: S.slots.map(r3), daySlot: S.daySlot, nightSlot: S.nightSlot, tiltSun: r3(S.tiltSun), tiltMoon: r3(S.tiltMoon), k0: S.k });
+  out.mirrors = { M: ms(MIRRORS.M), M3: ms(MIRRORS.M3) };
+  out.mplan = { ledgeAz: LEDGE.az, ledgeY: LEDGE.y, ledgeR0: LEDGE.r0, ledgeHalf: LEDGE.half, len: r3(MPLAN.len), slope: r3(MPLAN.slope), rmin: r3(MPLAN.rmin), yaw: r3(MPLAN.a.yaw), tilt: r3(MPLAN.a.tilt), win: out.openings.find((o) => o.id === 'mwin') };
+  out.mnight = { yaw: r3(MNIGHT.yaw), tilt: r3(MNIGHT.tilt) }; out.m3plan = { yaw: r3(M3PLAN.yaw), tilt: r3(M3PLAN.tilt) };
+  out.swan = { az: SWAN.az, r: SWAN.r, plinth: SWAN.plinth, yawOK: r3(SWAN.yawOK), slots: SWAN.slots.map(r3), k0: 3, screen: { ...polar(SWAN.screen.c), w: SWAN.screen.w, h: SWAN.screen.h, th: SWAN.screen.th, facing: r3(azOf(SWAN.screen.n.x, SWAN.screen.n.z)) }, gap: polar(SWAN.gap), dist: r3(SWAN.dist), tol: 0.12 };
+  out.twins = { ...TWINS, castor: TWIN_DEF.castor, pollux: TWIN_DEF.pollux };
+  out.pav = PAV; out.bridge = BRIDGE; out.ledge = { ...LEDGE };
+  out.niches = { sun: { az: LEDGE.az + 2.6, y: LEDGE.y }, moon: { az: MOONN.az, y: F[1] + 0.9 } };
+  out.merid = MERID.pts.filter((q, i) => i % 4 === 0).map((q) => ({ H: q.H, ...polar(q.p) }));
+  out.moonstones = MOONSTONES.map((m) => ({ id: m.id, name: m.name, source: m.source, samples: m.samples.map(polar) }));
+  // 月光扫查：每一处月石在每个时刻被照亮的比例
+  const saved = { caught: state.caught }; state.caught = true;
+  const M_ = MIRRORS.M, M3_ = MIRRORS.M3, k1 = M_.k, k3 = M3_.k; M_.k = M_.nightSlot; M_.yawNow = M_.slots[M_.k]; M3_.k = M3_.nightSlot; M3_.yawNow = M3_.slots[M3_.k];
+  for (const t of TREADS) if (t.kind === 'dn') { t.y = t.yNight; t.m.position.y = t.y; t.m.updateMatrixWorld(true); if (t.k >= STAIR1.firstMs) { removeFrom(LIGHT, t.m); } }
+  setIris(OC_R); out.moonSweep = [];
+  for (let H = 76; H <= 180; H += 0.5) {
+    state.forceH = H; setTime(H); for (const S of [M_, M3_]) { S.w3 = { sun: 0, moon: 1, dark: 0 }; S.form = 'moon'; placeMirror(S); } computeBeams();
+    const row = { H }; for (const m of MOONSTONES) row[m.id] = r3(moonstoneLitFrac(m)); out.moonSweep.push(row);
+  }
+  state.caught = saved.caught; state.forceH = null; M_.k = k1; M_.yawNow = M_.slots[k1]; M3_.k = k3; M3_.yawNow = M3_.slots[k3];
+  // 等时线：每层每个整点时角所在的方位（白天每 0.5，夜里每 1）
+  const iso = (Z, step) => Object.fromEntries(Object.entries(Z).map(([k, z]) => { const a = []; const lo = Math.min(z.f(z.lo + 1e-6), z.f(z.hi - 1e-6)), hi = Math.max(z.f(z.lo + 1e-6), z.f(z.hi - 1e-6)); for (let H = Math.ceil(lo / step) * step; H <= hi + 1e-9; H += step) { const az = z.a0 + (H - z.h0) / z.k; if (az >= z.lo - 1e-6 && az <= z.hi + 1e-6) a.push({ H: r3(H), az: r3(wrap360(az)) }); } return [k, a]; }));
+  out.isoDay = iso(ZD, 0.5); out.isoNight = iso(ZN, 1);
+  return out;
 };
 
 </script>

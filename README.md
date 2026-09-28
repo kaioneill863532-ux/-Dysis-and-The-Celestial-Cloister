@@ -7,4 +7,6 @@
 - 设计文档：[docs/game-design.md](docs/game-design.md)
 - 重构方案 v0.4（待确认）：[docs/proposal-v0.4.html](docs/proposal-v0.4.html)
 - 系统文档（给美术和程序：画风、场景、角色、道具、特效）：[docs/systems.md](docs/systems.md)
-- 可玩的灰盒原型（日月十关）：[prototype/cloister/index.html](prototype/cloister/index.html)，说明见 [prototype/README.md](prototype/README.md)
+- **v0.4 灰盒（神殿）**：[prototype/temple/index.html](prototype/temple/index.html)，说明见 [prototype/README.md](prototype/README.md)
+- **UE 数据册**（v0.4 灰盒导出的全部尺寸、角度、光路、等时线）：[docs/ue-spec.html](docs/ue-spec.html)，原始数据 [docs/ue-spec.json](docs/ue-spec.json)
+- 旧版灰盒（v0.3，日月十关）：[prototype/cloister/index.html](prototype/cloister/index.html)
