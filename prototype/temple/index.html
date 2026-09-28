@@ -1320,7 +1320,11 @@ function buildFacade() {
       }
       if (main) {   // 主光窗：拱圈框住真的窗洞（按外墙面上洞口的位置和宽度，斜切的窗洞在外面是挪开的）
         const oaz = outerMid(main), w = 2 * outerHalf(main) * DEG * R_OUT + 0.3, s = main.y1 - main.y0;
-        addStatic(place(nonIndexed(new THREE.ExtrudeGeometry(ring(w, s, 0.3), { depth: 0.22, bevelEnabled: false, curveSegments: 24 })), oaz, RO, main.y0), M.ext, 'c');
+        if ((main.archTop ?? main.y1 + main.w / 2) < main.y1 + main.w / 2 - 0.05) {   // 拱被檐口压平了：用两根边框和一道平的过梁
+          const top = main.archTop - main.y0;
+          for (const sx of [-1, 1]) addStatic(place(nonIndexed(new THREE.BoxGeometry(0.3, top, 0.22)).translate(sx * (w / 2 + 0.15), top / 2, 0.11), oaz, RO, main.y0), M.ext, 'c');
+          addStatic(place(nonIndexed(new THREE.BoxGeometry(w + 0.6, 0.3, 0.22)).translate(0, top + 0.15, 0.11), oaz, RO, main.y0), M.ext, 'c');
+        } else addStatic(place(nonIndexed(new THREE.ExtrudeGeometry(ring(w, s, 0.3), { depth: 0.22, bevelEnabled: false, curveSegments: 24 })), oaz, RO, main.y0), M.ext, 'c');
         addStatic(place(nonIndexed(new THREE.BoxGeometry(w + 0.5, 0.18, 0.4)).translate(0, -0.09, 0.1), oaz, RO, main.y0), M.ext, 'c');
         continue;
       }
