@@ -48,7 +48,9 @@ export function createOptics(scene,world) {
         for(let i=0;i<original.count;i++){
           const w=new THREE.Vector3().fromBufferAttribute(original,i).applyMatrix4(m.matrixWorld).toArray();
           const hit=rayPlane(w,dir,planePoint,planeNormal);
-          const q=hit?.point||planePoint;out.setXYZ(i,...add(q,scale(planeNormal,.014)));
+          // The receiver is a 0.28 m slab centered on planePoint. Keep the
+          // authored silhouette just beyond its face, instead of inside it.
+          const q=hit?.point||planePoint;out.setXYZ(i,...add(q,scale(planeNormal,.16)));
           if(i%29===0)landmarks.push(q);
         }out.needsUpdate=true;shadow.geometry.computeBoundingSphere();});return landmarks;}};
   }

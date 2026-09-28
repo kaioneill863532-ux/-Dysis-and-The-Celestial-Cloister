@@ -110,15 +110,15 @@ world.straightStairs(radial(13,230,12),M,2.6);world.disk(1.55,14.5,M[0],M[2]);
 world.quad(radial(14.1,230,12),radial(17,230,12),2.6);
 world.disk(1.35,18,roofFoot[0],roofFoot[2]);world.quad(radial(14,304,18),roofFoot,2.5);
 world.annulus(4.5,6,24,0,360);world.quad(radial(5.7,roofAngle,24),radial(16.7,roofAngle,24),2.3);
-world.annulus(15.8,18.6,24,8,352,[sectorHole(15.7,18.7,305,347)]);
-world.stairs(17.2,305,346,24,18,2.1);world.annulus(14.5,18.8,18,338,349);
+world.annulus(15.8,18.6,24,8,352,[sectorHole(15.7,18.7,305,332)]);
+world.stairs(15.7,305,330,24,18,2.1);world.annulus(14.5,18.8,18,326,349);
 const stairN1=world.stairs(18,327,250,18,12,2.0);
 world.quad(radial(18,250,12),radial(14.1,250,12),2.5);
 const n1Bridge=world.quad(radial(13.8,330,18),radial(18,327,18),2.25,moonStone,{solid:false});n1Bridge.mesh.visible=false;
-const n1Door=world.box([2.3,3.5,.24],radial(18,326.5,19.65),art.materials.relief);n1Door.rotation.y=-326.5*DEG;
+const n1Door=world.box([2.3,3.2,.24],radial(18,315,18.5),art.materials.relief);n1Door.rotation.y=-315*DEG;
 // Leave the first stair bay open so the moon bridge can join the stair centre.
 for(let i=1;i<15;i++)for(const r of [16.96,19.04])world.rail(radial(r,lerp(327,250,i/15),lerp(18,12,i/15)),radial(r,lerp(327,250,(i+1)/15),lerp(18,12,(i+1)/15)));
-world.annulus(14.5,18.9,18,336,344);
+world.annulus(14.5,18.9,18,326,344);
 const n2BridgeFixed=world.quad(radial(9.2,moonTheta,12),radial(11.3,moonTheta,12),2.3,moonStone,{solid:false});
 const n2BridgeMoving=world.quad(radial(11.3,moonTheta,12),radial(14.3,moonTheta,12),2.3,moonStone,{solid:false});
 n2BridgeFixed.mesh.visible=n2BridgeMoving.mesh.visible=false;
@@ -177,6 +177,7 @@ const receiverNormal=normalize([receiverSource[0],0,receiverSource[2]]);
 const receiverPoint=radial(15,337,19.9);
 const sculpturePoint=add([receiverPoint[0],18.55,receiverPoint[2]],scale(receiverNormal,2.5));
 const muralWall=world.box([6.2,4.3,.28],receiverPoint,art.materials.darkStone,{block:false});
+muralWall.receiveShadow=false; // The authored silhouette remains legible beside nearby stair and column shadows.
 muralWall.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),V(receiverNormal));
 const goddess=putModel(createGoddess(),sculpturePoint,.62);
 const swan=putModel(createSwan(moonStone),sculpturePoint,.62);
@@ -190,7 +191,7 @@ const wallTangent=[receiverNormal[2],0,-receiverNormal[0]];
 for(const side of [-1,1]){
  const copy=muralTarget.group.clone();
  copy.traverse(m=>{if(m.isMesh){m.material=m.material.clone();m.material.color.setHex(0xdbd4c3);m.material.opacity=.9;}});
- copy.position.set(...scale(wallTangent,side*1.95));scene.add(copy);
+ copy.position.set(...scale(wallTangent,side*1.55));scene.add(copy);
 }
 const moonGlyph=labelSprite('月光还未落在女神身上',{scale:2.2});moonGlyph.position.set(...add(sculpturePoint,[0,3.1,0]));scene.add(moonGlyph);
 
@@ -385,7 +386,7 @@ function advance(){
  else if(stage===1&&near(p,T2,3.2)&&p[1]>11.82)setStage(2,radial(15.1,166,12));
  else if(stage===2&&near(p,T3,3.2)&&p[1]>17.82)setStage(3,radial(15.1,276,18));
  else if(stage===3&&p[1]>23.82&&r<6.3)setStage(4,roofTop);
- else if(stage===4&&p[1]<18.2&&a>338)setStage(5,radial(17.2,345,18));
+ else if(stage===4&&p[1]<18.2&&a>323&&a<337)setStage(5,radial(15.7,330,18));
  else if(stage===5&&p[1]<12.21&&a>244&&a<258)setStage(6,radial(14.3,250,12));
  else if(stage===6&&p[1]<6.21&&r<10.4&&a>201&&a<214)setStage(7,radial(12,207,6));
  else if(stage===7&&p[1]<.21&&r>15.8&&Math.abs(a-(oldAngle-41))<8)setStage(8,radial(16.3,oldAngle-41,0));
@@ -528,7 +529,8 @@ function frame(now){
 }
 // A test hook only for isolated visual fixtures; real route QA uses key input.
 if(debug)window.__dysisQA={get state(){return{stage,phase,night,apple,position:[...player.position],grounded:player.grounded,ready:{swan:n1Bridge.enabled,pair:pairReady,old:oldReady,pool:poolReady},exposure:{n1Exposure,n2Direct,n2Reflected,poolAExposure,poolBExposure}};},
-  fixture(n,pos){if(!Number.isInteger(n)||n<0||n>9||!Array.isArray(pos)||pos.length!==3)return;stage=n;night=n>=5;iris=n>=5?1:0;player.teleport(pos);checkpoint={stage:n,position:[...pos],phase:0};},
+  fixture(n,pos){if(!Number.isInteger(n)||n<0||n>9||!Array.isArray(pos)||pos.length!==3)return;stage=n;night=n>=5;iris=n>=5?1:0;player.teleport(pos);checkpoint={stage:n,position:[...pos],phase:0};cameraUpdate(1);},
+  view(yaw,pitch,distance){cameraYaw=yaw;cameraPitch=pitch;cameraDistance=distance;cameraUpdate(1);},
   phaseAt:p=>{const prior=[...player.position];player.teleport(p);const value=activePhase();player.teleport(prior);return value;}
 };
 requestAnimationFrame(frame);

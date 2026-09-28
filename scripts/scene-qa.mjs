@@ -51,6 +51,9 @@ let best={score:0,yaw:0};
 for(let yaw=-1.6;yaw<=1.6;yaw+=.025){q.setYaw('swan',yaw);q.updateMoon(.05);if(q.n1Score>best.score)best={score:q.n1Score,yaw};}
 console.log('N1 swan best yaw',best);
 inspect('N2 mirror',[6,q.moonM]);
+const n2Sample=add(polar(9.7,290*DEG,12),[0,2.5,0]);
+const n2Hit=q.optics.obstruction(n2Sample,moonDirection(q.phase),80);
+console.log('N2 direct obstruction',JSON.stringify(n2Hit&&{name:n2Hit.object.name,parent:n2Hit.object.parent?.name,dist:n2Hit.distance,point:n2Hit.point.toArray()}));
 q.setYaw('moon',0);q.setRail(1);inspect('N2 mirrored/paired',[6,[q.moonM[0],12,q.moonM[2]]]);
 inspect('N3 crown',[7,[q.oldSpot[0],6,q.oldSpot[2]]]);
 inspect('pool mirror',[8,[q.poolMirror[0],0,q.poolMirror[2]]]);
@@ -81,6 +84,11 @@ if(process.env.QA_NIGHT_ONLY!=='1')for(const [name,stageNumber,from,to] of [
  window.__dysisQA.fixture(stageNumber,from);q.setYaw('sun',0);tick(10);motorTo(name,to);
 }
 const point=(r,a,y)=>polar(r,a*DEG,y),oldAngle=Math.atan2(q.oldSpot[2],q.oldSpot[0])/DEG+360;
+window.__dysisQA.fixture(4,point(15.7,305,24));tick(8);
+for(let a=308;a<=330&&q.stage===4;a+=3)motorTo('roof descent '+a,point(15.7,Math.min(a,330),24-(Math.min(a,330)-305)*6/25),24);
+if(q.stage===4)motorTo('roof descent landing',point(15.7,330,18),24);
+console.log('roof descent result',q.stage,q.player.position.map(v=>+v.toFixed(2)));
+if(q.stage!==5)throw new Error('Roof stair does not reach the swan chapter.');
 q.setYaw('swan',0);window.__dysisQA.fixture(5,point(13.8,330,18));tick(12);
 console.log('N1 gate before walk',q.n1Bridge.enabled,q.phase,q.n1Score);
 motorTo('N1 mural bridge',point(18,327,18));
