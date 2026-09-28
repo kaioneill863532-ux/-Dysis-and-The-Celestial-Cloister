@@ -5,5 +5,6 @@
 玩家扮演日落女神狄西斯，借日光登上圆殿最高处，用金苹果接住最后一缕阳光；入夜后循着月光穿过水庭，把它送到中心的小亭。
 
 - 设计文档：[docs/game-design.md](docs/game-design.md)
+- 重构方案 v0.4（待确认）：[docs/proposal-v0.4.html](docs/proposal-v0.4.html)
 - 系统文档（给美术和程序：画风、场景、角色、道具、特效）：[docs/systems.md](docs/systems.md)
 - 可玩的灰盒原型（日月十关）：[prototype/cloister/index.html](prototype/cloister/index.html)，说明见 [prototype/README.md](prototype/README.md)

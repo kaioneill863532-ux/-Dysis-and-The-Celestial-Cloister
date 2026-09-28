@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>日落回廊重构方案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#f1f0ec; --paper:#fbfaf7; --ink:#1c1e22; --muted:#5b5f66; --line:#cdc9bf; --stone:#e3dfd5; --band:#e7e4dc;
+  --sun:#b35f18; --sun-soft:rgba(226,150,70,.28); --moon:#35598a; --moon-soft:rgba(90,130,190,.22); --water:#2c7a7d; --water-soft:rgba(60,140,150,.22);
+  --serif:"Noto Serif SC","Songti SC","STSong",serif; --sans:"Noto Sans SC",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1216; --paper:#161a20; --ink:#e8e4da; --muted:#a2a5ab; --line:#363b44; --stone:#262b33; --band:#1d2229;
+  --sun:#f0aa55; --sun-soft:rgba(240,170,85,.26); --moon:#a2bde4; --moon-soft:rgba(140,175,230,.2); --water:#6cc3bf; --water-soft:rgba(108,195,191,.18); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f1216; --paper:#161a20; --ink:#e8e4da; --muted:#a2a5ab; --line:#363b44; --stone:#262b33; --band:#1d2229;
+  --sun:#f0aa55; --sun-soft:rgba(240,170,85,.26); --moon:#a2bde4; --moon-soft:rgba(140,175,230,.2); --water:#6cc3bf; --water-soft:rgba(108,195,191,.18); color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.8}
+.wrap{max-width:960px;margin:0 auto;padding-inline:20px;padding-block:44px 80px}
+header{display:grid;gap:12px;padding-bottom:26px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:12px;letter-spacing:.22em;color:var(--muted)}
+h1{margin:0;font-family:var(--serif);font-weight:700;font-size:clamp(30px,5.4vw,44px);letter-spacing:.06em;text-wrap:balance}
+.lede{margin:0;max-width:42em;font-size:16px}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+nav a{font-size:13px;color:var(--ink);text-decoration:none;padding:2px 12px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
+nav a:hover,nav a:focus-visible{border-color:var(--ink);outline:none}
+section{padding-top:44px;display:grid;gap:16px}
+h2{margin:0;font-family:var(--serif);font-size:24px;letter-spacing:.05em;text-wrap:balance}
+h3{margin:8px 0 0;font-family:var(--serif);font-size:18px;letter-spacing:.03em}
+p{margin:0;max-width:44em}
+ul{margin:0;padding-left:1.25em;display:grid;gap:6px;max-width:46em}
+.muted{color:var(--muted);font-size:14px}
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.col{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:grid;gap:8px;align-content:start}
+.col h3{margin:0;font-size:16px}
+.col ul{font-size:14px;gap:4px}
+.k-sun{color:var(--sun)} .k-moon{color:var(--moon)} .k-water{color:var(--water)}
+.rules{display:grid;gap:12px}
+.rule{display:grid;grid-template-columns:7.5em 1fr;gap:4px 16px;padding-block:10px;border-top:1px solid var(--line)}
+.rule b{font-family:var(--serif);font-size:16px}
+.rule div{display:grid;gap:6px}
+@media (max-width:620px){.rule{grid-template-columns:1fr}}
+figure{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:14px 14px 12px;display:grid;gap:8px}
+figure .scroll{overflow-x:auto}
+figure svg{display:block;width:100%;height:auto;min-width:520px}
+figcaption{font-size:13.5px;color:var(--muted);max-width:52em}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:600px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:500;font-size:12px;letter-spacing:.12em;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-family:var(--serif);font-weight:700;white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.levels{display:grid;gap:0}
+.lv{display:grid;grid-template-columns:9.5em 1fr;gap:6px 20px;padding-block:18px;border-top:1px solid var(--line)}
+.lv:first-child{border-top:0}
+.lv .h{display:grid;gap:2px;align-content:start}
+.lv .h b{font-family:var(--serif);font-size:18px;letter-spacing:.03em}
+.lv .h span{font-size:13px;color:var(--muted)}
+.lv .h i{font-style:normal;font-size:12.5px;font-variant-numeric:tabular-nums}
+.lv.d .h b{color:var(--sun)} .lv.n .h b{color:var(--moon)}
+.lv .b{display:grid;gap:8px}
+.lv .b ul{font-size:14.5px}
+@media (max-width:620px){.lv{grid-template-columns:1fr}}
+.note{padding:12px 16px;border-left:3px solid var(--moon);background:var(--paper);font-size:14px;max-width:46em}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+/* SVG */
+svg text{font-family:var(--sans);font-size:12px}
+.t-ink{fill:var(--ink)} .t-dim{fill:var(--muted);font-size:12.5px} .t-small{fill:var(--muted);font-size:11px}
+.t-sun{fill:var(--sun);font-size:12px} .t-moon{fill:var(--moon);font-size:12px} .t-water{fill:var(--water);font-size:12px} .t-b{font-weight:700;font-size:12.5px}
+.s-ink{stroke:var(--ink);stroke-width:1;fill:none} .f-none{fill:none}
+rect.s-ink,path.s-ink,polygon.s-ink,circle.s-ink{stroke:var(--ink);stroke-width:1}
+.f-stone{fill:var(--stone)} .f-bg{fill:var(--paper)} .f-open{fill:var(--paper)} .f-ink{fill:var(--ink)}
+.f-niche{fill:var(--band)}
+.f-water{fill:var(--water-soft)} .f-fall{fill:var(--water-soft)} .f-fall2{fill:var(--water-soft)}
+.s-fall{stroke:var(--water);stroke-width:1;opacity:.7}
+.s-guide{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4;fill:none}
+.s-col{stroke:var(--ink);stroke-width:3}
+.s-lat{stroke:var(--ink);stroke-width:.8;opacity:.7}
+.f-sun{fill:var(--sun-soft)} .s-sun{stroke:var(--sun);stroke-width:1.6} .s-sun-thin{stroke:var(--sun);stroke-width:1;opacity:.7}
+.s-moon{stroke:var(--moon);stroke-width:1.4} .s-moon-d{stroke:var(--moon);stroke-width:1.2;stroke-dasharray:3 4}
+.s-moon-arrow{stroke:var(--moon);stroke-width:1.6;fill:none}
+.f-moon{fill:var(--moon)} .f-moon-dot{fill:var(--moon)} .f-sun-dot{fill:var(--sun)}
+.f-band{fill:none;stroke:var(--band)}
+.s-day{stroke:var(--sun);stroke-width:4;fill:none;stroke-linecap:round}
+.s-night{stroke:var(--moon);stroke-width:4;fill:none;stroke-linecap:round}
+.s-day-l{stroke:var(--sun);stroke-width:1.1;fill:none;opacity:.85}
+.s-night-l{stroke:var(--moon);stroke-width:1.3;fill:none;stroke-dasharray:5 4}
+.f-shadow{fill:var(--ink);opacity:.08} .f-shadow2{fill:var(--ink);opacity:.18}
+.f-mist{fill:var(--water);opacity:.35}
+.f-lit{fill:var(--moon-soft)}
+.s-dash{stroke-dasharray:3 3}
+.s-bridgeA{stroke:var(--moon);stroke-width:7;stroke-linecap:round;opacity:.85}
+.s-bridgeB{stroke:var(--moon);stroke-width:7;stroke-linecap:round;opacity:.45}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">狄西斯的日落回廊 · 设计方案 v0.4 · 待确认</div>
+  <h1>日落回廊重构方案</h1>
+  <p class="lede">这一版把谜题交还给建筑和光。开关、拉杆、滑板、阀门和铜链都去掉了；玩家能改变的只有两样：自己站在哪里（这决定日月在哪），和几尊可以转动的雕像。白天，阳光从南和西南照进来，落在北面和东面；夜里，月亮从东边升起，光穿过打开的光圈，顺着西墙一层层往下沉，玩家跟着它下到水亭。</p>
+  <nav aria-label="目录"><a href="#change">改了什么</a><a href="#rules">规则</a><a href="#arch">建筑</a><a href="#route">路线</a><a href="#day">白天</a><a href="#night">夜里</a><a href="#check">几何校核</a><a href="#next">待定</a></nav>
+</header>
+
+<section id="change">
+  <h2>改了什么</h2>
+  <div class="three">
+    <div class="col"><h3>保留</h3><ul>
+      <li>时间由位置决定：白天顺时针向前，夜里逆时针向前</li>
+      <li>看得见的光能踩</li>
+      <li>托镜像（日、月、暗三相）</li>
+      <li>伊莉丝浮雕、虹桥、棱镜、塞勒涅浮雕</li>
+      <li>光圈天顶的环道、虹门、岛影</li>
+      <li>两架浑天仪、三个神龛</li>
+    </ul></div>
+    <div class="col"><h3>改动</h3><ul>
+      <li>开场：从海上的石柱走进塔</li>
+      <li>雾：来自东侧终年不停的瀑布</li>
+      <li>登顶：从穹顶中央的圆眼进去</li>
+      <li>夜里的规则：月石</li>
+      <li>每一层的等时线均匀</li>
+      <li>窗和柱子各有分工；建筑用一套比例</li>
+    </ul></div>
+    <div class="col"><h3>去掉</h3><ul>
+      <li>水闸、拉杆和双窗滑板、狮首水闸</li>
+      <li>天池进水口、竖井铜链、闸轮、百叶</li>
+      <li>月光踏片、月光大道、夜光石、井中月</li>
+      <li>甲门、阳台和塔外坡道</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="rules">
+  <h2>规则</h2>
+  <div class="rules">
+    <div class="rule"><b>时间</b><div>
+      <p>沿弧走，时间流动，日月跟着动；沿半径走，时间不变。每一层的等时线疏密均匀，层与层之间可以不同。</p>
+      <p>楼层之间的光路都是偏在一侧的弦，不穿过中庭中心：穿过中心时，几步之内方位角变很多，时间会跳一大截。唯一穿过中心的是圆眼那一束，它沿半径，走上去时间不动。</p>
+    </div></div>
+    <div class="rule"><b class="k-sun">白天</b><div>
+      <p>看得见的光能踩。雾来自东侧的瀑布：中庭里终年有雾，回廊里雾很淡，所以只有穿过中庭的光能走。</p>
+      <p>能踩的光有连续的体积、清楚的边界和水雾托着；纹样窗的碎光、棱镜的细色散光和月光束换一种画法，一眼看得出不能踩。</p>
+    </div></div>
+    <div class="rule"><b class="k-moon">夜里：月石</b><div>
+      <p>月石是一种半透明的白色石头（透石膏，selenite，名字就来自塞勒涅）。月光直射或经铜镜反射照到它时，它显出另一种形态：墙里的通路、雕像的另一种姿态、收拢的半桥。普通的柱、梁、楼板和台阶始终是实体。月光束本身不能踩。</p>
+      <p>一段通路要在<b>同一时刻整段都在月光里</b>（中间没有被柱影截断），才算读完；读完以后一直保留，玩家绕去入口时不会因为月亮挪走又关上。</p>
+    </div></div>
+    <div class="rule"><b class="k-moon">月光往下沉</b><div>
+      <p>月亮从东边升起，光穿过打开的光圈落在西墙上。月亮越高，光落得越低：约 10° 时照到 L3，19° 到 L2，31° 到 L1，48° 到水庭（见图 1）。玩家一层层往下走，就是追着月光往下。</p>
+    </div></div>
+    <div class="rule"><b>操作</b><div>
+      <p>雕像转过以后保持朝向。解谜靠两个动作交替：转一格，再沿回廊走，看光和影怎么变。</p>
+    </div></div>
+  </div>
+</section>
+
+<section id="arch">
+  <h2>建筑</h2>
+  <figure><div class="scroll"><svg viewBox="0 0 720 560" role="img" aria-label="东西向示意剖面：四层层高按 3:4 递减，内高等于内径，穹顶中央是圆眼；白天一束光穿过圆眼落到 L3，夜里月光从光圈东缘进来，月亮越高落得越低，依次照到 L3、L2、L1 和水庭。"><rect class="f-water" x="272.8" y="500" width="214.5" height="17.6"/><line class="s-ink" x1="122.6" y1="500" x2="272.8" y2="500"/><line class="s-ink" x1="487.3" y1="500" x2="637.4" y2="500"/><line class="s-ink" x1="365.7" y1="500" x2="365.7" y2="471.4"/><line class="s-ink" x1="394.3" y1="500" x2="394.3" y2="471.4"/><path class="s-ink f-none" d="M361.3 471.4 Q380 453.8 398.7 471.4 Z"/><circle class="s-guide" cx="380" cy="329.5" r="170.5"/><rect class="f-stone s-ink" x="191.9" y="150.2" width="17.6" height="349.8"/><rect class="f-stone s-ink" x="550.5" y="150.2" width="17.6" height="349.8"/><rect class="f-stone s-ink" x="209.5" y="375.3" width="36.4" height="5.5"/><rect class="f-stone s-ink" x="209.5" y="281.8" width="36.4" height="5.5"/><rect class="f-stone s-ink" x="209.5" y="211.6" width="36.4" height="5.5"/><line class="s-col" x1="243.6" y1="500" x2="243.6" y2="387.4"/><line class="s-col" x1="243.6" y1="375.3" x2="243.6" y2="293.9"/><line class="s-col" x1="243.6" y1="281.8" x2="243.6" y2="223.7"/><line class="s-col" x1="243.6" y1="211.6" x2="243.6" y2="165.6"/><line class="s-guide" x1="514.1" y1="375.3" x2="550.5" y2="375.3"/><line class="s-guide" x1="514.1" y1="281.8" x2="550.5" y2="281.8"/><line class="s-guide" x1="514.1" y1="211.6" x2="550.5" y2="211.6"/><rect class="f-fall" x="521.9" y="159" width="20.9" height="341"/><line class="s-fall" x1="524.1" y1="164.5" x2="524.1" y2="489"/><line class="s-fall" x1="527.1" y1="175.5" x2="527.1" y2="478"/><line class="s-fall" x1="530" y1="186.5" x2="530" y2="489"/><line class="s-fall" x1="533" y1="164.5" x2="533" y2="478"/><line class="s-fall" x1="536" y1="175.5" x2="536" y2="489"/><line class="s-fall" x1="539" y1="186.5" x2="539" y2="478"/><line class="s-fall" x1="541.9" y1="164.5" x2="541.9" y2="489"/><rect class="f-stone s-ink" x="191.9" y="150.2" width="147.8" height="8.8"/><rect class="f-stone s-ink" x="420.3" y="150.2" width="147.8" height="8.8"/><line class="s-moon-d" x1="259" y1="154.6" x2="501" y2="154.6"/><polygon class="f-sun" points="514.2,209 514.2,187.7 149,76.1 149,97.4"/><line class="s-sun" x1="514.2" y1="209" x2="149" y2="97.4"/><line class="s-moon" x1="611" y1="140.2" x2="209.5" y2="208.8"/><text class="t-moon" x="203.5" y="212.8" text-anchor="end">10° → L3</text><line class="s-moon" x1="611" y1="120.5" x2="209.5" y2="261.1"/><text class="t-moon" x="203.5" y="265.1" text-anchor="end">19° → L2</text><line class="s-moon" x1="611" y1="91.9" x2="209.5" y2="336.9"/><text class="t-moon" x="203.5" y="340.9" text-anchor="end">31° → L1</text><line class="s-moon" x1="611" y1="37.7" x2="209.5" y2="480.5"/><text class="t-moon" x="203.5" y="484.5" text-anchor="end">48° → 水庭</text><line class="s-ink" x1="119.3" y1="500" x2="130.3" y2="500"/><text class="t-dim" x="113.8" y="435.6" text-anchor="end">11.34 m</text><text class="t-small" x="113.8" y="449.6" text-anchor="end">水庭 · 多立克</text><line class="s-ink" x1="119.3" y1="375.3" x2="130.3" y2="375.3"/><text class="t-dim" x="113.8" y="326.6" text-anchor="end">8.50 m</text><text class="t-small" x="113.8" y="340.6" text-anchor="end">L1 · 爱奥尼</text><line class="s-ink" x1="119.3" y1="281.8" x2="130.3" y2="281.8"/><text class="t-dim" x="113.8" y="244.7" text-anchor="end">6.38 m</text><text class="t-small" x="113.8" y="258.7" text-anchor="end">L2 · 科林斯</text><line class="s-ink" x1="119.3" y1="211.6" x2="130.3" y2="211.6"/><text class="t-dim" x="113.8" y="183.3" text-anchor="end">4.78 m</text><text class="t-small" x="113.8" y="197.3" text-anchor="end">L3 · 女像柱</text><line class="s-ink" x1="124.8" y1="500" x2="124.8" y2="159"/><line class="s-ink" x1="119.3" y1="159" x2="130.3" y2="159"/><text class="t-dim" x="380" y="333.5" text-anchor="middle">内切球：内高 = 内径 = 31 m</text><text class="t-small" x="380" y="134.8" text-anchor="middle">圆眼 7.3 m</text><text class="t-sun" x="325" y="57.8" text-anchor="middle">圆眼光柱：太阳约 17°，沿半径，时间不动</text><text class="t-water" x="532.4" y="528.6" text-anchor="middle">东侧瀑布</text><text class="t-small" x="532.4" y="542.6" text-anchor="middle">（时间接缝）</text><text class="t-moon" x="627.5" y="28" text-anchor="end">月亮从东边升起</text><text class="t-small" x="292" y="134.8" text-anchor="middle">入夜后光圈开到 22 m（虚线）</text><text class="t-sun" x="510.20000000000005" y="225" text-anchor="end">光脚：L3 东北</text><text class="t-small" x="249.6" y="439.5" text-anchor="start">内圈柱廊</text><text class="t-dim" x="171" y="519.8" text-anchor="middle">西</text><text class="t-dim" x="589" y="519.8" text-anchor="middle">东</text></svg></div><figcaption>图 1 · 东西向示意剖面。四层层高按 3:4 递减，内高等于内径，正好容下一个球（虚线）。暖色是日落前穿过圆眼的那束光，沿半径落到 L3；冷色是夜里从光圈东缘进来的月光，月亮越高，落得越低。东侧的瀑布从屋顶落到水庭，把每一层截断。</figcaption></figure>
+  <h3>比例</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>项</th><th>依据</th><th>数值</th></tr></thead>
+    <tbody>
+      <tr><td>内部空间</td><td>万神庙：内高等于内径，正好容下一个球</td><td class="num">内径 31 m，地面到光圈 31 m</td></tr>
+      <tr><td>层高</td><td>维特鲁威：上层柱比下层小四分之一，按 3:4 递减</td><td class="num">11.34 / 8.50 / 6.38 / 4.78 m</td></tr>
+      <tr><td>柱式</td><td>叠柱式，由重到轻</td><td>水庭多立克，L1 爱奥尼，L2 科林斯，L3 女像柱</td></tr>
+      <tr><td>中庭</td><td>中庭半径比内墙半径 = 1 : √φ（开普勒三角形）</td><td class="num">12.19 : 15.5 m</td></tr>
+      <tr><td>圆眼</td><td>内径 ÷ φ³（万神庙的圆眼约为内径的 0.19，这里是 0.24）</td><td class="num">7.3 m</td></tr>
+      <tr><td>外圈开间</td><td>24 开间，每隔一根是时辰柱（十二时辰）</td><td class="num">每间 15°，内墙处约 4 m</td></tr>
+      <tr><td>内圈柱廊</td><td>12 开间；主光轴上用帕拉第奥母题（中间宽拱，两侧窄开间）</td><td class="num">每间 30°</td></tr>
+      <tr><td>墙厚</td><td>厚墙里藏楼梯和壁龛（poché）</td><td class="num">约 1.6 m</td></tr>
+      <tr><td>人体尺度</td><td>以狄西斯的身高为基准，模度尺做尺度检查</td><td class="num">身高 1.8 m，窗台 1.13 m，小门高 2.26 m，栏杆 1.0 m</td></tr>
+    </tbody>
+  </table></div>
+  <h3>窗</h3>
+  <figure><div class="scroll"><svg viewBox="0 0 680 370" role="img" aria-label="立面开间的三种填法：每个开间外观都是同一个半圆拱，拱头统一是石格纹样窗；拱下是主光窗（全开、窗洞斜切对准它服务的太阳方位）、日常采光窗（窗台高、窗窄、窗洞深）或盲拱壁龛（里面是雕像龛）。"><rect class="f-stone s-ink" x="20" y="20" width="200" height="230"/><rect class="f-bg" x="20" y="20" width="18" height="230"/><rect class="f-bg" x="202" y="20" width="18" height="230"/><line class="s-ink" x1="38" y1="20" x2="38" y2="250"/><line class="s-ink" x1="202" y1="20" x2="202" y2="250"/><path class="f-open s-ink" d="M65 230 L65 125 A55 55 0 0 1 175 125 L175 230 Z"/><line class="s-lat" x1="84" y1="83.4" x2="84" y2="125"/><line class="s-lat" x1="102" y1="73" x2="102" y2="125"/><line class="s-lat" x1="120" y1="70" x2="120" y2="125"/><line class="s-lat" x1="138" y1="73" x2="138" y2="125"/><line class="s-lat" x1="156" y1="83.4" x2="156" y2="125"/><line class="s-lat" x1="66.8" y1="111" x2="173.2" y2="111"/><line class="s-lat" x1="75.3" y1="93" x2="164.7" y2="93"/><line class="s-ink" x1="65" y1="125" x2="175" y2="125"/><polygon class="f-sun" points="90,129 172,129 172,230 90,230"/><line class="s-sun" x1="40" y1="110" x2="140" y2="220"/><text class="t-ink" x="120" y="274" text-anchor="middle">主光窗</text><text class="t-small" x="120" y="292" text-anchor="middle">拱下全开，窗洞斜切</text><text class="t-small" x="20" y="308">外</text><text class="t-small" x="20" y="360">内</text><polygon class="f-stone s-ink" points="34,312 86,312 108,346 34,346"/><polygon class="f-stone s-ink" points="140,312 206,312 206,346 164,346"/><line class="s-sun" x1="84" y1="296" x2="138" y2="362"/><line class="s-sun" x1="106" y1="296" x2="160" y2="362"/><rect class="f-stone s-ink" x="240" y="20" width="200" height="230"/><rect class="f-bg" x="240" y="20" width="18" height="230"/><rect class="f-bg" x="422" y="20" width="18" height="230"/><line class="s-ink" x1="258" y1="20" x2="258" y2="250"/><line class="s-ink" x1="422" y1="20" x2="422" y2="250"/><path class="f-open s-ink" d="M285 230 L285 125 A55 55 0 0 1 395 125 L395 230 Z"/><line class="s-lat" x1="304" y1="83.4" x2="304" y2="125"/><line class="s-lat" x1="322" y1="73" x2="322" y2="125"/><line class="s-lat" x1="340" y1="70" x2="340" y2="125"/><line class="s-lat" x1="358" y1="73" x2="358" y2="125"/><line class="s-lat" x1="376" y1="83.4" x2="376" y2="125"/><line class="s-lat" x1="286.8" y1="111" x2="393.2" y2="111"/><line class="s-lat" x1="295.3" y1="93" x2="384.7" y2="93"/><line class="s-ink" x1="285" y1="125" x2="395" y2="125"/><rect class="f-stone s-ink" x="285" y="125" width="110" height="105"/><rect class="f-open s-ink" x="324" y="135" width="32" height="56"/><line class="s-ink" x1="316" y1="191" x2="364" y2="191"/><text class="t-ink" x="340" y="274" text-anchor="middle">日常采光窗</text><text class="t-small" x="340" y="292" text-anchor="middle">窗台高，窗窄，窗洞深而直</text><text class="t-small" x="240" y="308">外</text><text class="t-small" x="240" y="360">内</text><rect class="f-stone s-ink" x="254" y="312" width="74" height="34"/><rect class="f-stone s-ink" x="352" y="312" width="74" height="34"/><rect class="f-stone s-ink" x="460" y="20" width="200" height="230"/><rect class="f-bg" x="460" y="20" width="18" height="230"/><rect class="f-bg" x="642" y="20" width="18" height="230"/><line class="s-ink" x1="478" y1="20" x2="478" y2="250"/><line class="s-ink" x1="642" y1="20" x2="642" y2="250"/><path class="f-open s-ink" d="M505 230 L505 125 A55 55 0 0 1 615 125 L615 230 Z"/><line class="s-lat" x1="524" y1="83.4" x2="524" y2="125"/><line class="s-lat" x1="542" y1="73" x2="542" y2="125"/><line class="s-lat" x1="560" y1="70" x2="560" y2="125"/><line class="s-lat" x1="578" y1="73" x2="578" y2="125"/><line class="s-lat" x1="596" y1="83.4" x2="596" y2="125"/><line class="s-lat" x1="506.8" y1="111" x2="613.2" y2="111"/><line class="s-lat" x1="515.3" y1="93" x2="604.7" y2="93"/><line class="s-ink" x1="505" y1="125" x2="615" y2="125"/><rect class="f-stone s-ink" x="505" y="125" width="110" height="105"/><path class="f-niche s-ink" d="M534 222 L534 155 A26 26 0 0 1 586 155 L586 222 Z"/><circle class="f-ink" cx="560" cy="155" r="6"/><path class="f-ink" d="M551 222 L554 163 L566 163 L569 222 Z"/><text class="t-ink" x="560" y="274" text-anchor="middle">盲拱壁龛</text><text class="t-small" x="560" y="292" text-anchor="middle">外面是盲拱，里面是雕像龛</text><text class="t-small" x="460" y="308">外</text><text class="t-small" x="460" y="360">内</text><rect class="f-stone s-ink" x="474" y="312" width="172" height="34"/><path class="f-niche s-ink" d="M534 346 L534 334 A26 12 0 0 1 586 334 L586 346 Z"/></svg></div><figcaption>图 2 · 立面开间。外圈 24 个开间外观都是同一个半圆拱，拱头统一是石格纹样窗；拱下按职责三选一。下排是平面：主光窗的窗洞斜切，对准它服务的那段太阳方位，其他时刻的光被厚墙挡住。</figcaption></figure>
+  <ul>
+    <li><b>主光窗</b>：拱下全开，只放在光路需要的开间。窗洞斜切，所以只在它服务的时段透光。立面按南北轴对称：西半边的主光窗为太阳服务，东半边的为月亮服务。</li>
+    <li><b>日常采光窗</b>：窗台高、窗窄、窗洞深。光只落在本层的地面或墙上，不进中庭，所以不会成路；它们提供气氛和方向，也是柱影钟的表盘。</li>
+    <li><b>纹样窗</b>：每个拱头的半月形石格。投下的是碎光，不能踩，可以在墙上投出图案线索。</li>
+    <li><b>盲拱壁龛</b>：外面是浅浮雕的盲拱，里面是雕像龛。托镜像、天鹅、双子都住在这里。这是万神庙、佛罗伦萨洗礼堂都用过的做法，外观的节奏不变，里面也不会多出一束误导的光。</li>
+  </ul>
+  <h3>柱子</h3>
+  <ul>
+    <li>外圈 24 根柱子在墙外。它们的影子只落在日常采光窗的光斑里（柱影钟），或者是玩家要读懂的遮挡。</li>
+    <li>内圈柱廊的每根柱子，要么在光扫过的范围之外，要么就是谜题里的遮挡物。主光轴上的帕拉第奥母题，让光在它服务的时段里只从中间的宽拱穿过。</li>
+    <li>每根柱、每道栏杆、每个拱肩，都要检查它在整段关卡时间里怎样影响光。原型会自动扫一遍各层各时刻的光路来做这项检查。</li>
+  </ul>
+  <h3>瀑布</h3>
+  <ul>
+    <li>从屋顶的天池经东侧的水阶落到水庭，终年不停。它是雾的来源，也把每一层截成一个 C 形，就是时间接缝。</li>
+    <li>傍晚的阳光照在它的水沫上，背对太阳能看到虹（伊莉丝浮雕就在旁边）。</li>
+    <li>夜里月亮从它后面升起，月光穿过水帘，在西墙上投下流动的水纹。白天水庭的水面把波光映在拱顶上。</li>
+  </ul>
+</section>
+
+<section id="route">
+  <h2>路线</h2>
+  <figure><div class="scroll"><svg viewBox="0 0 660 660" role="img" aria-label="路线图，每一圈是一层，从里到外是水庭、L1、L2、L3、屋顶。暖色是白天的路线（顺时针），冷色是夜里的路线（逆时针）；东侧是瀑布，把每一层截断。白天从南边海上进来，每层走西半边和北边，最后从 L3 东北穿过圆眼上屋顶；夜里从屋顶降到 L3 东北，经北、西一层层往下，最后在水庭西北过桥到中心的水亭。"><circle class="f-band" cx="330" cy="330" r="89" stroke-width="30"/><circle class="f-band" cx="330" cy="330" r="133" stroke-width="30"/><circle class="f-band" cx="330" cy="330" r="177" stroke-width="30"/><circle class="f-band" cx="330" cy="330" r="221" stroke-width="30"/><circle class="f-band" cx="330" cy="330" r="265" stroke-width="30"/><path class="f-fall2" d="M562.9 271.9 A240 240 0 0 1 569.4 346.7 L399.8 334.9 A70 70 0 0 0 397.9 313.1 Z"/><path class="s-day" d="M324.9 426.9 A97 97 0 0 1 267.6 255.7"/><path class="s-day" d="M222 420.6 A141 141 0 0 1 305.5 191.1"/><path class="s-day" d="M169.8 422.5 A185 185 0 0 1 151.3 377.9"/><path class="s-day" d="M251.7 545.2 A229 229 0 1 1 500.2 176.8"/><path class="s-day" d="M130.3 516.2 A273 273 0 0 1 201.8 89"/><line class="s-day-l" x1="314.3" y1="629.6" x2="324.9" y2="426.9"/><line class="s-day-l" x1="267.6" y1="255.7" x2="222" y2="420.6"/><line class="s-day-l" x1="305.5" y1="191.1" x2="169.8" y2="422.5"/><line class="s-day-l" x1="151.3" y1="377.9" x2="251.7" y2="545.2"/><path class="s-day-l" d="M500.2 176.8 L330 330 L130.3 516.2"/><path class="s-night" d="M571.5 242.1 A257 257 0 1 1 209.3 103.1"/><path class="s-night" d="M117.8 311.4 A213 213 0 0 1 530.2 257.1"/><path class="s-night" d="M191.6 426.9 A169 169 0 0 1 162.6 353.5"/><path class="s-night" d="M392.5 438.3 A125 125 0 0 1 258.3 432.4"/><path class="s-night" d="M277.9 268 A81 81 0 0 1 400.1 289.5"/><line class="s-night-l" x1="571.5" y1="242.1" x2="530.2" y2="257.1"/><line class="s-night-l" x1="117.8" y1="311.4" x2="162.6" y2="353.5"/><line class="s-night-l" x1="191.6" y1="426.9" x2="258.3" y2="432.4"/><path class="s-night-l" d="M392.5 438.3 Q431.4 347.9 400.1 289.5"/><line class="s-night-l" x1="277.9" y1="268" x2="317.1" y2="314.7"/><circle class="f-moon" cx="330" cy="330" r="9"/><circle class="f-sun-dot" cx="314.3" cy="629.6" r="4.5"/><text class="t-sun t-b" x="314.3" y="649.6" text-anchor="middle">序</text><circle class="f-sun-dot" cx="236.3" cy="355.1" r="4.5"/><text class="t-sun t-b" x="236.3" y="346.1" text-anchor="middle">日1</text><circle class="f-sun-dot" cx="259.5" cy="207.9" r="4.5"/><text class="t-sun t-b" x="245.5" y="201.9" text-anchor="middle">日2</text><circle class="f-sun-dot" cx="156.2" cy="393.3" r="4.5"/><text class="t-sun t-b" x="142.2" y="385.3" text-anchor="middle">日3</text><circle class="f-sun-dot" cx="108.8" cy="270.7" r="4.5"/><text class="t-sun t-b" x="92.8" y="264.7" text-anchor="middle">日4</text><circle class="f-sun-dot" cx="93.6" cy="193.5" r="4.5"/><text class="t-sun t-b" x="79.6" y="183.5" text-anchor="middle">日5</text><circle class="f-moon-dot" cx="532.6" cy="264.2" r="4.5"/><text class="t-moon t-b" x="548.6" y="278.2" text-anchor="middle">月1</text><circle class="f-moon-dot" cx="120.2" cy="293" r="4.5"/><text class="t-moon t-b" x="137.2" y="307" text-anchor="middle">月2</text><circle class="f-moon-dot" cx="176.8" cy="401.4" r="4.5"/><text class="t-moon t-b" x="192.8" y="415.4" text-anchor="middle">月3</text><circle class="f-moon-dot" cx="295.5" cy="450.2" r="4.5"/><text class="t-moon t-b" x="279.5" y="444.2" text-anchor="middle">月4</text><circle class="f-moon-dot" cx="277.9" cy="268" r="4.5"/><text class="t-moon t-b" x="293.9" y="280" text-anchor="middle">月5</text><text class="t-small" x="621.1" y="406.6" text-anchor="start">瀑布</text><text class="t-small" x="621.1" y="417.6" text-anchor="start">（时间接缝）</text><text class="t-small" x="330" y="316" text-anchor="middle">圆眼</text><text class="t-small" x="187.3" y="65.6" text-anchor="end">虹门·浑天仪</text><text class="t-dim" x="387.2" y="402.2" text-anchor="middle">水庭</text><text class="t-dim" x="415.5" y="435.9" text-anchor="middle">L1</text><text class="t-dim" x="443.8" y="469.6" text-anchor="middle">L2</text><text class="t-dim" x="472.1" y="503.3" text-anchor="middle">L3</text><text class="t-dim" x="500.3" y="537" text-anchor="middle">屋顶</text><text class="t-ink t-b" x="330" y="19" text-anchor="middle">北</text><text class="t-ink t-b" x="646" y="335" text-anchor="middle">东</text><text class="t-ink t-b" x="330" y="651" text-anchor="middle">南</text><text class="t-ink t-b" x="14" y="335" text-anchor="middle">西</text></svg></div><figcaption>图 3 · 路线图。每一圈是一层，从里到外是水庭、L1、L2、L3、屋顶；方位是真的，北在上。暖色是白天（顺时针），冷色是夜里（逆时针）；实线连接是光路，虚线是月石显出的楼梯。白天每层走西半边和北边，夜里经北、西、南一层层往下，东边是瀑布。方位和时刻是初排，原型里再解算。</figcaption></figure>
+</section>
+
+<section id="day">
+  <h2>白天</h2>
+  <div class="levels">
+    <div class="lv d"><div class="h"><b>序 · 海上石柱</b><span>塔南边的海上 → 南门</span><i>太阳 34°，正南</i></div><div class="b">
+      <ul>
+        <li>玩家站在海上一根石柱的顶上，柱顶立着一道天然石拱。太阳在身后。</li>
+        <li>光穿过石拱，落进石柱自己的影子里，斜着铺过海峡，落到塔的南门，海浪的水沫让它显形。沿着它走下去，从南门进塔。</li>
+        <li>第一课：绕着柱顶走，时间在变，光一会儿穿过石拱、一会儿被挡；朝塔走（沿半径），时间不动。</li>
+        <li>背对太阳，水沫里有一道虹，正好框住塔。</li>
+      </ul>
+      <figure><div class="scroll"><svg viewBox="0 0 540 340" role="img" aria-label="开场的南北剖面：塔南边海上一根石柱，柱顶的天然石拱让正午的阳光穿过去，落进石柱自己的影子里，斜着铺过海峡到塔的南门；玩家背对太阳沿光走下去，水沫里有一道虹。"><polygon class="f-shadow" points="106,70 432.2,290 106,290"/><rect class="f-water" x="18" y="290" width="484" height="30"/><path class="f-stone s-ink" d="M29 301 L34.5 180 L45.5 130.5 L111.5 130.5 L122.5 191 L128 301 Z"/><path class="f-stone s-ink" d="M84 130.5 L84 70 L106 70 L106 130.5 L106 97.5 L84 97.5 Z"/><rect class="f-open" x="84" y="97.5" width="22" height="33"/><polygon class="f-sun" points="84,115.7 84,97.5 106,112.4 265.5,219.9 265.5,238.1 106,130.5"/><line class="s-sun" x1="106" y1="130.5" x2="265.5" y2="238.1"/><line class="s-sun-thin" x1="-26" y1="26" x2="40" y2="70.5"/><line class="s-sun-thin" x1="12.5" y1="26" x2="78.5" y2="70.5"/><line class="s-sun-thin" x1="51" y1="26" x2="117" y2="70.5"/><text class="t-sun" x="23.5" y="19.4">太阳约 34°，在身后</text><circle class="f-mist" cx="133.5" cy="285.6" r="1.6"/><circle class="f-mist" cx="213.8" cy="244.9" r="1.6"/><circle class="f-mist" cx="162.1" cy="250.4" r="1.6"/><circle class="f-mist" cx="242.4" cy="255.9" r="1.6"/><circle class="f-mist" cx="190.7" cy="261.4" r="1.6"/><circle class="f-mist" cx="139" cy="266.9" r="1.6"/><circle class="f-mist" cx="219.3" cy="272.4" r="1.6"/><circle class="f-mist" cx="167.6" cy="277.9" r="1.6"/><circle class="f-mist" cx="247.9" cy="283.4" r="1.6"/><circle class="f-mist" cx="196.2" cy="242.7" r="1.6"/><circle class="f-mist" cx="144.5" cy="248.2" r="1.6"/><circle class="f-mist" cx="224.8" cy="253.7" r="1.6"/><circle class="f-mist" cx="173.1" cy="259.2" r="1.6"/><circle class="f-mist" cx="253.4" cy="264.7" r="1.6"/><circle class="f-mist" cx="201.7" cy="270.2" r="1.6"/><circle class="f-mist" cx="150" cy="275.7" r="1.6"/><circle class="f-mist" cx="230.3" cy="281.2" r="1.6"/><circle class="f-mist" cx="178.6" cy="240.5" r="1.6"/><circle class="f-mist" cx="258.9" cy="246" r="1.6"/><circle class="f-mist" cx="207.2" cy="251.5" r="1.6"/><circle class="f-mist" cx="155.5" cy="257" r="1.6"/><circle class="f-mist" cx="235.8" cy="262.5" r="1.6"/><circle class="f-mist" cx="184.1" cy="268" r="1.6"/><circle class="f-mist" cx="264.4" cy="273.5" r="1.6"/><circle class="f-mist" cx="212.7" cy="279" r="1.6"/><circle class="f-mist" cx="161" cy="284.5" r="1.6"/><path fill="none" stroke="#d95b43" stroke-width="1.6" d="M155.5 283.4 A46.2 46.2 0 0 1 247.9 283.4"/><path fill="none" stroke="#e3a13b" stroke-width="1.6" d="M156.8 283.4 A44.9 44.9 0 0 1 246.6 283.4"/><path fill="none" stroke="#8fb85a" stroke-width="1.6" d="M158.1 283.4 A43.6 43.6 0 0 1 245.3 283.4"/><path fill="none" stroke="#4a8cc4" stroke-width="1.6" d="M159.5 283.4 A42.2 42.2 0 0 1 243.9 283.4"/><path fill="none" stroke="#7b62b5" stroke-width="1.6" d="M160.8 283.4 A40.9 40.9 0 0 1 242.6 283.4"/><rect class="f-stone s-ink" x="268.8" y="235" width="242" height="6.6"/><rect class="f-stone s-ink" x="271" y="26" width="17.6" height="159.5"/><text class="t-ink" x="297.4" y="213">塔的南门</text><text class="t-small" x="297.4" y="114">塔的南墙</text><circle class="f-ink" cx="65.3" cy="112.9" r="3"/><line class="s-ink" x1="65.3" y1="116.2" x2="65.3" y2="129.4"/><text class="t-small" x="62" y="56.8" text-anchor="middle">天然石拱</text><text class="t-small" x="188.5" y="312" text-anchor="middle">水沫里的虹（背对太阳才看得见）</text><text class="t-small" x="205" y="151.4">石柱的影子</text><text class="t-dim" x="29" y="328.6">南</text><text class="t-dim" x="491" y="328.6" text-anchor="end">北</text></svg></div><figcaption>图 4 · 开场的南北剖面。光只能从高处往远离太阳的方向铺，所以开场是从石柱往下走进塔。塔在影子里，光在影子里才显得出来。</figcaption></figure>
+    </div></div>
+    <div class="lv d"><div class="h"><b>日1 · 正午·水庭</b><span>水庭：南 → 西 → 西北</span><i>太阳 34° → 32°</i></div><div class="b"><ul>
+      <li><b>子午线</b>：南墙高处一个小孔，太阳的圆斑落在西侧地面一条嵌铜的时辰线上（ΣΤ Ζ Η Θ），随脚步滑动，把人领到西北。</li>
+      <li><b>第一束光</b>：从 L1 西南的主光窗斜穿中庭，落到水庭西北。它是一条偏在一侧的弦，走在上面光会跟着时间摆动。</li>
+      <li>水面的波光映在拱顶上。</li>
+    </ul></div></div>
+    <div class="lv d"><div class="h"><b>日2 · 午后·柱廊</b><span>L1：西南 → 西 → 北</span><i>太阳 32° → 29°</i></div><div class="b"><ul>
+      <li>L1 北侧回廊内沿是爱奥尼柱廊，通往 L2 的主光轴上是帕拉第奥母题：中间一个宽拱，两边各一个窄开间。</li>
+      <li>走动时太阳在动，光束在柱廊上横着滑。大多数时候它被柱子切成两半，每一半都太窄、踩不上；只有穿过中间宽拱的那一段时间，落到回廊上的是完整的一束。</li>
+      <li><b>柱影钟</b>：日常采光窗在墙上投下光斑，外圈时辰柱的影子从光斑里扫过。</li>
+    </ul></div></div>
+    <div class="lv d"><div class="h"><b>日3 · 申时·三相</b><span>L2：西南 → 西</span><i>太阳 29° → 25°</i></div><div class="b"><ul>
+      <li>托镜像站在西侧的壁龛里。转动底座时，日常采光窗把她的影子投在龛壁的壁画上；转到对的格子，影子补上壁画里的缺口，说明这个朝向有意义。</li>
+      <li>在这个朝向上，太阳照到她脸上，她举起铜镜，把上窗的光反射上 L3。这是主线。</li>
+    </ul></div></div>
+    <div class="lv d"><div class="h"><b>日4 · 酉时·光阶</b><span>L3：南 → 西 → 北 → 东北</span><i>太阳 25° → 17°</i></div><div class="b"><ul>
+      <li><b>光阶</b>：西侧三扇相邻、同高的主光窗。太阳斜着照进来，三束平行的光在中庭里一束比一束高，从一束跳到下一束。立面上三扇窗一样高，高差来自光的斜度。</li>
+      <li><b>延迟反射（日之龛）</b>：走在光阶上时间在走，另一扇窗的光扫到楼下那尊托镜像上，还是日3 转好的朝向。反射光从侧下方升起，贴到光阶旁边的石台；跳过去，就是日之龛。</li>
+      <li>路过西侧时，会看到一尊女神像，身后的浮雕上几只天鹅中间空着一块（月2 用）。</li>
+    </ul></div></div>
+    <div class="lv d"><div class="h"><b>日5 · 日落·最后一缕</b><span>L3 东北 → 圆眼 → 屋顶</span><i>太阳 17° → 落山</i></div><div class="b"><ul>
+      <li><b>圆眼光柱</b>：太阳降到约 17° 时，光从穹顶正中的圆眼射下来，脚正好落在 L3 东北的回廊上。它沿半径，走上去时间不动，是白天唯一静止的光。</li>
+      <li><b>伊莉丝浮雕（虹之龛，可选）</b>：在光脚旁边、瀑布的水沫前。站进光里，自己影子的头落进浮雕上空着的人形，一圈虹出现在水沫里；虹桥伸到对面，那里是虹之龛，棱镜把光分成七色投到北墙的塞勒涅。</li>
+      <li>穿过圆眼上到屋顶，朝太阳走到环道边（西南），顺时针往上。岛影一路追上来。</li>
+      <li>最高一级在西北偏北：走到这里时人正好背对夕阳，看到虹填满拱门；穿过拱门，浑天仪里的太阳就是金苹果。台阶全部升起时它亮起来；取下它，天黑了。</li>
+    </ul></div></div>
+  </div>
+</section>
+
+<section id="night">
+  <h2>夜里</h2>
+  <div class="levels">
+    <div class="lv n"><div class="h"><b>月1 · 月升·读墙</b><span>屋顶 → L3 东北</span><i>月亮 0° → 5°，东北偏东</i></div><div class="b"><ul>
+      <li>逆时针往回走，升起的台阶一级级落平；过了西南继续逆时针，另外半圈降成阶梯，经过南面和瀑布的源头，下到 L3。</li>
+      <li>最后一段楼梯藏在月石墙里。月亮刚出海，从东北的窗照进来，窗间墙墩的影子把楼梯截成几段。往前走一步，月亮挪一点，影子跟着滑。找到整段楼梯同时被照亮的那一刻，它就读完了，留下来。</li>
+      <li>这是第一次教月石的规则。</li>
+    </ul></div></div>
+    <div class="lv n"><div class="h"><b>月2 · 初夜·天鹅</b><span>L3：东北 → 北 → 西</span><i>月亮 7° → 13°</i></div><div class="b"><ul>
+      <li>白天见过的女神像。月光从打开的光圈照过来，她变成一只白天鹅，墙上的影子是一只黑天鹅。</li>
+      <li>转动底座，让黑天鹅的朝向和浮雕上的天鹅一致；再沿回廊走，让月亮把影子挪进空白处。雕像离浮雕约 2.5 米时，影子随脚步上下移动约 0.3 米。</li>
+      <li>吻合时，浮雕旁边的墙显出下行的楼梯。</li>
+      <li>铭文（建议）："湖上七只天鹅，第七只只在月光里回来。"</li>
+      <li>和芭蕾正好反过来：芭蕾里奥杰塔白天是天鹅、夜里变回人；这里月光照出的真形是天鹅，影子是黑天鹅奥吉莉亚。</li>
+      <li>制作时倒着来：先定白天鹅的形体和正确的月角，实际投出影子，再按影子画浮雕的空白。</li>
+    </ul></div></div>
+    <div class="lv n"><div class="h"><b>月3 · 中夜·双子</b><span>L2 西</span><i>月亮 13° → 27°</i></div><div class="b"><ul>
+      <li>一尊固定的像站在西侧，光圈照下来的月光在这一段时间里一直照着她，显出半边拱。另一尊藏在厚墙后的侧龛里，直射月光照不到。</li>
+      <li>托镜像还在这里。转动她，把月光反射进侧龛，沿一条径向轨道照过去。另一尊显形后，沿轨道把她推向固定的那尊：沿半径走，月亮不动，光一直在；推的人在雕像后面，挡不住光；光没了，雕像停在原地。</li>
+      <li>两尊合拢，拱背补成一座桥，跨过地面的断口，通往下 L1 的楼梯。合拢的拱卡住托镜像的底座，她的朝向从此固定。</li>
+      <li>建议用狄俄斯库里双子（卡斯托耳与波吕丢刻斯）：一个凡人、一个永生，宙斯让他们轮流在天上和冥府，正好是日夜交替。</li>
+    </ul></div></div>
+    <div class="lv n"><div class="h"><b>月4 · 夜半·镜下</b><span>L1：西南 → 南 → 东南</span><i>月亮 27° → 40°</i></div><div class="b"><ul>
+      <li>楼梯的下一段藏在南侧、L2 楼板下的夹层里。月亮已经很高，直射太陡，只能擦过楼板边。</li>
+      <li>沿 L1 逆时针走，月亮升高，楼上托镜像的反射光慢慢扫进楼板下面，照出夹层里的通道。观察点能同时看到铜镜、反射光和目标。</li>
+      <li>夹层里有一扇小窗，往外看是白天走过的平台底部。</li>
+      <li><b>月之龛（支路）</b>：继续往前走，反射光扫到另一处，照出一个小龛。</li>
+      <li>上一关把托镜像卡在唯一的朝向，所以这一关一定可解。</li>
+    </ul></div></div>
+    <div class="lv n"><div class="h"><b>月5 · 子夜·水亭</b><span>水庭：东北 → 北 → 西北 → 水亭</span><i>月亮 40° → 75°，转到正南</i></div><div class="b">
+      <ul>
+        <li>下行的楼梯穿过瀑布后面的墙，出到水庭东北，沿岸逆时针走。</li>
+        <li>池里有两段收拢的月石半桥。<b>A</b> 在西北岸边，光圈照下来的月光照得到它，但亭柱和上层楼板边的影子会挡住一部分；<b>B</b> 在亭子檐下，永远在亭顶的影子里，只能靠岸边托镜像反射。</li>
+        <li>沿岸走选月角，转铜镜选反射方向。要同时满足三件事：A 被照亮；镜子被照亮；反射光越过展开的 A 照进檐下的 B。两段同时展开、接合，才是一座稳定的石桥。</li>
+        <li>桥沿半径通向亭子，走过去时间不动。浑天仪的月亮位置是一个空托，放上金苹果，它变成月亮。</li>
+        <li>水面倒映着桥和亭柱，帮玩家看清藏在后面的光。</li>
+      </ul>
+      <figure><div class="scroll"><svg viewBox="0 0 500 460" role="img" aria-label="水亭平面：月亮在东南约 70°，光圈照下来的亮区偏向西北，盖住西北岸边的半桥 A；亭顶的影子也伸向西北，罩住檐下的半桥 B，只有岸边托镜像的反射光能照进去；玩家沿西北岸走选月角。"><defs><clipPath id="pool"><circle cx="250" cy="225" r="165.75"/></clipPath></defs><circle class="f-stone s-ink" cx="250" cy="225" r="190.4"/><circle class="f-water s-ink" cx="250" cy="225" r="165.75"/><circle class="f-lit" cx="139.1" cy="83" r="187" clip-path="url(#pool)"/><circle class="f-shadow2" cx="239.5" cy="211.6" r="37.4"/><circle class="s-ink f-none s-dash" cx="250" cy="225" r="37.4"/><circle class="f-ink" cx="258.5" cy="204.6" r="2.6"/><circle class="f-ink" cx="270.4" cy="216.5" r="2.6"/><circle class="f-ink" cx="270.4" cy="233.5" r="2.6"/><circle class="f-ink" cx="258.5" cy="245.4" r="2.6"/><circle class="f-ink" cx="241.5" cy="245.4" r="2.6"/><circle class="f-ink" cx="229.6" cy="233.5" r="2.6"/><circle class="f-ink" cx="229.6" cy="216.5" r="2.6"/><circle class="f-ink" cx="241.5" cy="204.6" r="2.6"/><circle class="f-moon" cx="250" cy="225" r="5"/><line class="s-bridgeA" x1="150.6" y1="97.7" x2="213.4" y2="178.1"/><line class="s-bridgeB" x1="213.4" y1="178.1" x2="225.9" y2="194.2"/><text class="t-moon t-b" x="193.9" y="127.8">A</text><text class="t-moon t-b" x="229.6" y="174.6">B</text><rect class="f-ink" x="82.1" y="154.8" width="8" height="8" transform="rotate(20 86.1 158.8)"/><line class="s-moon-arrow" x1="86.1" y1="158.8" x2="221" y2="185.1" marker-end="url(#arr)"/><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-moon-dot" d="M0 0 L10 5 L0 10 Z"/></marker></defs><line class="s-moon-arrow" x1="392.3" y1="407.2" x2="363" y2="369.7" marker-end="url(#arr)"/><text class="t-moon" x="384.3" y="423.2" text-anchor="middle">月亮约 70°，东南</text><path class="s-night" d="M219 49.2 A178.5 178.5 0 0 0 95.4 135.8"/><text class="t-moon" x="197.2" y="28" text-anchor="middle">沿岸走：选月角</text><text class="t-small" x="53.7" y="176.1" text-anchor="end">岸边托镜像</text><text class="t-small" x="291.9" y="110" text-anchor="middle">光圈照下来的亮区</text><text class="t-small" x="209" y="270.5" text-anchor="end">亭顶的影子</text><text class="t-small" x="300.2" y="233.9" text-anchor="start">浑天仪（月亮位置是空托）</text><text class="t-ink t-b" x="250" y="10.8" text-anchor="middle">北</text></svg></div><figcaption>图 5 · 水亭平面（北在上）。月亮在东南约 70° 时，光圈照下来的亮区偏向西北，盖住半桥 A；亭顶的影子也伸向西北，罩住檐下的 B，只有岸边托镜像的反射光能照进去。</figcaption></figure>
+    </div></div>
+  </div>
+  <p class="note">神龛里的碎片建议用柏拉图《蒂迈欧篇》的正多面体：日是正四面体（火），虹是正八面体（气），月是正二十面体（水）。集齐三片合成正十二面体，柏拉图说它是宇宙的形状，对应黎明结局。</p>
+</section>
+
+<section id="check">
+  <h2>几何校核</h2>
+  <p class="muted">下面的数都用游戏里的日月轨道算过（纬度 35°，太阳赤纬 −21°，月亮赤纬 +20°）。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>项目</th><th>算出来的</th><th>结论</th></tr></thead>
+    <tbody>
+      <tr><td>圆眼登顶</td><td>圆眼 7.3 m，铜环厚 0.3 m。太阳 17–17.5° 时，光穿过圆眼的净高 1.9–2.0 m，光脚落在 L3 离塔心 12.5–13 m 处</td><td>可行。能通过的时间很短，正好做成"对准"的一刻。圆眼放大到 8 m，太阳 15.5–17° 都行</td></tr>
+      <tr><td>虹门朝向</td><td>日落时太阳在方位约 242°。最高一级放在约 332°，顺时针走到那里时正好背对太阳</td><td>先看到虹，再穿过拱门，成立</td></tr>
+      <tr><td>开场石柱</td><td>正午太阳约 34°。石拱比南门高约 11 m 时，海峡约 16 m 宽；石柱的影子盖住海峡和南门的下半</td><td>光在影子里显形，成立</td></tr>
+      <tr><td>月光下沉</td><td>从光圈东缘进来的月光落到西墙的高度：月亮 10° 到 L3，19° 到 L2，31° 到 L1，48° 到水庭；每一条都从上层楼板边下面穿过</td><td>成立，是夜间路线的骨架</td></tr>
+      <tr><td>水亭</td><td>月亮约 70°（东南）时，光圈投在水面的亮区偏西北约 11 m；亭顶的影子向西北伸出约 1 m</td><td>A 在亮区里，B 在亭影里，成立</td></tr>
+      <tr><td>天鹅影子</td><td>雕像离浮雕 2.5 m，月亮 7–13°</td><td>影子随月亮上下移动约 0.3 m，走动选月角有意义</td></tr>
+      <tr><td>楼层间的光路</td><td>穿过中庭中心附近时，几步之内方位角变化很大，时间跳一大截</td><td>规定：层间光路都是偏在一侧的弦；只有圆眼那一束穿过中心</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="next">
+  <h2>待定与下一步</h2>
+  <ul>
+    <li>图 3 的方位和每关的时刻是初排。原型里按"每层等时线均匀、层与层之间时间接得上"用解算器再定，窗、柱、雕像的位置跟着光反推。</li>
+    <li>要你确认的：开场改成从石柱往下走进塔；瀑布放在东侧当时间接缝；双子用卡斯托耳与波吕丢刻斯；伊莉丝浮雕放在圆眼光脚旁边。</li>
+    <li>确认后重做原型：先搭新的建筑（比例、开间、柱廊、瀑布、圆眼），再从序章开始逐关做，每做完一关跑一次完整通关和光路扫查。</li>
+  </ul>
+</section>
+
+<footer>狄西斯的日落回廊 · 方案 v0.4。现有的设计文档是 v0.3，这份方案确认后会合并进去。</footer>
+</div>
+</body></html>
