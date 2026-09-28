@@ -9,15 +9,18 @@ const root=resolve(import.meta.dirname,'..');
 const entry=resolve(root,'prototype/rotunda/main.js');
 const nodes=new Map();
 function node(id){
- if(!nodes.has(id))nodes.set(id,{
-  id,style:{},classList:{add(){},remove(){},toggle(){},contains(){return false;}},
+ if(!nodes.has(id)){
+  const classes=new Set(['#map','#pause','#journey','#controls','#resume','#ending'].includes(id)?['hidden']:[]);
+  nodes.set(id,{
+  id,style:{},classList:{add(name){classes.add(name);},remove(name){classes.delete(name);},toggle(name,force){if(force===undefined?classes.has(name):!force){classes.delete(name);return false;}classes.add(name);return true;},contains(name){return classes.has(name);}},
   addEventListener(){},getContext(){return context;},setPointerCapture(){},
   textContent:'',visible:true,
- });
+  });
+ }
  return nodes.get(id);
 }
 const context={fillRect(){},clearRect(){},beginPath(){},arc(){},stroke(){},fill(){},moveTo(){},lineTo(){},fillText(){},measureText(){return{width:32};}};
-globalThis.document={querySelector:node,createElement:()=>({width:0,height:0,getContext:()=>context})};
+globalThis.document={querySelector:node,createElement:()=>({width:0,height:0,getContext:()=>context}),addEventListener(){},pointerLockElement:null,exitPointerLock(){}};
 globalThis.window=globalThis;
 globalThis.addEventListener=()=>{};
 globalThis.location={search:'?debug=1'};

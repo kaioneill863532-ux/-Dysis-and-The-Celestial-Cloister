@@ -4,9 +4,10 @@ import {build} from 'esbuild';
 
 const root=resolve(import.meta.dirname,'..','prototype','rotunda');
 const entry=resolve(root,'main.js');
-const [html,css,faces,license,result]=await Promise.all([
+const [html,css,cameraCss,faces,license,result]=await Promise.all([
  readFile(resolve(root,'index.html'),'utf8'),
  readFile(resolve(root,'style.css'),'utf8'),
+ readFile(resolve(root,'camera.css'),'utf8'),
  readFile(resolve(root,'fonts/faces.css'),'utf8'),
  readFile(resolve(root,'fonts/OFL.txt'),'utf8'),
  build({entryPoints:[entry],bundle:true,write:false,format:'iife',minify:true,target:'es2022',legalComments:'inline'}),
@@ -20,6 +21,7 @@ const js=result.outputFiles[0].text;
 const standalone=html
  .replace('<link rel="stylesheet" href="./fonts/faces.css">',`<style>${inlineFaces}\n/* Noto Serif SC font license\n${license}\n*/</style>`)
  .replace('<link rel="stylesheet" href="./style.css">',`<style>${css}</style>`)
+ .replace('<link rel="stylesheet" href="./camera.css">',`<style>${cameraCss}</style>`)
  .replace('<script type="module" src="./main.js"></script>',`<script>${js.replaceAll('</script','<\\/script')}</script>`);
 if(!standalone.includes('data:font/woff2;base64,')||!standalone.includes('<script>')||standalone.includes('src="./main.js"')||standalone.includes('href="./fonts/faces.css"'))throw new Error('Standalone substitution incomplete.');
 await writeFile(resolve(root,'play.html'),standalone,'utf8');

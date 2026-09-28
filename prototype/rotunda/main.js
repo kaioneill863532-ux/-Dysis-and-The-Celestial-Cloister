@@ -19,8 +19,12 @@ const notices=[];
 let started=false,ended=false,stage=0,night=false,phase=0,source=sunDirection(0),elapsed=0,iris=0,apple=false;
 let checkpoint={stage:0,position:radial(14,20,0),phase:0},lastToast=0;
 let sunYaw=.32,moonYaw=.3,swanYaw=.7,poolYaw=-.32,railT=0;
-let cameraYaw=1.13,cameraPitch=.24,cameraDistance=5.5,dragging=false,overview=false;
-let nearest=null,lastE=false,lastH=false,lastX=false,lastTab=false,fallPeak=0;
+let cameraYaw=1.13,cameraPitch=.24,cameraDistance=5.5,cameraActualDistance=5.5;
+let mouseLocked=false,lockPending=false,hoverFallback=false,manualPaused=false,lastMouse=null;
+const SENSITIVITY_KEY='dysis-camera-sensitivity';
+let mouseSensitivity=.9;
+try{const stored=Number(localStorage.getItem(SENSITIVITY_KEY));if(Number.isFinite(stored)&&stored>=.5&&stored<=1.5)mouseSensitivity=stored;}catch{}
+let nearest=null,lastE=false,lastH=false,lastX=false,fallPeak=0;
 let n1Score=0,pairReady=false,oldReady=false,poolReady=false;
 let n1Exposure=false,n2Direct=false,n2Reflected=false,poolAExposure=false,poolBExposure=false;
 const progress=new NightProgress(),keys=new Set();
@@ -408,7 +412,7 @@ function markAndAct(kind){
   if(!apple){toast('浑天仪的空位还在等待金苹果。');return;}
   ended=true;finalArmillary.userData.apple.visible=true;
   $('#ending-journal').textContent=shrines.filter(s=>s.active).length===3?'三座小龛也记住了你走过的光。':'你走过的每一道光，都留在建筑里。';
-  $('#ending').classList.remove('hidden');save();return;
+  $('#ending').classList.remove('hidden');if(mouseLocked)document.exitPointerLock();save();return;
  }
  const shrine=shrines.find(s=>s.id===kind);
  if(shrine&&!shrine.active){shrine.active=true;shrine.marker.material.color.set('#fff0be');toast(`${shrine.name} · 这束光有了见证。`);save();}
@@ -472,46 +476,105 @@ function updateCelestial(){
 }
 function cameraUpdate(dt){
  const p=V(player.position),look=p.clone().add(new THREE.Vector3(0,1.4,0));
- const distanceWanted=overview?22:cameraDistance;
- const raw=look.clone().add(new THREE.Vector3(Math.sin(cameraYaw)*Math.cos(cameraPitch)*distanceWanted,Math.sin(cameraPitch)*distanceWanted+1.1,Math.cos(cameraYaw)*Math.cos(cameraPitch)*distanceWanted));
- const trace=new THREE.Raycaster(look,raw.clone().sub(look).normalize(),.1,distanceWanted);
+ const orbit=new THREE.Vector3(Math.sin(cameraYaw)*Math.cos(cameraPitch),Math.sin(cameraPitch),Math.cos(cameraYaw)*Math.cos(cameraPitch));
+ const trace=new THREE.Raycaster(look,orbit,.1,cameraDistance);
  const hit=trace.intersectObjects([...art.occluders,...world.occluders].filter(m=>m.visible),false)[0];
- if(hit)raw.copy(look).add(raw.sub(look).normalize().multiplyScalar(Math.max(.7,hit.distance-.24)));
- camera.position.lerp(raw,Math.min(1,dt*9));camera.lookAt(look);
+ const clearance=hit?Math.max(.7,hit.distance-.24):cameraDistance;
+ const desired=Math.min(cameraDistance,clearance);
+ // Keep the orbit angle exact. Only ease the camera back out after an obstruction clears.
+ cameraActualDistance=desired<cameraActualDistance?desired:lerp(cameraActualDistance,desired,1-Math.exp(-dt*8));
+ camera.position.copy(look).addScaledVector(orbit,cameraActualDistance);camera.lookAt(look);
  avatar.position.set(...player.position);avatar.rotation.y=cameraYaw+Math.PI;
+}
+function paused(){return manualPaused||!$('#map').classList.contains('hidden')||(!mouseLocked&&!hoverFallback);}
+function syncPause(){
+ $('#pause').classList.toggle('hidden',!started||ended||!$('#map').classList.contains('hidden')||lockPending||!paused());
+}
+function fallbackMouse(){
+ lockPending=false;hoverFallback=true;manualPaused=false;lastMouse=null;syncPause();
+ toast('鼠标锁定不可用：在画面内直接移动鼠标环视。');
+}
+function lockMouse(){
+ if(mouseLocked||lockPending)return;
+ const canvas=$('#scene');
+ if(typeof canvas.requestPointerLock!=='function'){fallbackMouse();return;}
+ lockPending=true;manualPaused=false;syncPause();
+ try{const result=canvas.requestPointerLock();if(result?.catch)result.catch(fallbackMouse);}catch{fallbackMouse();}
+}
+function closeMap(){
+ $('#map').classList.add('hidden');syncPause();lockMouse();
+}
+function toggleMap(){
+ if($('#map').classList.contains('hidden')){
+  $('#map').classList.remove('hidden');drawMap();keys.clear();
+  if(mouseLocked)document.exitPointerLock();syncPause();
+ }else closeMap();
 }
 function startGame(resume=false){
  if(resume&&!load()){toast('没有可用存档，从入口开始。');}
  if(!resume){stage=0;night=false;apple=false;player.teleport(radial(14,20,0));checkpoint={stage:0,position:[...player.position],phase:0};save();}
  started=true;$('#welcome').classList.add('hidden');$('#journey').classList.remove('hidden');$('#controls').classList.remove('hidden');
- camera.position.set(player.position[0]+3,player.position[1]+4,player.position[2]+4);updateHUD();
+ cameraActualDistance=cameraDistance;cameraUpdate(0);updateHUD();lockMouse();
 }
 $('#start').addEventListener('click',()=>startGame());
 $('#resume').addEventListener('click',()=>startGame(true));
-$('#close-map').addEventListener('click',()=>$('#map').classList.add('hidden'));
+$('#close-map').addEventListener('click',closeMap);
+$('#continue').addEventListener('click',lockMouse);
+const sensitivityControl=$('#sensitivity');
+sensitivityControl.value=String(mouseSensitivity);
+$('#sensitivity-value').textContent=`${Math.round(mouseSensitivity*100)}%`;
+sensitivityControl.addEventListener('input',()=>{
+ mouseSensitivity=clamp(Number(sensitivityControl.value),.5,1.5);
+ $('#sensitivity-value').textContent=`${Math.round(mouseSensitivity*100)}%`;
+ try{localStorage.setItem(SENSITIVITY_KEY,String(mouseSensitivity));}catch{}
+});
 $('#return').addEventListener('click',()=>$('#ending').classList.add('hidden'));
 $('#restart').addEventListener('click',()=>{try{localStorage.removeItem(SAVE);}catch{}location.reload();});
 try{if(localStorage.getItem(SAVE))$('#resume').classList.remove('hidden');}catch{}
 window.addEventListener('keydown',e=>{
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code))e.preventDefault();
+ if(e.code==='Tab'&&!e.repeat&&started&&!ended){toggleMap();return;}
+ if(e.code==='Escape'){
+  if(mouseLocked)document.exitPointerLock();
+  else if(!$('#map').classList.contains('hidden'))closeMap();
+  else if(hoverFallback){manualPaused=!manualPaused;keys.clear();syncPause();}
+  return;
+ }
+ if(started&&paused())return;
  keys.add(e.code);
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
-window.addEventListener('blur',()=>keys.clear());
-$('#scene').addEventListener('pointerdown',e=>{dragging=true;$('#scene').setPointerCapture(e.pointerId);});
-$('#scene').addEventListener('pointermove',e=>{if(dragging){cameraYaw-=e.movementX*.006;cameraPitch=clamp(cameraPitch+e.movementY*.004,-.1,1.1);}});
-$('#scene').addEventListener('pointerup',()=>dragging=false);
+window.addEventListener('blur',()=>{keys.clear();lastMouse=null;});
+document.addEventListener('pointerlockchange',()=>{
+ mouseLocked=document.pointerLockElement===$('#scene');lockPending=false;lastMouse=null;
+ if(mouseLocked){hoverFallback=false;manualPaused=false;}
+ else keys.clear();
+ syncPause();
+});
+document.addEventListener('pointerlockerror',fallbackMouse);
+$('#scene').addEventListener('pointerdown',()=>{if(started&&!ended&&!mouseLocked&&!hoverFallback&&$('#map').classList.contains('hidden'))lockMouse();});
+$('#scene').addEventListener('pointerleave',()=>lastMouse=null);
+$('#scene').addEventListener('pointermove',e=>{
+ if(!started||ended||paused())return;
+ let dx=e.movementX,dy=e.movementY;
+ if(!mouseLocked){
+  if(lastMouse){dx=e.clientX-lastMouse[0];dy=e.clientY-lastMouse[1];}
+  else{dx=0;dy=0;}
+  lastMouse=[e.clientX,e.clientY];
+ }
+ cameraYaw-=clamp(dx,-70,70)*.0025*mouseSensitivity;
+ cameraPitch=clamp(cameraPitch+clamp(dy,-70,70)*.0019*mouseSensitivity,-.2,.9);
+});
 $('#scene').addEventListener('wheel',e=>{cameraDistance=clamp(cameraDistance+e.deltaY*.008,3.1,11);},{passive:true});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 let last=performance.now();
 function frame(now){
  requestAnimationFrame(frame);const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;elapsed+=dt;
  if(!started){art.update(elapsed,false,0);camera.position.set(31,31,31);camera.lookAt(0,10,0);renderer.render(scene,camera);return;}
- if(!ended){
+ if(!ended&&!paused()){
   const toggle=(code,prior,callback)=>{const held=keys.has(code);if(held&&!prior)callback();return held;};
   lastH=toggle('KeyH',lastH,()=>toast(hints[stage],7));
   lastX=toggle('KeyX',lastX,respawn);
-  lastTab=toggle('Tab',lastTab,()=>{$('#map').classList.toggle('hidden');drawMap();});
   const forward=[-Math.sin(cameraYaw),-Math.cos(cameraYaw)],right=[Math.cos(cameraYaw),-Math.sin(cameraYaw)];
   const w=Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown'));
   const d=Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft'));
@@ -528,9 +591,9 @@ function frame(now){
  cameraUpdate(dt);renderer.render(scene,camera);
 }
 // A test hook only for isolated visual fixtures; real route QA uses key input.
-if(debug)window.__dysisQA={get state(){return{stage,phase,night,apple,position:[...player.position],grounded:player.grounded,ready:{swan:n1Bridge.enabled,pair:pairReady,old:oldReady,pool:poolReady},exposure:{n1Exposure,n2Direct,n2Reflected,poolAExposure,poolBExposure}};},
-  fixture(n,pos){if(!Number.isInteger(n)||n<0||n>9||!Array.isArray(pos)||pos.length!==3)return;stage=n;night=n>=5;iris=n>=5?1:0;player.teleport(pos);checkpoint={stage:n,position:[...pos],phase:0};cameraUpdate(1);},
-  view(yaw,pitch,distance){cameraYaw=yaw;cameraPitch=pitch;cameraDistance=distance;cameraUpdate(1);},
+if(debug)window.__dysisQA={get state(){return{stage,phase,night,apple,position:[...player.position],grounded:player.grounded,camera:{yaw:cameraYaw,pitch:cameraPitch,distance:cameraActualDistance,position:camera.position.toArray(),locked:mouseLocked,sensitivity:mouseSensitivity},ready:{swan:n1Bridge.enabled,pair:pairReady,old:oldReady,pool:poolReady},exposure:{n1Exposure,n2Direct,n2Reflected,poolAExposure,poolBExposure}};},
+  fixture(n,pos){if(!Number.isInteger(n)||n<0||n>9||!Array.isArray(pos)||pos.length!==3)return;stage=n;night=n>=5;iris=n>=5?1:0;player.teleport(pos);checkpoint={stage:n,position:[...pos],phase:0};cameraActualDistance=cameraDistance;cameraUpdate(1);},
+  view(yaw,pitch,distance){cameraYaw=yaw;cameraPitch=pitch;cameraDistance=distance;cameraActualDistance=distance;cameraUpdate(1);},
   phaseAt:p=>{const prior=[...player.position];player.teleport(p);const value=activePhase();player.teleport(prior);return value;}
 };
 requestAnimationFrame(frame);
