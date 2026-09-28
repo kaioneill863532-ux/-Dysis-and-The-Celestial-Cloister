@@ -14,7 +14,7 @@ function sunDir(Hd) { const h = Hd * DEG, dec = -21 * DEG, lat = 35 * DEG;
   const E = -Math.cos(dec) * Math.sin(h), N = Math.sin(dec) * Math.cos(lat) - Math.cos(dec) * Math.cos(h) * Math.sin(lat), U = Math.sin(dec) * Math.sin(lat) + Math.cos(dec) * Math.cos(h) * Math.cos(lat);
   return new V3(E, U, -N).normalize(); }
 const warm = view !== 'b';
-const sv = sunDir(warm ? 58 : 12);
+const sv = sunDir(warm ? 58 : 10);
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(3000, 48, 24), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
   uniforms: { uSun: { value: sv }, uWarm: { value: warm ? 1 : 0.2 } },
   vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
@@ -42,10 +42,10 @@ const lathe = (pts, seg = 96) => new THREE.LatheGeometry(pts.map(([r, y]) => new
 const RO = 17.1, F = [0, 11.34, 19.84, 26.22, 31.0];
 const RP = 21.6, NCOL = 24, CD = 1.76, CH = 17.6;          // 外圈巨柱：科林斯，柱高 10D，檐部顶面对齐 L2 楼面
 // 海、礁石台基
-add(new THREE.Mesh(new THREE.CircleGeometry(3000, 64).rotateX(-Math.PI / 2).translate(0, -6, 0), sea), false, true);
-{ const g = new THREE.CylinderGeometry(30, 36, 7, 44, 3); const p = g.attributes.position;
+add(new THREE.Mesh(new THREE.CircleGeometry(3000, 64).rotateX(-Math.PI / 2).translate(0, -16, 0), sea), false, true);
+{ const g = new THREE.CylinderGeometry(28.5, 31, 16.5, 44, 5); const p = g.attributes.position;
   for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), y = p.getY(i); const n = 1 + 0.07 * Math.sin(x * 0.6 + y) * Math.cos(z * 0.45); p.setX(i, x * n); p.setZ(i, z * n); }
-  g.computeVertexNormals(); add(new THREE.Mesh(g.translate(0, -5.9, 0), rock)); }
+  g.computeVertexNormals(); add(new THREE.Mesh(g.translate(0, -8.1, 0), rock)); }
 // 基座台阶（crepidoma）
 for (const [r, y] of [[26.4, -2.4], [25.6, -1.6], [24.8, -0.8]]) add(new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.8, 128).translate(0, y + 0.4, 0), marble));
 // 殿身（圆形内殿）
@@ -94,10 +94,10 @@ add(new THREE.Mesh(lathe([[RP - 1.1, CH], [RP + 1.1, CH], [RP + 1.1, CH + 0.9], 
 add(new THREE.Mesh(lathe([[RO, F[4] - 0.8], [RO + 0.9, F[4] - 0.7], [RO + 1.3, F[4]], [RO + 1.3, F[4] + 0.3], [RO - 0.2, F[4] + 0.3]]), marbleL));
 add(new THREE.Mesh(lathe([[RO - 0.2, 31.3], [RO - 0.2, 32.0], [16.2, 32.0], [16.2, 32.6], [15.6, 32.6], [15.6, 33.1], [15.45, 33.1], [15.45, 31.3]]), marble));
 add(new THREE.Mesh(lathe([[11, 31.9], [15.45, 31.9], [15.45, 31.8], [11, 31.8]]), marbleL));               // 环道（静止时是平的）
-{ const iris = lathe([[3.9, 33.9], [11, 31.85], [11, 31.95], [3.9, 34.0]], 96); add(new THREE.Mesh(iris, bronze));
+{ const iris = lathe([[0.4, 34.9], [11, 31.85], [11, 31.95], [0.4, 35.0]], 96); add(new THREE.Mesh(iris, bronze));
   for (let k = 0; k < 24; k++) { const a = k * 15; const g = new THREE.BoxGeometry(0.06, 0.06, 7.4); const m = new THREE.Mesh(g, bronze);
-    const mid = P(a + 6, 7.45, 33.0); m.position.copy(mid); m.lookAt(P(a + 14, 3.9, 34.05)); add(m); }
-  add(new THREE.Mesh(new THREE.TorusGeometry(3.9, 0.22, 12, 64).rotateX(Math.PI / 2).translate(0, 34.05, 0), bronze)); }
+    g.dispose(); m.geometry = new THREE.BoxGeometry(0.06, 0.06, 10.6); const mid = P(a + 8, 5.7, 33.45); m.position.copy(mid); m.lookAt(P(a + 22, 0.45, 34.95)); add(m); }
+  add(new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.08, 8, 32).rotateX(Math.PI / 2).translate(0, 35.0, 0), bronze)); }
 // 最高一级（西北偏北）：拱门与大浑天仪
 { const az = 332, c = P(az, 13.2, 31.9), n = new V3(Math.cos(az * DEG), 0, Math.sin(az * DEG));
   for (const s of [-1, 1]) { const pier = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.6, 0.6), marbleL); pier.position.copy(c).addScaledVector(n, s * 1.6).setY(33.2); pier.rotation.y = -az * DEG; add(pier); }
@@ -118,25 +118,36 @@ add(new THREE.Mesh(lathe([[11, 31.9], [15.45, 31.9], [15.45, 31.8], [11, 31.8]])
   const ped = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: depth1 - depth0 + 2.6, bevelEnabled: false }), marble); ped.position.set(0, F[2] + 0.25, depth0 - 1); add(ped);
   for (const s of [-1, 1]) { const rake = new THREE.Mesh(new THREE.BoxGeometry(15.9, 0.4, 0.8), marbleL); rake.position.set(s * 7.15, F[2] + 3.35, depth1 + 1.4); rake.rotation.z = -s * Math.atan(6.2 / 14.3); add(rake); }
   const floor = new THREE.Mesh(new THREE.BoxGeometry(28.5, 0.8, 12), marble); floor.position.set(0, -0.4, depth0 + 5.2); add(floor);
-  for (let k = 0; k < 7; k++) { const st = new THREE.Mesh(new THREE.BoxGeometry(22, 0.8, 1.1), marble); st.position.set(0, -1.2 - k * 0.8, depth1 + 1.4 + k * 1.1); add(st); }
 }
-// 南边海上的石柱与天然石拱（序章）
-{ const az = 183, c = P(az, 52, 0);
-  const g = new THREE.CylinderGeometry(4.6, 6.0, 17, 9, 4); const p = g.attributes.position;
-  for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), y = p.getY(i); const n = 1 + 0.12 * Math.sin(x * 1.3 + y) * Math.cos(z * 1.1); p.setX(i, x * n); p.setZ(i, z * n); }
-  g.computeVertexNormals(); const st = add(new THREE.Mesh(g, rock)); st.position.set(c.x, -6 + 8.5, c.z);
-  const fin = new THREE.Shape(); fin.moveTo(-2.8, 0); fin.lineTo(-2.3, 5.6); fin.quadraticCurveTo(0, 7.4, 2.3, 5.6); fin.lineTo(2.8, 0); fin.lineTo(-2.8, 0);
-  const hole = new THREE.Path(); hole.moveTo(-1.1, 0); hole.lineTo(-1.1, 2.4); hole.absarc(0, 2.4, 1.1, Math.PI, 0, true); hole.lineTo(1.1, 0); hole.lineTo(-1.1, 0); fin.holes.push(hole);
-  const fm = new THREE.Mesh(new THREE.ExtrudeGeometry(fin, { depth: 1.8, bevelEnabled: true, bevelSize: 0.3, bevelThickness: 0.3, bevelSegments: 2 }), rock);
-  fm.position.copy(P(az, 51.2, 11)); fm.rotation.y = Math.PI - az * DEG; add(fm); }
+// 北边低处的小岛、崖壁上的海门出口、出水，以及从海门穿出落到岛上的那束光（序章）
+{ const az = 12;
+  const g = new THREE.CylinderGeometry(4.5, 6.5, 3.2, 10, 2); const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), y = p.getY(i); const n = 1 + 0.15 * Math.sin(x * 1.7 + y) * Math.cos(z * 1.3); p.setX(i, x * n); p.setZ(i, z * n); }
+  g.computeVertexNormals(); const isl = add(new THREE.Mesh(g, rock)); isl.position.copy(P(az, 45, -15.2));
+  // 海门出口：崖壁上的拱洞
+  const door = new THREE.Mesh(new THREE.ShapeGeometry(archShape(3.2, 2.4), 16), shade); door.position.copy(P(az, 29.7, -7.4)); door.rotation.y = Math.PI - az * DEG; door.rotation.x = -0.18; add(door);
+  const ring = new THREE.Shape(); ring.moveTo(-2.1, 2.4); ring.absarc(0, 2.4, 2.1, Math.PI, 0, true); ring.lineTo(1.6, 2.4); ring.absarc(0, 2.4, 1.6, 0, Math.PI, false); ring.lineTo(-2.1, 2.4);
+  const rm = new THREE.Mesh(new THREE.ExtrudeGeometry(ring, { depth: 0.5, bevelEnabled: false }), marble); rm.position.copy(P(az, 29.6, -7.4)); rm.rotation.y = Math.PI - az * DEG; rm.rotation.x = -0.18; add(rm);
+  // 出水：从海门旁泻进海里
+  const fall = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 10), new THREE.MeshStandardMaterial({ color: 0xcfe6ee, transparent: true, opacity: 0.75, roughness: 0.2 }));
+  fall.position.copy(P(az + 6, 30.6, -11.0)); fall.rotation.y = Math.PI - (az + 6) * DEG; fall.rotation.x = -0.25; add(fall, false, false);
+  for (let k = 0; k < 40; k++) { const sp = new THREE.Mesh(new THREE.SphereGeometry(0.35 + (k % 3) * 0.15, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })); sp.position.copy(P(az + 4 + (k * 7) % 11 - 5, 31 + (k * 5) % 12, -15.7 + ((k * 3) % 5) * 0.3)); scene.add(sp); }
+  // 光：沿太阳的反方向（正午偏西的太阳 → 光朝北偏东），从海门斜着落到岛上
+  const sd = sunDir(10), dirH = new V3(-sd.x, 0, -sd.z).normalize(), slope = Math.asin(sd.y);
+  const start = P(az, 29.4, -6.6), len = (7.0 / Math.tan(slope)) / Math.cos(slope);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.8, len), new THREE.MeshBasicMaterial({ color: 0xffdcaa, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const dir = new V3(-sd.x, -sd.y, -sd.z).normalize();
+  beam.position.copy(start).addScaledVector(dir, len / 2); beam.lookAt(start.clone().addScaledVector(dir, len)); scene.add(beam);
+  const spot = new THREE.Mesh(new THREE.CircleGeometry(1.6, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe6b8, transparent: true, opacity: 0.8 })); spot.position.copy(start.clone().addScaledVector(dir, len)).add(new V3(0, 0.05, 0)); scene.add(spot);
+}
 // 西边远处的岩岛
 { const s = new THREE.Shape(); const prof = [[-330, -6], [-300, 2], [-262, 18], [-205, 38], [-140, 54], [-120, 57], [130, 57], [178, 47], [232, 30], [300, 4], [335, -6]];
   s.moveTo(prof[0][0], prof[0][1]); for (const [x, y] of prof.slice(1)) s.lineTo(x, y);
   const m = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 120, bevelEnabled: false }), M(0x7d7f8c, { roughness: 1 }));
-  m.position.copy(P(240, 463, 0)); m.rotation.y = -240 * DEG + Math.PI; scene.add(m); }
+  m.position.copy(P(240, 463, 0)); m.rotation.y = -240 * DEG + Math.PI; m.visible = view !== 'b'; scene.add(m); }
 const cam = new THREE.PerspectiveCamera(view === 'c' ? 38 : 32, W / H, 0.5, 5000);
 if (view === 'a') { cam.position.copy(P(222, 112, 24)); cam.lookAt(0, 15, 0); }
-else if (view === 'b') { cam.position.copy(P(163, 135, 10)); cam.lookAt(0, 14, 0); }
+else if (view === 'b') { cam.position.copy(P(28, 135, 8)); cam.lookAt(P(12, 12, 1)); }
 else { cam.position.copy(P(40, 70, 78)); cam.lookAt(0, 20, 0); }
 renderer.render(scene, cam);
 window.__done = true;
