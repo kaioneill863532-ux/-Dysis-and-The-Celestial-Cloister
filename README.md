@@ -1,4 +1,4 @@
-# 狄西斯的日月回廊 · Dysis and The Celestial Cloister
+# 狄西斯的日落回廊 · Dysis and The Celestial Cloister
 
 一款以行走、观察和空间推理为核心的 3D 解谜游戏：移动的方式决定时间，光本身就是路。
 
