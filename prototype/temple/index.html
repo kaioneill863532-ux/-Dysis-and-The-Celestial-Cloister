@@ -1,0 +1,2598 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>日落回廊</title>
+<meta name="description" content="狄西斯的日落回廊 v0.4 灰盒：从海上的小岛沿光登入神殿，白天顺时针一层层往上，在屋顶用金苹果接住最后一缕阳光；入夜后追着月光一层层往下，把金苹果放上水亭的浑天仪。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
+<style>
+  :root {
+    --ink: #0f0c09;
+    --panel: rgba(20, 16, 11, 0.68);
+    --line: rgba(196, 154, 90, 0.36);
+    --marble: #efe6d6;
+    --dim: #b1a38d;
+    --bronze: #c49a5a;
+    --gold: #f2c46a;
+    --serif: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+    --sans: system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; background: var(--ink); color: var(--marble); font-family: var(--sans); overflow: hidden; }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+
+  .hud { position: fixed; inset: 0; pointer-events: none; }
+  #lvl { position: absolute; left: calc(16px + env(safe-area-inset-left, 0px)); top: calc(14px + env(safe-area-inset-top, 0px));
+    font-family: var(--serif); font-size: 15px; letter-spacing: 0.1em; text-shadow: 0 1px 10px rgba(0,0,0,0.7); }
+  #lvl small { display: block; margin-top: 3px; font-family: var(--sans); font-size: 11px; letter-spacing: 0.16em; color: var(--dim); }
+
+  #dial { position: absolute; right: calc(16px + env(safe-area-inset-right, 0px)); top: calc(14px + env(safe-area-inset-top, 0px));
+    width: 236px; padding: 10px 12px 9px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(6px); }
+  #dial svg { display: block; width: 100%; height: auto; overflow: visible; }
+  #dial .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  #dial .row b { color: var(--marble); font-weight: 500; }
+  #dial .greek { font-family: var(--serif); color: var(--gold); }
+
+  #prompt, #toast { position: absolute; left: 50%; transform: translateX(-50%); padding: 7px 14px; border-radius: 4px;
+    background: var(--panel); border: 1px solid var(--line); font-size: 14px; letter-spacing: 0.06em; white-space: nowrap; }
+  #prompt { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  #toast { top: calc(64px + env(safe-area-inset-top, 0px)); color: var(--dim); font-size: 13px; max-width: calc(100% - 32px); white-space: normal; text-align: center; }
+  #title { position: absolute; left: 0; right: 0; top: 30%; text-align: center; font-family: var(--serif); font-size: clamp(26px, 5vw, 40px);
+    letter-spacing: 0.3em; text-shadow: 0 2px 24px rgba(0,0,0,0.8); opacity: 0; transition: opacity 1.2s; }
+  #title small { display: block; margin-top: 10px; font-size: 13px; letter-spacing: 0.4em; color: var(--dim); }
+  .kbd { display: inline-block; min-width: 1.5em; padding: 1px 5px; margin-right: 6px; border: 1px solid var(--line); border-radius: 3px;
+    font-size: 11px; line-height: 1.5; text-align: center; color: var(--marble); font-family: var(--sans); }
+
+  #keys { position: absolute; left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-wrap: wrap; gap: 6px 14px; max-width: min(760px, calc(100% - 32px)); font-size: 12px; color: var(--dim); transition: opacity 1.2s; }
+
+  /* 触屏控件 */
+  #touch { position: absolute; inset: 0; }
+  #stick { position: absolute; left: calc(22px + env(safe-area-inset-left, 0px)); bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+    width: 132px; height: 132px; border-radius: 50%; border: 1px solid var(--line); background: rgba(20,16,11,0.35); pointer-events: auto; touch-action: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%;
+    background: rgba(239,230,214,0.18); border: 1px solid rgba(239,230,214,0.4); }
+  #tbtns { position: absolute; right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+  #tbtns button { width: 64px; height: 44px; border-radius: 22px; }
+
+  button { font: inherit; color: var(--marble); background: rgba(20,16,11,0.72); border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
+  button:hover { border-color: var(--bronze); }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* 卡片 */
+  .card { position: fixed; inset: 0; display: flex; align-items: flex-end; padding-inline: 16px; padding-block: 16px;
+    background: linear-gradient(90deg, rgba(12,9,6,0.9) 0%, rgba(12,9,6,0.72) 42%, rgba(12,9,6,0) 78%); }
+  .card .inner { width: min(560px, 100%); margin-left: clamp(0px, 5vw, 64px); margin-bottom: clamp(16px, 8vh, 80px);
+    max-height: calc(100% - 32px); overflow-y: auto; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.24em; color: var(--bronze); }
+  h1 { margin: 10px 0 0; font-family: var(--serif); font-weight: 700; font-size: clamp(30px, 6vw, 48px); letter-spacing: 0.12em; text-wrap: balance; }
+  h1 .en { display: block; margin-top: 6px; font-family: var(--serif); font-weight: 500; font-size: 13px; letter-spacing: 0.3em; color: var(--dim); }
+  .lede { margin: 18px 0 0; font-family: var(--serif); font-size: 17px; line-height: 1.8; color: var(--marble); max-width: 34em; }
+  .card h2, .panel h2 { margin: 22px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.22em; color: var(--bronze); }
+  .card ol, .card ul, .panel ol, .panel ul { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; font-size: 14px; line-height: 1.7; color: var(--marble); }
+  .card p, .panel p { font-size: 14px; line-height: 1.75; color: var(--dim); max-width: 36em; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 16px; font-size: 13px; color: var(--dim); }
+  .go { margin-top: 24px; padding: 12px 28px; font-family: var(--serif); font-size: 17px; letter-spacing: 0.3em;
+    background: linear-gradient(180deg, rgba(196,154,90,0.3), rgba(196,154,90,0.12)); border-color: var(--bronze); }
+  .foot { margin-top: 12px; font-size: 12px; color: var(--dim); }
+  .panel { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 32px));
+    max-height: calc(100% - 48px); overflow-y: auto; padding: 22px 24px; background: rgba(16,12,8,0.9); border: 1px solid var(--line);
+    border-radius: 8px; backdrop-filter: blur(8px); }
+  .panel.corner { left: calc(16px + env(safe-area-inset-left, 0px)); top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: none; width: min(460px, calc(100% - 32px)); }
+  .panel h1 { font-size: 26px; }
+  .panel .close { float: right; padding: 4px 10px; font-size: 13px; }
+
+  .panel b.who { color: var(--gold); font-weight: 600; letter-spacing: 0.1em; }
+  #fade { position: fixed; inset: 0; background: #0b0907; opacity: 0; pointer-events: none; transition: opacity 0.35s; }
+  #err { color: #f0a58a; }
+
+  @media (max-width: 640px) {
+    #dial { width: 176px; padding: 8px 9px 7px; }
+    #dial .row { font-size: 11px; }
+    #keys { display: none; }
+    .card { align-items: flex-end; background: linear-gradient(0deg, rgba(12,9,6,0.94) 0%, rgba(12,9,6,0.78) 60%, rgba(12,9,6,0.1) 100%); }
+    .card .inner { margin-left: 0; margin-bottom: 8px; }
+    .lede { font-size: 15px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #keys, #fade, #title { transition: none; } }
+</style>
+
+<canvas id="c" tabindex="0" aria-label="游戏画面"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div id="lvl"><span id="lvlName">序 · 登殿</span><small id="shardHud">灰盒 v0.4</small></div>
+  <div id="dial" aria-live="off">
+    <svg id="dialSvg" viewBox="0 0 212 92" aria-hidden="true"></svg>
+    <div class="row"><span><span id="rBody">太阳</span>高度 <b id="rAlt">—</b></span><span>方位 <b id="rAz">—</b></span></div>
+    <div class="row"><span>时刻 <b id="rClock">—</b></span><span id="rHour">—</span></div>
+  </div>
+  <div id="title"></div>
+  <div id="prompt" hidden></div>
+  <div id="toast" hidden></div>
+  <div id="keys">
+    <span><span class="kbd">WASD</span>移动</span>
+    <span><span class="kbd">鼠标</span>视角</span>
+    <span><span class="kbd">Shift</span>快走</span>
+    <span><span class="kbd">空格</span>跳</span>
+    <span><span class="kbd">E</span>互动</span>
+    <span><span class="kbd">T</span>等时线</span>
+    <span><span class="kbd">V</span>第一/第三人称</span>
+    <span><span class="kbd">H</span>说明</span>
+    <span><span class="kbd">M</span>静音</span>
+    <span><span class="kbd">R</span>重来</span>
+  </div>
+  <div id="touch" hidden>
+    <div id="stick"><div id="knob"></div></div>
+    <div id="tbtns">
+      <button id="bJ" type="button">跳</button>
+      <button id="bE" type="button">互动</button>
+      <button id="bT" type="button">等时线</button>
+      <button id="bV" type="button">视角</button>
+      <button id="bH" type="button">说明</button>
+    </div>
+  </div>
+</div>
+
+<section class="card" id="intro">
+  <div class="inner">
+    <div class="eyebrow">灰盒 v0.4 · 日月十关</div>
+    <h1>狄西斯的日落回廊<span class="en">DYSIS AND THE CELESTIAL CLOISTER</span></h1>
+    <p class="lede">从海上的小岛沿着光登入神殿。白天顺时针一层层往上，日落时在屋顶用金苹果接住最后一缕阳光；入夜后追着月光一层层往下，把金苹果放上水亭中心的浑天仪。</p>
+    <h2>白天</h2>
+    <ol>
+      <li><b>序 · 登殿</b>　神殿的光从北门穿出来，落到海上的小岛。沿着它走上去。</li>
+      <li><b>日1 · 午后·水庭</b>　墙上一个小孔把太阳投成圆斑，随脚步滑动。第一束光从 L1 的窗斜穿中庭。</li>
+      <li><b>日2 · 未时·柱廊</b>　通往 L2 的光被柱子切开，只有穿过中间那道宽拱时才是完整的一束。</li>
+      <li><b>日3 · 申时·光阶</b>　两束平行的光一高一低：走上高的那束，跳到低的那束，上到 L3。支路：托镜像把窗光反射成一条缓坡，通向东墙上的日之龛。</li>
+      <li><b>日4 · 酉时·圆眼</b>　光圈一片片张开，太阳降到十七度时，一束光从圆眼正中落下来。</li>
+      <li><b>日5 · 日落·最后一缕</b>　顺时针沿环道往上，岛影追上来。背对夕阳穿过虹门，接住最后一缕光。</li>
+    </ol>
+    <h2>夜里</h2>
+    <ol>
+      <li><b>月1 · 月升·读墙</b>　往回走，台阶落平。东南的楼梯是月石：月门的竖棂把它截成几段，要整段同时被月光照亮才显出来。</li>
+      <li><b>月2 · 初夜·天鹅</b>　白天的女神像在月光下变成白天鹅，影子是一只黑天鹅。</li>
+      <li><b>月3 · 中夜·双子</b>　固定的那一尊被光圈照下的月光照着；托镜像把月光反射进龛里，藏着的那一尊显形。两尊同时亮，就合成跨过断口的桥。</li>
+      <li><b>月4 · 夜半·沉光</b>　月亮升高，光圈照下来的月光沉到 L1 的西墙，照出墙里的月石门。旁边还有月之龛。</li>
+      <li><b>月5 · 子夜·水亭</b>　两段半桥要同时被照亮才会接上。走过去，把金苹果放上浑天仪。</li>
+    </ol>
+    <h2>操作</h2>
+    <div class="controls" id="ctrlDesk">
+      <span><span class="kbd">WASD</span>移动</span>
+      <span><span class="kbd">鼠标</span>转动视角</span>
+      <span><span class="kbd">空格</span>跳</span>
+      <span><span class="kbd">E</span>互动</span>
+      <span><span class="kbd">T</span>显示等时线</span>
+      <span><span class="kbd">V</span>切换视角</span>
+      <span><span class="kbd">H</span>说明</span>
+    </div>
+    <div class="controls" id="ctrlTouch" hidden>
+      <span>左下摇杆移动</span>
+      <span>右侧拖动转视角</span>
+      <span>右下按钮互动、跳</span>
+    </div>
+    <button class="go" id="go" type="button">登岛</button>
+    <div class="foot" id="foot">进入后会有声音，按 M 静音。</div>
+  </div>
+</section>
+
+<section class="panel" id="help" hidden>
+  <button class="close" id="helpClose" type="button">关闭</button>
+  <div class="eyebrow">说明</div>
+  <h1>规则</h1>
+  <ul>
+    <li>沿弧走，时间流动，日月跟着动；沿半径走，时间不变。往回走，时间就倒回。每一层有自己的一段时间，同一层的等时线疏密均匀。</li>
+    <li>白天顺时针是向前。接住最后一缕阳光以后，入夜，逆时针才是向前。</li>
+    <li>白天：穿过中庭、有雾托着的光能踩，坡度不超过 35°。纹样窗的碎光、棱镜的色散光不能踩。</li>
+    <li>光路上的时间：从脚下走到窗口，时间从光脚那一刻均匀走到窗口那一刻，光会带着你一起摆动。沿半径的光（开场、圆眼）时间不动。</li>
+    <li>夜里：月石只有被月光照着时才显出它的另一种形态（墙里的通路、雕像的真形、展开的半桥），光离开后约 2 秒慢慢合上。脚下的月石不会合上。月光束本身不能踩。</li>
+    <li>雕像转过以后保持朝向。空格跳，可以从一束光跳到另一束光。掉下去不会死，会回到上一个落脚点。</li>
+  </ul>
+  <h2>每一关的提示</h2>
+  <ul>
+    <li><b>序</b>　岛上时间不动。光从神殿北门穿出来，一直铺到岛上，沿着它往上走。</li>
+    <li><b>日1</b>　进门后往东北走，地上的铜线上有太阳的圆斑。第一束光的脚在东北的回廊边上。</li>
+    <li><b>日2</b>　在 L1 顺时针走到北边，瀑布前。光被柱子切成两半时，换个位置等它整个穿过宽拱。</li>
+    <li><b>日3</b>　L2 北边有一束光的脚落在回廊上，走上去；旁边低一点有另一束平行的光，跳过去，顺着它上到 L3。支路：站上西边托镜像的圆台，转到对的格子，反射光会搭到东墙上的石台。</li>
+    <li><b>日4</b>　在 L3 顺时针走到东北，光圈会一片片张开。圆眼那束光落到脚边时，沿半径往里走，走在光的上表面。</li>
+    <li><b>日5</b>　上了屋顶朝太阳走到环道边，顺时针往上。最高一级在西北偏北。</li>
+    <li><b>月1</b>　逆时针往回走，过了西南继续走到东南，环道在那里落成楼梯。下半段是月石，走到楼梯口时看它是不是整段亮着。</li>
+    <li><b>月2</b>　天鹅像在 L3 东北，正对着东边的窗。转它，再沿回廊走，看影子。</li>
+    <li><b>月3</b>　L2 西北：托镜像、断口前的那尊、断口后面龛里的那尊。转托镜像，把月光送进龛里。</li>
+    <li><b>月4</b>　出了墙里的楼梯，在 L1 逆时针走，看月光从西墙上往下沉，照到那扇月石门时走进去。</li>
+    <li><b>月5</b>　从瀑布旁出来，沿西北的岸走，转岸边的托镜像，再回到桥头，让两段半桥同时亮。</li>
+  </ul>
+  <h2>等时线</h2>
+  <p>按 T 显示。地上的铜线每隔一段时间画一根：线越密，日月走得越快。每一层画的是它自己的时间。</p>
+</section>
+
+<section class="panel" id="talk" hidden>
+  <button class="close" id="talkClose" type="button">关闭</button>
+  <div class="eyebrow">月神的眼睛亮了</div>
+  <h1>虹的传话</h1>
+  <p><b class="who">伊莉丝</b>　日和月从来不同时在天上，所以你们的话，一直是我替你们传。</p>
+  <p><b class="who">赫利俄斯</b>　告诉塞勒涅：今天最后一缕光，我交给那个在神殿里奔跑的时辰了。</p>
+  <p><b class="who">塞勒涅</b>　狄西斯？她总是来得太晚，又走得太早。</p>
+  <p><b class="who">伊莉丝</b>　所以她才需要这座神殿。她沿着回廊每走一步，你们就在天上挪一寸。</p>
+  <p><b class="who">塞勒涅</b>　那就让她把光带下来吧。我在水里等她。</p>
+  <p><b class="who">赫利俄斯</b>　等她集齐了日、虹、月，黎明会来接她。</p>
+</section>
+
+<section class="panel corner" id="done" hidden>
+  <div class="eyebrow">子夜</div>
+  <h1>归亭</h1>
+  <p>金苹果落进浑天仪的月托，变成了一轮白色的月亮。</p>
+  <p>月光本来就是日光的回声。日落时接住的那一缕阳光，绕了一圈，又回到了这里。</p>
+  <p>日月十关到这里结束。<span id="doneShards"></span></p>
+  <button class="go" id="doneClose" type="button">继续看看</button>
+</section>
+
+<div id="fade"></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { Sky } from 'three/addons/objects/Sky.js';
+
+const DEG = Math.PI / 180;
+const $ = (id) => document.getElementById(id);
+const V3 = THREE.Vector3;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
+const toward = (v, target, rate, dt) => v + clamp(target - v, -rate * dt, rate * dt);
+
+// ────────────────────────────── 尺寸（米）与方位约定 ──────────────────────────────
+// 方位角 az：0 = 北，90 = 东，顺时针增加。世界坐标：x = 东，y = 上，-z = 北。
+// 比例：内径 31 m = 地面到光圈底 31 m（万神庙的球）；层高按 3:4 递减；中庭半径 : 内墙半径 = 1 : √φ；圆眼 = 内径 / φ³。
+const R_POOL = 9.75;           // 水池边（水庭走道 9.75–15.5）
+const R_A = 12.19;             // 回廊内沿（中庭半径）
+const R_PARA = 12.49;          // 栏杆外沿（栏杆厚 0.3，高 1.0）
+const R_IN = 15.5, R_OUT = 17.1;   // 内墙面、外墙面（墙厚 1.6）
+const R_PERI = 21.6, R_STYLO = 23.2;   // 外圈柱廊的柱心、台基边
+const F = [0, 11.34, 19.84, 26.22];   // 水庭、L1、L2、L3 的地面
+const SLAB = 0.5, PARA_H = 1.0;
+const CEIL = 31.0, IRIS_TOP = 31.3, CROWN_Y = 31.8, WALL_TOP = 32.8;
+const OC_R = 3.66, IRIS_R = 11.0, CROWN_R1 = 15.45;
+const WATER_Y = -0.45, POOL_BOTTOM = -2.2;
+const TERR_Y = -1.2, TERR_C = { x: 0, z: 14 }, TERR_R = 40, SEA_Y = -16;
+const ISLAND = { az: 22.5, r: 48.6, top: -12, R: 4.6 };
+const WALL_TH = R_OUT - R_IN;
+
+const P = (az, r, y = 0) => new V3(r * Math.sin(az * DEG), y, -r * Math.cos(az * DEG));
+const azOf = (x, z) => ((Math.atan2(x, -z) / DEG) % 360 + 360) % 360;
+const angDiff = (a, b) => ((a - b) % 360 + 540) % 360 - 180;
+const inArc = (az, [a0, a1]) => { let t = az; while (t < a0) t += 360; while (t >= a0 + 360) t -= 360; return t <= a1; };
+const wrap360 = (a) => ((a % 360) + 360) % 360;
+const halfOf = (w, r = R_IN) => (w / 2 / r) / DEG;   // 宽 w 米的开口在半径 r 处的半角
+const rOf = (p) => Math.hypot(p.x, p.z);
+
+// ────────────────────────────── 天象：固定的倾斜圆轨道 ──────────────────────────────
+// 纬度 35°，太阳赤纬 −21°（正午 34°），满月赤纬 +20°（最高 75°）。H 是时角（度），月亮的时角是 H − 180。
+const LAT = 35 * DEG, DEC_SUN = -21 * DEG, DEC_MOON = 20 * DEG;
+function skyDir(Hdeg, dec, out) {
+  const H = Hdeg * DEG;
+  const E = -Math.cos(dec) * Math.sin(H);
+  const N = Math.sin(dec) * Math.cos(LAT) - Math.cos(dec) * Math.cos(H) * Math.sin(LAT);
+  const U = Math.sin(dec) * Math.sin(LAT) + Math.cos(dec) * Math.cos(H) * Math.cos(LAT);
+  return out.set(E, U, -N);
+}
+const sunDir = (H, out = new V3()) => skyDir(H, DEC_SUN, out);
+const moonDir = (H, out = new V3()) => skyDir(H - 180, DEC_MOON, out);
+const altOf = (v) => Math.asin(clamp(v.y, -1, 1)) / DEG;
+const azV = (v) => azOf(v.x, v.z);
+function hourForSunAz(az) { let a = 0, b = 74; const v = new V3(); for (let i = 0; i < 60; i++) { const m = (a + b) / 2; if (azV(sunDir(m, v)) < az) a = m; else b = m; } return (a + b) / 2; }
+
+// 西边海上远处的岩岛：落日沉到它的山脊后面时，岛影从神殿脚下往上爬
+const FAR_ISLE = { az: 240, dist: 463, ridge: 56.9 };
+function shadowY(sv) {
+  const alt = Math.asin(clamp(sv.y, -1, 1));
+  if (alt <= 0) return 1e4;
+  const d = FAR_ISLE.dist / Math.max(0.2, Math.cos(angDiff(azV(sv), FAR_ISLE.az) * DEG));
+  return FAR_ISLE.ridge - d * Math.tan(alt);
+}
+function hourForShadow(y) { let a = 40, b = 74; const v = new V3(); for (let i = 0; i < 50; i++) { const m = (a + b) / 2; if (shadowY(sunDir(m, v)) < y) a = m; else b = m; } return (a + b) / 2; }
+
+// ────────────────────────────── 关键时刻（由光路反推） ──────────────────────────────
+const H_I = hourForSunAz(202.5);        // 序：南墙 202.5° 的窗对着北门，光沿半径穿出北门落到小岛。岛上时间固定在这一刻。
+const H_OC = 49.5;                      // 圆眼：太阳约 17°
+const AZ_OC = wrap360(azV(sunDir(H_OC)) + 180);   // 圆眼光柱落脚的方位（≈ 47.9°）
+const J_AZ = wrap360(AZ_OC + 180);      // 从圆眼上到屋顶后，朝太阳走到环道边的那一点
+const T_AZ = 332;                       // 环道最高一级
+const CROWN = { nUp: 16, dz: 0.45, th: 0.8 };
+const TOP_Y = CROWN_Y + CROWN.nUp * CROWN.dz;
+const H_TOP = hourForShadow(TOP_Y + 1.4);   // 接光：岛影刚好漫过架上的苹果，举起来的苹果还在光里
+
+// ────────────────────────────── 时间：每一层一段，等时线均匀 ──────────────────────────────
+// 每层是一段按方位角均匀变化的时间，接缝处断开（瀑布、厚墙）。白天顺时针时间增加，夜里逆时针时间增加。
+// 楼层之间的光路和楼梯按高度在两端的时刻之间均匀插值；沿半径的光（开场、圆眼）和镜子的反射光时间不动。
+function lineZone(seam, pts) {
+  // pts: [[az, H], [az, H]]，两点定一条直线；方位按从接缝的顺时针一端展开
+  const lo = seam[1], hi = seam[0] + 360;
+  const un = (az) => { let t = wrap360(az); if (t < lo) t += 360; return t; };
+  const [[a0, h0], [a1, h1]] = pts.map(([a, h]) => [un(a), h]);
+  const k = (h1 - h0) / (a1 - a0);
+  const f = (az) => { let t = un(az); if (inArc(az, seam)) t = angDiff(az, (seam[0] + seam[1]) / 2) > 0 ? lo : hi; return h0 + k * (t - a0); };
+  return { seam, f, k, lo, hi, un, a0, h0 };
+}
+const SEAM_N = [358, 12];      // 水庭、L1：北侧的瀑布
+const SEAM_SE = [150, 170];    // L2、L3：东南的厚墙
+// 白天
+const ZD = {
+  L0: lineZone(SEAM_N, [[22.5, H_I], [61.7, H_I + 0.0602 * 39.2]]),
+  L1: lineZone(SEAM_N, [[172.5, 24], [345.2, 29]]),
+  L2: lineZone(SEAM_SE, [[247.5, 30], [342.35, 30 + 0.06 * 94.85]]),
+  L3: lineZone(SEAM_SE, [[257, 38.2], [AZ_OC, H_OC]]),
+};
+// 夜里（逆时针向前）
+const H_NIGHT = { J: 76, ring150: 80, L3a: 82, swan: 92.5, L2a: 93, twins: 120, L1a: 128, door: 143, L0a: 158, end: 173 };
+const ZN = {
+  L3: lineZone(SEAM_SE, [[115, H_NIGHT.L3a], [60, H_NIGHT.swan]]),
+  L2: lineZone(SEAM_SE, [[23, H_NIGHT.L2a], [283, H_NIGHT.twins]]),
+  L1: lineZone(SEAM_N, [[330, H_NIGHT.L1a], [285, H_NIGHT.door]]),
+  L0: lineZone(SEAM_N, [[350, H_NIGHT.L0a], [300, H_NIGHT.end]]),
+};
+// 屋顶环道：白天从 J 顺时针升到 T；夜里从 T 逆时针降回 J，再到 150°，从那里的月石楼梯下到 L3
+const crownDay = (az) => { const raw = wrap360(az - J_AZ), psi = raw > 200 ? 0 : Math.min(raw, T_AZ - J_AZ); return lerp(H_OC, H_TOP, psi / (T_AZ - J_AZ)); };
+function crownNight(az) {
+  const back = wrap360(T_AZ - az);   // 从 T 逆时针走过的角度
+  const tj = T_AZ - J_AZ, j150 = J_AZ - 150;
+  if (back > 300) return H_TOP;                       // T 顺时针一侧（护栏外）
+  if (back <= tj) return lerp(H_TOP, H_NIGHT.J, back / tj);
+  return lerp(H_NIGHT.J, H_NIGHT.ring150, clamp((back - tj) / j150, 0, 1));
+}
+
+
+// ────────────────────────────── 渲染器 ──────────────────────────────
+const canvas = $('c');
+const touch = matchMedia('(pointer: coarse)').matches;
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: !!window.__keepBuffer });
+  if (!renderer.capabilities.isWebGL2) throw new Error('WebGL2');
+} catch (e) {
+  $('foot').innerHTML = '<span id="err">这台设备的浏览器不支持 WebGL2，原型无法运行。请换用较新的桌面浏览器打开。</span>';
+  $('go').disabled = true;
+  throw e;
+}
+const DPR = Math.min(window.devicePixelRatio || 1, touch ? 1.5 : 1.75);
+renderer.setPixelRatio(DPR);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.95;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(62, 1, 0.05, 12000);
+const rt = new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, samples: 4 });
+rt.depthTexture = new THREE.DepthTexture(2, 2);
+
+// ────────────────────────────── 天空与环境光 ──────────────────────────────
+const sunV = new V3(), moonV = new V3();
+function makeSky() {
+  const s = new Sky(); s.scale.setScalar(10000);
+  const u = s.material.uniforms;
+  u.turbidity.value = 2.4; u.rayleigh.value = 1.05; u.mieCoefficient.value = 0.004; u.mieDirectionalG.value = 0.82;
+  return s;
+}
+const sky = makeSky(); scene.add(sky);
+const envScene = new THREE.Scene(); const envSky = makeSky(); envScene.add(envSky);
+const pmrem = new THREE.PMREMGenerator(renderer);
+let envRT = null, envH = 1e9;
+
+// ────────────────────────────── 材质 ──────────────────────────────
+// 室内的环境光不会被墙挡住，所以室内材质的环境光要比室外暗得多。
+const ENV_MATS = [];
+const std = (o) => { const m = new THREE.MeshStandardMaterial(o); ENV_MATS.push(m); return m; };
+function updateEnv(H) {
+  envSky.material.uniforms.sunPosition.value.copy(sunV);
+  const next = pmrem.fromScene(envScene, 0, 0.1, 100);
+  if (envRT) envRT.dispose();
+  const first = !envRT;
+  envRT = next; envH = H;
+  for (const m of ENV_MATS) { m.envMap = envRT.texture; if (first) m.needsUpdate = true; }
+}
+const IN_ENV = 0.06, EXT_ENV = 0.32;
+const M = {
+  stone: std({ color: 0xded3c2, roughness: 0.84, envMapIntensity: IN_ENV }),
+  stoneDark: std({ color: 0xb9ae9c, roughness: 0.88, envMapIntensity: IN_ENV }),
+  ext: std({ color: 0xe6dccb, roughness: 0.8, envMapIntensity: EXT_ENV }),
+  extDark: std({ color: 0xcfc3ae, roughness: 0.84, envMapIntensity: EXT_ENV }),
+  floor: std({ color: 0xcfc4b1, roughness: 0.9, envMapIntensity: IN_ENV }),
+  column: std({ color: 0xece4d6, roughness: 0.7, envMapIntensity: IN_ENV }),
+  poolBed: std({ color: 0x8c8b80, roughness: 0.94, envMapIntensity: IN_ENV }),
+  water: std({ color: 0x1f2a2e, roughness: 0.05, transparent: true, opacity: 0.4, envMapIntensity: 0.1, depthWrite: false }),
+  bronze: std({ color: 0xa8773f, metalness: 1, roughness: 0.36, envMapIntensity: 0.1, emissive: 0x8a5a1c, emissiveIntensity: 0 }),
+  gold: std({ color: 0xe2b24f, metalness: 1, roughness: 0.22, envMapIntensity: 0.14, emissive: 0x7a5410, emissiveIntensity: 0.15 }),
+  silver: std({ color: 0xcfd6dc, metalness: 1, roughness: 0.25, envMapIntensity: 0.12 }),
+  mirror: std({ color: 0xe3d5b4, metalness: 1, roughness: 0.05, envMapIntensity: 0.3 }),
+  statue: std({ color: 0xf1ebe0, roughness: 0.6, envMapIntensity: 0.1, emissive: 0x000000 }),
+  relief: std({ color: 0xd8ccb8, roughness: 0.8, envMapIntensity: IN_ENV }),
+  rock: std({ color: 0x6d6153, roughness: 0.96, envMapIntensity: EXT_ENV }),
+  cliff: std({ color: 0x8a7c69, roughness: 0.95, envMapIntensity: EXT_ENV }),
+  sea: std({ color: 0x143645, roughness: 0.22, metalness: 0.15, envMapIntensity: 0.5 }),
+  robe: std({ color: 0xf2e8d6, roughness: 0.7, envMapIntensity: 0.05, emissive: 0x4a3418, emissiveIntensity: 0.6 }),
+  apple: std({ color: 0xe8b640, metalness: 0.9, roughness: 0.25, envMapIntensity: 0.2, emissive: 0xffb03a, emissiveIntensity: 0 }),
+  grille: std({ color: 0x6f5a3a, metalness: 0.8, roughness: 0.5, envMapIntensity: 0.1 }),
+  iris: std({ color: 0x9a7a4c, metalness: 0.9, roughness: 0.4, envMapIntensity: 0.12 }),
+  moonstone: new THREE.MeshStandardMaterial({ color: 0xe9f0ff, roughness: 0.35, transparent: true, opacity: 0.12, emissive: 0x9fb8ff, emissiveIntensity: 0, depthWrite: false }),
+  lapis: std({ color: 0x23408e, roughness: 0.3, metalness: 0.1, envMapIntensity: 0.1, emissive: 0x3050c0, emissiveIntensity: 0 }),
+};
+const FAR_ISLE_MAT = new THREE.MeshBasicMaterial({ color: 0x5b636b, fog: false });
+const ISLE_DAY = new THREE.Color(0x6a737b), ISLE_NIGHT = new THREE.Color(0x0b0f18);
+
+// ────────────────────────────── 光照 ──────────────────────────────
+const sun = new THREE.DirectionalLight(0xfff0da, 3.6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(touch ? 2048 : 4096, touch ? 2048 : 4096);
+Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 220 });
+sun.shadow.camera.updateProjectionMatrix();
+sun.shadow.camera.layers.enable(1);
+sun.shadow.bias = -0.0002; sun.shadow.normalBias = 0.035;
+sun.target.position.set(0, 15, 0);
+scene.add(sun, sun.target);
+const bounce = new THREE.PointLight(0xffd6a0, 0, 18, 2);
+scene.add(bounce);
+const SUN_HI = new THREE.Color(1.0, 0.94, 0.84), SUN_LO = new THREE.Color(1.0, 0.52, 0.26), sunCol = new THREE.Color();
+const MOON_COL = new THREE.Color(0.62, 0.72, 0.95);
+const nightAmb = new THREE.HemisphereLight(0x3a4c70, 0x0c0c10, 0); scene.add(nightAmb);
+const dayAmb = new THREE.HemisphereLight(0xb8c4d0, 0x6a5a48, 0.35); scene.add(dayAmb);
+
+// 夜空：星星绕着北天极转，满月是一面小圆盘
+const stars = new THREE.Group(); scene.add(stars);
+{
+  const N = 1800, pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < N; i++) {
+    const u = rnd() * 2 - 1, th = rnd() * Math.PI * 2, rr = Math.sqrt(1 - u * u);
+    pos.set([rr * Math.cos(th) * 9000, u * 9000, rr * Math.sin(th) * 9000], i * 3);
+    const b = 0.35 + rnd() ** 3 * 1.6, w = rnd(); col.set([b * (0.85 + 0.15 * w), b * 0.9, b * (1.05 - 0.1 * w)], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const m = new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0, fog: false, depthWrite: false });
+  stars.add(new THREE.Points(g, m)); stars.userData.m = m;
+}
+const moonDisc = new THREE.Mesh(new THREE.CircleGeometry(95, 48), new THREE.MeshBasicMaterial({ color: 0xc9d0dc, fog: false, transparent: true, opacity: 0 }));
+const moonHalo = new THREE.Mesh(new THREE.CircleGeometry(520, 48), new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uO: { value: 0 } },
+  vertexShader: `varying vec2 vP; void main(){ vP = position.xy / 520.0; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform float uO; varying vec2 vP; void main(){ float d = length(vP); gl_FragColor = vec4(vec3(0.55, 0.62, 0.8) * uO * pow(max(0.0, 1.0 - d), 3.0) * 0.5, 1.0); }`,
+}));
+scene.add(moonDisc, moonHalo);
+const nightDome = new THREE.Mesh(new THREE.SphereGeometry(4000, 48, 24), new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.BackSide, fog: false, uniforms: { uO: { value: 0 }, uMoon: { value: new V3(0, 1, 0) } },
+  vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform float uO; uniform vec3 uMoon; varying vec3 vD;
+    void main(){
+      vec3 d = normalize(vD);
+      vec3 c = mix(vec3(0.03, 0.045, 0.085), vec3(0.006, 0.01, 0.026), smoothstep(-0.02, 0.55, d.y));
+      c += vec3(0.05, 0.06, 0.085) * pow(max(0.0, dot(d, uMoon)), 10.0) * smoothstep(-0.05, 0.1, uMoon.y);
+      gl_FragColor = vec4(c, uO);
+    }`,
+}));
+nightDome.renderOrder = -1; nightDome.frustumCulled = false; scene.add(nightDome);
+stars.children[0].renderOrder = 1; moonHalo.renderOrder = 2; moonDisc.renderOrder = 3;
+
+
+// ────────────────────────────── 几何工具 ──────────────────────────────
+// 静态几何分两份：一份按材质合并成大网格用来画（少画几次），一份按 15° 左右切小块、不进场景，用来做射线检测（落脚、碰撞、挡光、挡相机）。
+const WALK = [], SOLID = [], LIGHT = [], CAMB = [];
+const LISTS = { w: WALK, s: SOLID, l: LIGHT, c: CAMB };
+const world = new THREE.Group(); scene.add(world);
+const BUCKETS = new Map();   // 材质 -> 几何列表
+function pushRender(geo, mat, cast = true) {
+  const key = mat.uuid + (cast ? 'c' : 'n');
+  if (!BUCKETS.has(key)) BUCKETS.set(key, { mat, cast, geos: [] });
+  BUCKETS.get(key).geos.push(geo);
+}
+const COLLIDER = new THREE.MeshBasicMaterial({ visible: false });
+function proxy(geo, flags, data) {
+  const m = new THREE.Mesh(geo, COLLIDER); m.updateMatrixWorld(true);
+  geo.computeBoundingSphere(); geo.computeBoundingBox();
+  if (data) Object.assign(m.userData, data);
+  for (const f of flags) LISTS[f].push(m);
+  return m;
+}
+// 静态：画在合并网格里，射线检测用同一份几何
+function addStatic(geo, mat, flags = 'wslc', data, cast = true) {
+  if (mat) pushRender(geo, mat, cast);
+  return flags ? proxy(geo, flags, data) : null;
+}
+// 动态：单独的网格（会动、会显隐），直接进场景，也进检测列表
+function addDynamic(mesh, flags = '', data, cast = true, receive = true) {
+  mesh.castShadow = cast; mesh.receiveShadow = receive;
+  world.add(mesh); mesh.updateMatrixWorld(true);
+  if (mesh.geometry) { mesh.geometry.computeBoundingSphere(); mesh.geometry.computeBoundingBox(); }
+  if (data) Object.assign(mesh.userData, data);
+  for (const f of flags) LISTS[f].push(mesh);
+  return mesh;
+}
+function removeFrom(list, obj) { const i = list.indexOf(obj); if (i >= 0) list.splice(i, 1); }
+function setIn(list, obj, on) { const i = list.indexOf(obj); if (on && i < 0) list.push(obj); else if (!on && i >= 0) list.splice(i, 1); }
+
+// 三角形收集器：给出想要的法线方向，绕向自动翻正
+function GB() {
+  const pos = [], nor = [];
+  const _a = new V3(), _b = new V3(), _n = new V3();
+  return {
+    tri(a, b, c, na, nb = na, nc = na) {
+      _a.subVectors(b, a); _b.subVectors(c, a); _n.crossVectors(_a, _b);
+      const want = _a.copy(na).add(nb).add(nc);
+      if (_n.dot(want) < 0) { const t = b; b = c; c = t; const tn = nb; nb = nc; nc = tn; }
+      pos.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+      nor.push(na.x, na.y, na.z, nb.x, nb.y, nb.z, nc.x, nc.y, nc.z);
+    },
+    quad(a, b, c, d, n, n2) { this.tri(a, b, c, n, n2 ? n2[1] : n, n2 ? n2[2] : n); this.tri(a, c, d, n2 ? n2[0] : n, n2 ? n2[2] : n, n2 ? n2[3] : n); },
+    geo() {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(nor), 3));
+      return g;
+    },
+    empty() { return pos.length === 0; },
+  };
+}
+const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
+const radN = (az, s = 1) => new V3(s * Math.sin(az * DEG), 0, -s * Math.cos(az * DEG));
+// 环形扇块：内侧弧 [a0,a1]（半径 r0）、外侧弧 [b0,b1]（半径 r1），内外两侧的角度可以不同（斜切的窗洞、门洞）
+function sector(r0, r1, y0, y1, a0, a1, b0 = a0, b1 = a1, o = {}) {
+  const { top = true, bottom = true, inner = true, outer = true, ends = true } = o;
+  const n = Math.max(1, o.seg ?? Math.ceil(Math.max(Math.abs(a1 - a0), Math.abs(b1 - b0)) / 2.5));
+  const g = GB();
+  const I = (t, y) => P(lerp(a0, a1, t), r0, y), O = (t, y) => P(lerp(b0, b1, t), r1, y);
+  for (let i = 0; i < n; i++) {
+    const t0 = i / n, t1 = (i + 1) / n;
+    if (inner && r0 > 0.01) { const na = radN(lerp(a0, a1, t0), -1), nb = radN(lerp(a0, a1, t1), -1); g.quad(I(t0, y0), I(t1, y0), I(t1, y1), I(t0, y1), na, [na, nb, nb, na]); }
+    if (outer) { const na = radN(lerp(b0, b1, t0)), nb = radN(lerp(b0, b1, t1)); g.quad(O(t0, y0), O(t1, y0), O(t1, y1), O(t0, y1), na, [na, nb, nb, na]); }
+    if (top) g.quad(I(t0, y1), I(t1, y1), O(t1, y1), O(t0, y1), UP);
+    if (bottom) g.quad(I(t0, y0), I(t1, y0), O(t1, y0), O(t0, y0), DOWN);
+  }
+  if (ends) {
+    for (const [t, s] of [[0, -1], [1, 1]]) {
+      const i0 = I(t, y0), o0 = O(t, y0), e = new V3().subVectors(o0, i0), nn = new V3(-e.z, 0, e.x).normalize();
+      const mid = P(lerp(lerp(a0, a1, t), lerp(b0, b1, t), 0.5) + s * 0.01, (r0 + r1) / 2);
+      const midE = P(lerp(lerp(a0, a1, t), lerp(b0, b1, t), 0.5), (r0 + r1) / 2);
+      if (nn.dot(new V3().subVectors(mid, midE)) < 0) nn.negate();
+      g.quad(i0, o0, O(t, y1), I(t, y1), nn);
+    }
+  }
+  return g.geo();
+}
+// 任意平面多边形竖直拉伸
+function planPrism(poly, y0, y1, o = {}) {
+  const g = GB(), n = poly.length;
+  let area = 0; for (let i = 0; i < n; i++) { const [x0, z0] = poly[i], [x1, z1] = poly[(i + 1) % n]; area += x0 * z1 - x1 * z0; }
+  const s = area > 0 ? 1 : -1;
+  for (let i = 0; i < n; i++) {
+    const [x0, z0] = poly[i], [x1, z1] = poly[(i + 1) % n];
+    const nn = new V3(s * (z1 - z0), 0, -s * (x1 - x0)).normalize();
+    g.quad(new V3(x0, y0, z0), new V3(x1, y0, z1), new V3(x1, y1, z1), new V3(x0, y1, z0), nn);
+  }
+  const tris = THREE.ShapeUtils.triangulateShape(poly.map(([x, z]) => new THREE.Vector2(x, z)), []);
+  for (const [a, b, c] of tris) {
+    if (o.top !== false) g.tri(new V3(poly[a][0], y1, poly[a][1]), new V3(poly[b][0], y1, poly[b][1]), new V3(poly[c][0], y1, poly[c][1]), UP);
+    if (o.bottom !== false) g.tri(new V3(poly[a][0], y0, poly[a][1]), new V3(poly[b][0], y0, poly[b][1]), new V3(poly[c][0], y0, poly[c][1]), DOWN);
+  }
+  return g.geo();
+}
+// 定向的盒子：中心 c、宽 w（沿 yaw 的横向）、高 h、厚 d（沿 yaw 的前向）。yaw 是朝向的方位角。
+function boxGeo(c, w, h, d, yaw = 0) {
+  const f = new V3(Math.sin(yaw * DEG), 0, -Math.cos(yaw * DEG)), r = new V3(Math.cos(yaw * DEG), 0, Math.sin(yaw * DEG));
+  const pts = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => { const p = c.clone().addScaledVector(r, a * w / 2).addScaledVector(f, b * d / 2); return [p.x, p.z]; });
+  return planPrism(pts, c.y - h / 2, c.y + h / 2);
+}
+function nonIndexed(g) { const q = g.index ? g.toNonIndexed() : g; for (const k of Object.keys(q.attributes)) if (k !== 'position' && k !== 'normal') q.deleteAttribute(k); return q; }
+function cylGeo(c, r0, r1, h, seg = 20) { const g = nonIndexed(new THREE.CylinderGeometry(r1, r0, h, seg)); g.translate(c.x, c.y + h / 2, c.z); return g; }
+function latheGeo(prof, c, seg = 24, scale = 1) { const g = nonIndexed(new THREE.LatheGeometry(prof.map(([x, y]) => new THREE.Vector2(x * scale, y * scale)), seg)); g.translate(c.x, c.y, c.z); return g; }
+function mergeRender() {
+  for (const { mat, cast, geos } of BUCKETS.values()) {
+    const g = mergeGeos(geos);
+    const m = new THREE.Mesh(g, mat); m.castShadow = cast; m.receiveShadow = true; m.matrixAutoUpdate = false;
+    world.add(m);
+  }
+  BUCKETS.clear();
+}
+function mergeGeos(geos) {
+  let n = 0; for (const g of geos) n += g.attributes.position.count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3); let o = 0;
+  for (const g of geos) { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); o += g.attributes.position.count; }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.computeBoundingSphere();
+  return g;
+}
+// 把长弧切成不超过 maxSpan 度的小段
+function splitArc(a0, a1, maxSpan = 15) { const n = Math.max(1, Math.ceil((a1 - a0) / maxSpan)), out = []; for (let i = 0; i < n; i++) out.push([lerp(a0, a1, i / n), lerp(a0, a1, (i + 1) / n)]); return out; }
+// 弧段 [a0,a1] 减去若干弧段（都按 a0 起展开）
+function arcMinus(a0, a1, cuts) {
+  let segs = [[a0, a1]];
+  for (const [c0, c1] of cuts) {
+    let s0 = c0, s1 = c1; while (s0 < a0 - 1e-9) { s0 += 360; s1 += 360; } while (s0 >= a0 + 360) { s0 -= 360; s1 -= 360; }
+    const next = [];
+    for (const [x0, x1] of segs) {
+      let pieces = [[x0, x1]];
+      for (const [d0, d1] of [[s0, s1], [s0 - 360, s1 - 360], [s0 + 360, s1 + 360]]) {
+        const np = [];
+        for (const [p0, p1] of pieces) { if (d1 <= p0 || d0 >= p1) { np.push([p0, p1]); continue; } if (d0 > p0) np.push([p0, d0]); if (d1 < p1) np.push([d1, p1]); }
+        pieces = np;
+      }
+      next.push(...pieces);
+    }
+    segs = next.filter(([x0, x1]) => x1 - x0 > 1e-6);
+  }
+  return segs;
+}
+
+
+// ────────────────────────────── 设计解算：光路落脚、时间线、栏杆缺口 ──────────────────────────────
+// 这些数都在启动时按天象公式算出来，建筑按它们来建；运行时再用射线检测核对一遍（挡光、柱子、雾）。
+// 主光窗：az 窗洞中心（内墙面）、y0 窗台、h 窗高、w 窗宽、axisH 窗洞斜切对准的时刻
+const WIN = {
+  isle: { az: 202.5, y0: 23.71, h: 2.0, w: 2.0, axisH: H_I, name: '开场光窗（南墙 L2 层）' },
+  b1: { az: 172.5, y0: 14.5, h: 2.4, w: 2.4, axisH: 23.5, name: '日1 主光窗（L1 层）' },
+  b2: { az: 247.5, y0: 23.2, h: 2.3, w: 2.4, axisH: 29, name: '日2 主光窗（L2 层）' },
+  p: { az: 262.5, y0: 28.4, h: 2.0, w: 2.4, axisH: 36.5, name: '光阶·高（L3 层）' },
+  r: { az: 247.5, y0: 28.4, h: 2.0, w: 2.4, axisH: 36.5, name: '光阶·低（L3 层）' },
+};
+function lowerEdgePoint(win, H, u, t, out = new V3()) {   // 窗台线上 u 处沿光走 t 米（三维距离）
+  const s = sunDir(H), hw = halfOf(win.w);
+  const W = P(win.az - hw + 2 * hw * u, R_IN, win.y0);
+  return out.copy(W).addScaledVector(s, -t);
+}
+function footOn(win, H, yF, u = 0.5) {
+  const s = sunDir(H); if (s.y <= 0.01) return null;
+  const t = (win.y0 - yF) / s.y, p = lowerEdgePoint(win, H, u, t);
+  return { t, p, az: azOf(p.x, p.z), r: rOf(p) };
+}
+// 让光脚落在"这一层此刻所在的方位"：H = 线(az)，光脚方位(H) = az
+function lineThrough(seam, a0, h0, a1, h1) { return lineZone(seam, [[a0, h0], [a1, h1]]); }
+{
+  const f1 = (H) => footOn(WIN.b1, H, F[0]).az;
+  // 水庭：过 (22.5°, H_I)，斜率 0.0602/°，找光脚与时刻一致的点
+  let best = null; for (let az = 30; az < 120; az += 0.02) { const H = ZD.L0.f(az), d = angDiff(f1(H), az); if (!best || Math.abs(d) < Math.abs(best.d)) best = { az, H, d }; }
+  WIN.b1.footAz = best.az; WIN.b1.H = best.H;
+  // L1：24 在窗下（172.5°），29 在 B2 的光脚
+  const a2 = footOn(WIN.b2, 29, F[1]).az; ZD.L1 = lineThrough(SEAM_N, 172.5, 24, a2, 29); WIN.b2.footAz = a2; WIN.b2.H = 29;
+  // L2：30 在 B2 的窗下（247.5°），35.7 在光阶 P 的光脚
+  const HP = 35.7, ap = footOn(WIN.p, HP, F[2]).az; ZD.L2 = lineThrough(SEAM_SE, 247.5, 30, ap, HP); WIN.p.footAz = ap; WIN.p.H = HP;
+}
+// 光阶：P、R 两束光和它们之间的时间按高度插值：从 P 的光脚（L2）到 R 在 L3 回廊上的下光点
+const R_STEP = { az: 257, H: 38.2 };
+ZD.L3 = lineThrough(SEAM_SE, R_STEP.az, R_STEP.H, AZ_OC, H_OC);
+// 楼层之间的光路按高度插值时间：[y0, H0] → [y1, H1]
+WIN.b1.timeY = [F[0], WIN.b1.H, WIN.b1.y0, ZD.L1.f(WIN.b1.az)];
+WIN.b2.timeY = [F[1], WIN.b2.H, WIN.b2.y0, ZD.L2.f(WIN.b2.az)];
+WIN.p.timeY = [F[2], WIN.p.H, F[3] + 0.3, R_STEP.H];
+WIN.r.timeY = WIN.p.timeY;
+WIN.isle.timeY = null;   // 开场的光时间不动
+
+// 光束下沿穿过栏杆带（r 12.0–12.7，高度在地面到栏杆顶之间）的方位：这些地方栏杆要断开
+function crossings(win, Hs, floorIdx) {
+  const yF = F[floorIdx], out = [];
+  for (const H of Hs) for (let ui = 0; ui <= 8; ui++) {
+    const u = ui / 8;
+    for (let t = 0.2; t < 40; t += 0.05) {
+      const p = lowerEdgePoint(win, H, u, t), r = rOf(p);
+      if (p.y < yF - 0.6) break;
+      if (r > R_A - 0.2 && r < R_PARA + 0.2 && p.y < yF + PARA_H + 0.15) out.push(azOf(p.x, p.z));
+    }
+  }
+  if (!out.length) return null;
+  // 求一段连续的方位范围（跨 0° 时展开）
+  const ref = out[0], un = out.map((a) => ref + angDiff(a, ref));
+  return [Math.min(...un) - 1.2, Math.max(...un) + 1.2];
+}
+const PARA_GAPS = { 1: [], 2: [], 3: [] };
+function addGap(fi, g, why) { if (g) PARA_GAPS[fi].push({ a0: g[0], a1: g[1], why }); }
+addGap(1, crossings(WIN.b1, [WIN.b1.H - 0.3, WIN.b1.H + 1.2], 1), '日1 光路穿过 L1 栏杆');
+addGap(1, crossings(WIN.b2, [WIN.b2.H - 0.2, WIN.b2.H + 0.2], 1), '日2 帕拉第奥母题（光落在 L1）');
+addGap(2, crossings(WIN.b2, [WIN.b2.H, WIN.b2.H + 1.2], 2), '日2 光路在 L2 窗下穿过栏杆');
+addGap(2, crossings(WIN.p, [WIN.p.H - 0.2, WIN.p.H + 0.2], 2), '日3 光阶 P 的光脚');
+addGap(3, crossings(WIN.r, [WIN.p.H + 0.5, R_STEP.H + 0.5], 3), '日3 光阶 R 上到 L3');
+
+
+// ────────────────────────────── 墙上的开口 ──────────────────────────────
+// 开口按内墙面的方位 [a0,a1] 定；斜切的窗洞给一个对准的方位 axisAz（从内往外），外墙面上的边沿这个方向推出去。
+const OPENINGS = [];
+function openingOuter(a, axisAz, ref) {
+  if (axisAz == null) return a;
+  const E = P(a, R_IN), A = new V3(Math.sin(axisAz * DEG), 0, -Math.cos(axisAz * DEG));
+  const b = E.dot(A), c = E.lengthSq() - R_OUT * R_OUT, s = -b + Math.sqrt(b * b - c);
+  const Q = E.addScaledVector(A, s);
+  return ref + angDiff(azOf(Q.x, Q.z), ref);
+}
+function opening(id, az, w, y0, y1, axisAz = null, kind = 'win', extra = {}) {
+  const hw = halfOf(w);
+  const o = { id, az, w, a0: az - hw, a1: az + hw, y0, y1, axisAz, kind, ...extra };
+  o.b0 = openingOuter(o.a0, axisAz, o.a0); o.b1 = openingOuter(o.a1, axisAz, o.a1);
+  OPENINGS.push(o); return o;
+}
+const sunAzAt = (H) => azV(sunDir(H)), moonAzAt = (H) => azV(moonDir(H));
+// 主光窗
+for (const [k, w] of Object.entries(WIN)) w.open = opening(k, w.az, w.w, w.y0, w.y0 + w.h, sunAzAt(w.axisH), 'main');
+// 北门：3.4 × 6.0，正对小岛
+const DOOR_N = opening('doorN', 22.5, 3.4, 0, 6.0, null, 'door');
+// 子午线小孔：南墙 L1 层，太阳的圆斑落在水庭东北的铜线上
+const PIN = opening('pin', 186.5, 0.32, 15.45, 15.77, sunAzAt(21.5), 'pin');
+// 日常采光窗（窗台高、窗窄、窗洞深，光只落在本层）
+const DAILY = [
+  // 水庭层（外面是柱廊，柱影扫过光斑：柱影钟）
+  ...[157.5, 187.5, 217.5, 247.5].map((az) => ({ az, y0: 3.4, h: 3.6, w: 1.3 })),
+  // L1 层
+  ...[142.5, 202.5, 217.5, 232.5].map((az) => ({ az, y0: 14.6, h: 2.6, w: 1.2 })),
+];
+DAILY.forEach((d, i) => opening('daily' + i, d.az, d.w, d.y0, d.y0 + d.h, null, 'daily'));
+// 月光窗：L3 层东侧。天鹅窗对着初夜的月亮，读墙楼梯的窗对着刚出海的月亮（斜切）
+const MOONWIN = {
+  swan: { az: 67.5, y0: 27.6, h: 2.8, w: 2.4, axisH: 90 },
+  gate: { az: 117.0, y0: 26.32, h: 4.45, w: 4.17, axisH: 80, mullions: [114.15, 121.93] },   // 月门：一扇斜切的宽窗，两根竖棂
+};
+for (const [k, w] of Object.entries(MOONWIN)) w.open = opening('moon_' + k, w.az, w.w, w.y0, w.y0 + w.h, moonAzAt(w.axisH), 'moon');
+
+// ────────────────────────────── 厚墙里的楼梯（夜里用） ──────────────────────────────
+// 楼梯在墙厚里（r 15.8–16.8），两端各有 4° 的平台和门。按高度插值时间。
+const TUN_R0 = 15.8, TUN_R1 = 16.8, TUN_HEAD = 2.4, TUN_LAND = 4;
+const TUNNELS = [
+  { id: 'T2', aTop: 58, aBot: 23, yTop: F[3], yBot: F[2], name: '月2 天鹅揭开的楼梯（L3 → L2，东北墙）' },
+  { id: 'T3', aTop: 279, aBot: 330, yTop: F[2], yBot: F[1], name: '月3 双子桥后的楼梯（L2 → L1，西北墙）', topDoorW: 8, land0: 10 },
+  { id: 'T4', aTop: 285, aBot: 350, yTop: F[1], yBot: F[0], name: '月4 月石门后的楼梯（L1 → 水庭，瀑布旁出来）' },
+];
+for (const T of TUNNELS) {
+  T.dir = Math.sign(T.aBot - T.aTop);
+  const span = Math.abs(T.aBot - T.aTop), l0 = T.land0 ?? TUN_LAND, l1 = TUN_LAND;
+  T.floorAt = (az) => {   // 楼梯某方位的踏面高度
+    const s = (az - T.aTop) * T.dir;
+    if (s <= l0) return T.yTop;
+    if (s >= span - l1) return T.yBot;
+    const k = (s - l0) / (span - l0 - l1), steps = Math.max(4, Math.round((T.yTop - T.yBot) / 0.3));
+    return T.yTop - (T.yTop - T.yBot) * Math.ceil(k * steps - 1e-6) / steps;
+  };
+  T.lo = Math.min(T.aTop, T.aBot); T.hi = Math.max(T.aTop, T.aBot);
+  T.topDoor = T.aTop + T.dir * (T.topDoorW ? T.topDoorW / 2 - 0.0 : l0 / 2);
+  T.botDoor = T.aBot - T.dir * l1 / 2;
+  T.chunks = [];
+  for (let a = T.lo; a < T.hi - 1e-6; a += 5) {
+    const c0 = a, c1 = Math.min(T.hi, a + 5); let fmin = 1e9, fmax = -1e9;
+    for (let x = c0; x <= c1 + 1e-6; x += 0.25) { const f = T.floorAt(Math.min(x, c1)); fmin = Math.min(fmin, f); fmax = Math.max(fmax, f); }
+    const ch = { c0, c1, y0: fmin - 0.45, y1: fmax + TUN_HEAD + 0.45 };
+    T.chunks.push(ch);
+    opening(T.id + '_' + c0, (c0 + c1) / 2, 0, ch.y0, ch.y1, null, 'tunnel', { a0: c0, a1: c1, b0: c0, b1: c1 });
+  }
+}
+
+// ────────────────────────────── 圆殿的墙 ──────────────────────────────
+const WALL_BASE = -0.6;
+function buildWall() {
+  const ys = new Set([WALL_BASE, WALL_TOP]);
+  for (const o of OPENINGS) { ys.add(clamp(o.y0, WALL_BASE, WALL_TOP)); ys.add(clamp(o.y1, WALL_BASE, WALL_TOP)); }
+  const lv = [...ys].sort((a, b) => a - b);
+  let n = 0;
+  for (let i = 0; i < lv.length - 1; i++) {
+    const ya = lv[i], yb = lv[i + 1]; if (yb - ya < 1e-4) continue;
+    const act = OPENINGS.filter((o) => o.y0 <= ya + 1e-6 && o.y1 >= yb - 1e-6).map((o) => {
+      const s = wrap360(o.a0), d = s - o.a0; return { a0: s, a1: o.a1 + d, b0: o.b0 + d, b1: o.b1 + d };
+    }).sort((p, q) => p.a0 - q.a0);
+    if (!act.length) { for (const [s, e] of splitArc(0, 360, 15)) { addStatic(sector(R_IN, R_OUT, ya, yb, s, e, s, e, { ends: false }), M.stone); n++; } continue; }
+    for (let k = 0; k < act.length; k++) {
+      const A = act[k], B = act[(k + 1) % act.length];
+      let as = A.a1, ae = B.a0, bs = A.b1, be = B.b0;
+      if (k === act.length - 1) { ae += 360; be += 360; }
+      if (ae - as < 1e-4) continue;
+      const parts = splitArc(as, ae, 15);
+      parts.forEach(([p0, p1], j) => {
+        const t0 = (p0 - as) / (ae - as), t1 = (p1 - as) / (ae - as);
+        const g = sector(R_IN, R_OUT, ya, yb, p0, p1, lerp(bs, be, t0), lerp(bs, be, t1), { ends: false });
+        addStatic(g, M.stone); n++;
+      });
+      // 窗洞、门洞的侧面（斜切）
+      for (const [a, b, s] of [[as, bs, 1], [ae, be, -1]]) {
+        const i0 = P(a, R_IN), o0 = P(b, R_OUT);
+        const g = GB(), e = new V3().subVectors(o0, i0), nn = new V3(-e.z, 0, e.x).normalize();
+        const t = P(a + s * 0.5, R_IN).sub(i0); if (nn.dot(t) > 0) nn.negate();
+        g.quad(new V3(i0.x, ya, i0.z), new V3(o0.x, ya, o0.z), new V3(o0.x, yb, o0.z), new V3(i0.x, yb, i0.z), nn);
+        addStatic(g.geo(), M.stone, 'slc');
+      }
+    }
+  }
+  return n;
+}
+
+// ────────────────────────────── 墙里的楼梯：内外两层皮、踏步和顶 ──────────────────────────────
+const TUN_DOORS = [];
+function buildTunnels() {
+  for (const T of TUNNELS) {
+    const doorHW = halfOf(1.2, 15.65);
+    const doors = [
+      { az: T.topDoor, hw: T.topDoorW ? T.topDoorW / 2 : doorHW, y: T.yTop, h: T.topDoorW ? 2.6 : TUN_HEAD, end: 'top' },
+      { az: T.botDoor, hw: doorHW, y: T.yBot, h: TUN_HEAD, end: 'bot' },
+    ];
+    T.doors = doors;
+    for (const ch of T.chunks) {
+      addStatic(sector(TUN_R1, R_OUT, ch.y0, ch.y1, ch.c0, ch.c1, ch.c0, ch.c1, { ends: false }), M.stone);
+      // 内皮：门洞处断开
+      let cuts = doors.filter((d) => d.az + d.hw > ch.c0 && d.az - d.hw < ch.c1);
+      const pieces = arcMinus(ch.c0, ch.c1, cuts.map((d) => [d.az - d.hw, d.az + d.hw]));
+      for (const [p0, p1] of pieces) addStatic(sector(R_IN, TUN_R0, ch.y0, ch.y1, p0, p1, p0, p1, { ends: true }), M.stone);
+      for (const d of cuts) {
+        const p0 = Math.max(ch.c0, d.az - d.hw), p1 = Math.min(ch.c1, d.az + d.hw);
+        if (d.y > ch.y0) addStatic(sector(R_IN, TUN_R0, ch.y0, d.y, p0, p1, p0, p1, { ends: false }), M.stone);
+        if (d.y + d.h < ch.y1) addStatic(sector(R_IN, TUN_R0, d.y + d.h, ch.y1, p0, p1, p0, p1, { ends: false }), M.stone);
+        if (!TUN_DOORS.includes(d)) { TUN_DOORS.push(d); d.T = T; }
+      }
+      // 踏步与顶：每 1.25° 一格
+      for (let a = ch.c0; a < ch.c1 - 1e-6; a += 1.25) {
+        const b = Math.min(ch.c1, a + 1.25), f = T.floorAt((a + b) / 2);
+        addStatic(sector(TUN_R0, TUN_R1, ch.y0, f, a, b, a, b, { ends: true }), M.stoneDark, 'wslc', { zone: 'tun', T });
+        addStatic(sector(TUN_R0, TUN_R1, f + TUN_HEAD, ch.y1, a, b, a, b, { ends: true }), M.stone, 'slc');
+      }
+    }
+    // 门口的平台接到回廊地面：内皮下面那一条也要能踩
+    for (const d of doors) addStatic(sector(R_IN - 0.02, TUN_R0, d.y - 0.45, d.y, d.az - d.hw, d.az + d.hw), M.stoneDark, 'wl', { zone: 'tun', T });
+  }
+}
+
+// ────────────────────────────── 楼板、回廊、栏杆、柱廊 ──────────────────────────────
+// 楼板（环形，按方位断点切块）：cuts = [{a0,a1,r0,r1}]
+function ringSlab(y0, y1, rIn, rOut, a0, a1, cuts, mat, flags, data) {
+  const bps = new Set([a0, a1]);
+  for (const c of cuts) { for (const x of [c.a0, c.a1]) { let t = x; while (t < a0) t += 360; while (t > a1) t -= 360; if (t > a0 && t < a1) bps.add(t); } }
+  const arr = [...bps].sort((p, q) => p - q);
+  for (let i = 0; i < arr.length - 1; i++) {
+    const s = arr[i], e = arr[i + 1], mid = (s + e) / 2;
+    let rs = [[rIn, rOut]];
+    for (const c of cuts) {
+      if (!inArc(wrap360(mid), [wrap360(c.a0), wrap360(c.a0) + (c.a1 - c.a0)])) continue;
+      const nr = []; for (const [r0, r1] of rs) { if (c.r1 <= r0 || c.r0 >= r1) { nr.push([r0, r1]); continue; } if (c.r0 > r0) nr.push([r0, c.r0]); if (c.r1 < r1) nr.push([c.r1, r1]); }
+      rs = nr;
+    }
+    for (const [r0, r1] of rs) if (r1 - r0 > 0.02) for (const [p0, p1] of splitArc(s, e, 15)) addStatic(sector(r0, r1, y0, y1, p0, p1), mat, flags, data);
+  }
+}
+const SLAB_CUTS = { 1: [], 2: [], 3: [] };
+SLAB_CUTS[1].push({ a0: SEAM_N[0], a1: SEAM_N[1] + 360, r0: 0, r1: 99, why: '瀑布' });
+SLAB_CUTS[2].push({ a0: SEAM_SE[0], a1: SEAM_SE[1], r0: 0, r1: 99, why: '厚墙（接缝）' });
+SLAB_CUTS[3].push({ a0: SEAM_SE[0], a1: SEAM_SE[1], r0: 0, r1: 99, why: '厚墙（接缝）' });
+// 双子：L2 西北的坑（楼板上的断口），前面是固定的那尊，后面是龛
+const TWINS = { az: 283, pitA: [279, 287], pitR: [14.1, R_IN], castorR: 13.55, polluxR: 16.25 };
+SLAB_CUTS[2].push({ a0: TWINS.pitA[0], a1: TWINS.pitA[1], r0: TWINS.pitR[0], r1: TWINS.pitR[1], why: '双子前的断口' });
+// 光阶 P 近窗的一段从 L3 楼板内沿穿下去：楼板内沿开一道缺口，外面立铜栅
+const P_NOTCH = (() => {
+  const w = WIN.p; let a0 = 1e9, a1 = -1e9, rMax = 0;
+  for (const H of [w.H - 0.2, w.H + 1, R_STEP.H + 0.5]) for (let ui = 0; ui <= 8; ui++) for (let t = 0; t < 12; t += 0.05) {
+    const p = lowerEdgePoint(w, H, ui / 8, t), r = rOf(p);
+    if (r < R_A - 0.3) break;
+    if (p.y < F[3] + 0.25 && r < R_IN) { const az = azOf(p.x, p.z); a0 = Math.min(a0, az); a1 = Math.max(a1, az); rMax = Math.max(rMax, r); }
+  }
+  return { a0: a0 - 1.5, a1: a1 + 1.5, r1: rMax + 0.25 };
+})();
+SLAB_CUTS[3].push({ a0: P_NOTCH.a0, a1: P_NOTCH.a1, r0: 0, r1: P_NOTCH.r1, why: '光阶 P 从楼板内沿穿过' });
+PARA_GAPS[3].push({ a0: P_NOTCH.a0, a1: P_NOTCH.a1, why: '光阶 P 的缺口' });
+// 圆眼光柱的光脚（L3 东北）
+PARA_GAPS[3].push({ a0: AZ_OC - 8, a1: AZ_OC + 8, why: '圆眼光柱的光脚' });
+// 双子桥
+PARA_GAPS[2].push({ a0: TWINS.az - 1.2, a1: TWINS.az + 1.2, why: '双子桥（合拢前有护栏）', rail: true });
+
+function buildFloors() {
+  // 水庭走道（水池边 9.75 到内墙），下面一直填到池底
+  ringSlab(POOL_BOTTOM, 0, R_POOL, R_IN, SEAM_N[1], SEAM_N[0], [], M.floor, 'wslc', { zone: 'L0' });
+  ringSlab(POOL_BOTTOM, -0.55, R_POOL, R_IN, SEAM_N[0], SEAM_N[1] + 360, [], M.poolBed, 'slc', { zone: 'L0' });   // 瀑布落水的槽
+  // 池底
+  addStatic(sector(0, R_POOL, POOL_BOTTOM - 0.3, POOL_BOTTOM, 0, 360, 0, 360, { ends: false, inner: false, seg: 72 }), M.poolBed, 'lc', { zone: 'pool' });
+  for (let i = 1; i <= 3; i++) ringSlab(F[i] - SLAB, F[i], R_A, R_IN, 0, 360, SLAB_CUTS[i], M.floor, 'wslc', { zone: 'L' + i });
+}
+function buildParapets() {
+  for (let i = 1; i <= 3; i++) {
+    const cuts = [...PARA_GAPS[i].map((g) => ({ a0: g.a0, a1: g.a1, r0: 0, r1: 99 })), ...SLAB_CUTS[i].filter((c) => c.r0 < R_PARA)];
+    ringSlab(F[i], F[i] + PARA_H, R_A, R_PARA, 0, 360, cuts, M.stone, 'lc');
+    ringSlab(F[i], F[i] + 2.3, R_A, R_PARA, 0, 360, cuts, null, 's');   // 看不见的高护栏：跳也翻不过去
+  }
+  // 双子前的断口四周的护栏（合拢以后，中间那一段拿掉）
+  const [a0, a1] = TWINS.pitA, r0 = TWINS.pitR[0];
+  const bridgeA = [TWINS.az - 1.8, TWINS.az + 1.8];
+  for (const [s, e] of [[a0 - 0.3, bridgeA[0]], [bridgeA[1], a1 + 0.3]]) {
+    addStatic(sector(r0 - 0.25, r0, F[2], F[2] + PARA_H, s, e), M.stone, 'lc');
+    addStatic(sector(r0 - 0.25, r0, F[2], F[2] + 2.3, s, e), null, 's');
+  }
+  for (const a of [a0, a1]) { addStatic(sector(r0 - 0.25, R_IN, F[2], F[2] + PARA_H, a - 0.5, a + 0.5), M.stone, 'lc'); addStatic(sector(r0, R_IN, F[2], F[2] + 2.3, a - 0.5, a + 0.5), null, 's'); }
+  TWINS.rail = addDynamic(new THREE.Mesh(sector(r0 - 0.25, r0, F[2], F[2] + PARA_H, bridgeA[0], bridgeA[1]), M.bronze), 'slc');
+  TWINS.railTall = proxy(sector(r0 - 0.25, r0, F[2], F[2] + 2.3, bridgeA[0], bridgeA[1]), 's');
+}
+// 内圈柱廊：每层 12 根，在 30° 的倍数上。挡住主光路的柱子不立（列在数据表里）。
+const COL_SPEC = [
+  { fi: 0, D: 0.9, y0: F[0], y1: F[1] - SLAB, order: '多立克' },
+  { fi: 1, D: 0.75, y0: F[1], y1: F[2] - SLAB, order: '爱奥尼' },
+  { fi: 2, D: 0.6, y0: F[2], y1: F[3] - SLAB, order: '科林斯' },
+  { fi: 3, D: 0.5, y0: F[3], y1: CEIL, order: '女像柱' },
+];
+const R_COL = (R_A + R_PARA) / 2;
+const COLUMNS = [], COL_SKIPPED = [];
+function beamHitsColumn(win, Hs, c, spec) {
+  for (const H of Hs) for (let ui = 0; ui <= 6; ui++) for (let vi = 0; vi <= 2; vi++) {
+    const s = sunDir(H), hw = halfOf(win.w);
+    const W = P(win.az - hw + 2 * hw * ui / 6, R_IN, win.y0 + win.h * vi / 2);
+    for (let t = 0; t < 45; t += 0.1) {
+      const p = W.clone().addScaledVector(s, -t);
+      if (p.y < spec.y0 - 0.5) break;
+      if (p.y > spec.y1 + 0.2) continue;
+      if (Math.hypot(p.x - c.x, p.z - c.z) < spec.D / 2 + 0.12) return true;
+    }
+  }
+  return false;
+}
+let SERLIANA = null;
+function buildColonnades() {
+  const beams = [[WIN.b1, [WIN.b1.H - 0.5, WIN.b1.H + 1]], [WIN.b2, [WIN.b2.H, WIN.b2.H + 1]], [WIN.p, [WIN.p.H, WIN.p.H + 1.5]], [WIN.r, [WIN.p.H + 0.5, R_STEP.H]], [WIN.isle, [H_I]]];
+  for (const spec of COL_SPEC) for (let k = 0; k < 12; k++) {
+    const az = k * 30, c = P(az, R_COL);
+    const why = [];
+    if (spec.fi <= 1 && inArc(az, SEAM_N)) why.push('瀑布');
+    if (spec.fi >= 2 && inArc(az, [SEAM_SE[0] - 1, SEAM_SE[1]])) why.push('厚墙');
+    if (spec.fi === 1 && SERLIANA_A && inArc(az, [SERLIANA_A[0] - 3, SERLIANA_A[1] + 3])) why.push('帕拉第奥母题');
+    if (spec.fi === 3 && Math.abs(angDiff(az, AZ_OC)) < 9) why.push('圆眼光柱');
+    for (const [w, Hs] of beams) if (beamHitsColumn(w, Hs, c, spec)) why.push('挡住' + w.name);
+    if (why.length) { COL_SKIPPED.push({ floor: spec.fi, az, why: why.join('、') }); continue; }
+    const h = spec.y1 - spec.y0;
+    addStatic(cylGeo(new V3(c.x, spec.y0, c.z), spec.D / 2, spec.D / 2 * 0.86, h - 0.35, 18), M.column, 'slc');
+    addStatic(boxGeo(new V3(c.x, spec.y1 - 0.175, c.z), spec.D * 1.35, 0.35, spec.D * 1.35, az), M.column, 'lc');
+    addStatic(boxGeo(new V3(c.x, spec.y0 + 0.12, c.z), spec.D * 1.3, 0.24, spec.D * 1.3, az), M.column, 'lc');
+    COLUMNS.push({ floor: spec.fi, az, D: spec.D, h, order: spec.order });
+  }
+}
+// 帕拉第奥母题：L1 北侧，B2 落在 L1 时穿过中间的宽拱。两边的窄开间比光窄，光从那里过只会被柱子切开。
+let SERLIANA_A = null;
+function planSerliana() {
+  const w = WIN.b2; let a0 = 1e9, a1 = -1e9;
+  for (const H of [w.H]) for (let ui = 0; ui <= 10; ui++) for (let vi = 0; vi <= 4; vi++) {
+    const s = sunDir(H), hw = halfOf(w.w), W = P(w.az - hw + 2 * hw * ui / 10, R_IN, w.y0 + w.h * vi / 4);
+    for (let t = 0; t < 45; t += 0.05) { const p = W.clone().addScaledVector(s, -t), r = rOf(p); if (p.y < F[1]) break; if (Math.abs(r - R_COL) < 0.3 && t > 10) { const az = azOf(p.x, p.z); const u = 340 + angDiff(az, 340); a0 = Math.min(a0, u); a1 = Math.max(a1, u); } }
+  }
+  const cHalf = halfOf(0.55, R_COL), side = halfOf(0.9, R_COL), pier = halfOf(1.1, R_COL);
+  const c0 = a0 - 0.9, c1 = a1 + 0.9;   // 中间宽拱
+  SERLIANA = { mid: [c0, c1], colL: c0 - cHalf, colR: c1 + cHalf, sideL: [c0 - 2 * cHalf - side, c0 - 2 * cHalf], sideR: [c1 + 2 * cHalf, c1 + 2 * cHalf + side], beam: [a0, a1] };
+  SERLIANA.pierL = [SERLIANA.sideL[0] - pier, SERLIANA.sideL[0]]; SERLIANA.pierR = [SERLIANA.sideR[1], SERLIANA.sideR[1] + pier];
+  SERLIANA_A = [SERLIANA.pierL[0], SERLIANA.pierR[1]];
+  PARA_GAPS[1].push({ a0: SERLIANA_A[0], a1: SERLIANA_A[1], why: '帕拉第奥母题（取代栏杆）' });
+  const chord = 2 * R_COL * Math.sin((c1 - c0) / 2 * DEG);
+  SERLIANA.midW = chord; SERLIANA.sideW = 0.9; SERLIANA.lintel = F[1] + 2.9; SERLIANA.crown = F[1] + 2.9 + chord / 2;
+}
+function buildSerliana() {
+  const S = SERLIANA, y0 = F[1], yTop = F[2] - SLAB, r0 = R_A - 0.05, r1 = R_PARA + 0.1;
+  // 两端的墩、两根柱、窄开间上的横楣、中间的拱（用阶梯形近似）、拱上墙
+  for (const [a, b] of [S.pierL, S.pierR]) addStatic(sector(r0, r1, y0, yTop, a, b), M.column);
+  for (const az of [S.colL, S.colR]) { const c = P(az, R_COL); addStatic(cylGeo(new V3(c.x, y0, c.z), 0.275, 0.24, S.lintel - y0, 16), M.column, 'slc'); }
+  for (const [a, b] of [S.sideL, S.sideR]) addStatic(sector(r0, r1, S.lintel, yTop, a, b), M.column);
+  for (const az of [S.colL, S.colR]) { const hw = halfOf(0.55, R_COL); addStatic(sector(r0, r1, S.lintel, yTop, az - hw, az + hw), M.column); }
+  const [m0, m1] = S.mid, R = (m1 - m0) / 2, cm = (m0 + m1) / 2, n = 14;
+  for (let i = 0; i < n; i++) {   // 拱：把拱肩按小块堆出来
+    const x0 = -1 + 2 * i / n, x1 = -1 + 2 * (i + 1) / n, xm = Math.max(Math.abs(x0), Math.abs(x1));
+    const yA = S.lintel + (S.crown - S.lintel) * Math.sqrt(Math.max(0, 1 - xm * xm));
+    addStatic(sector(r0, r1, yA, yTop, cm + x0 * R, cm + x1 * R), M.column);
+  }
+}
+
+// ────────────────────────────── 外面：台地、崖、海、小岛、台基、外圈柱廊 ──────────────────────────────
+function circlePts(cx, cz, r, n, rev = false) { const a = []; for (let i = 0; i < n; i++) { const t = (rev ? -1 : 1) * i / n * Math.PI * 2; a.push([cx + r * Math.cos(t), cz + r * Math.sin(t)]); } return a; }
+function buildOutside() {
+  // 台地：以殿心以南 14 m 为圆心、半径 40 m 的圆盘，北沿离殿心约 26.7 m；中间挖掉神殿的地基
+  const outer = circlePts(TERR_C.x, TERR_C.z, TERR_R, 144).map(([x, z]) => new THREE.Vector2(x, z));
+  const hole = circlePts(0, 0, R_OUT + 0.2, 72, true).map(([x, z]) => new THREE.Vector2(x, z));
+  const tris = THREE.ShapeUtils.triangulateShape(outer, [hole]); const all = [...outer, ...hole];
+  { const g = GB(); for (const [a, b, c] of tris) g.tri(new V3(all[a].x, TERR_Y, all[a].y), new V3(all[b].x, TERR_Y, all[b].y), new V3(all[c].x, TERR_Y, all[c].y), UP); addStatic(g.geo(), M.ext, 'wlc', { zone: 'out' }); }
+  // 崖壁
+  { const n = outer.length; for (let i = 0; i < n; i += 12) { const g = GB(); for (let j = i; j < Math.min(n, i + 12); j++) { const a = outer[j], b = outer[(j + 1) % n]; const na = new V3(a.x - TERR_C.x, 0, a.y - TERR_C.z).normalize(), nb = new V3(b.x - TERR_C.x, 0, b.y - TERR_C.z).normalize(); g.quad(new V3(a.x, SEA_Y - 2, a.y), new V3(b.x, SEA_Y - 2, b.y), new V3(b.x, TERR_Y, b.y), new V3(a.x, TERR_Y, a.y), na, [na, nb, nb, na]); } addStatic(g.geo(), M.cliff, 'lc'); } }
+  // 台地边上看不见的护栏：北边小岛的光落下来的地方留一个口
+  const TERR_EDGE_GAP = { az: 22.5, half: 5 };
+  { for (let i = 0; i < 144; i++) { const t0 = i / 144 * Math.PI * 2, t1 = (i + 1) / 144 * Math.PI * 2; const a = [TERR_C.x + (TERR_R - 0.3) * Math.cos(t0), TERR_C.z + (TERR_R - 0.3) * Math.sin(t0)], b = [TERR_C.x + (TERR_R - 0.3) * Math.cos(t1), TERR_C.z + (TERR_R - 0.3) * Math.sin(t1)];
+      const mid = azOf((a[0] + b[0]) / 2, (a[1] + b[1]) / 2); if (Math.abs(angDiff(mid, TERR_EDGE_GAP.az)) < TERR_EDGE_GAP.half) continue;
+      const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz), nx = -dz / L * 0.15, nz = dx / L * 0.15;
+      proxy(planPrism([[a[0] - nx, a[1] - nz], [b[0] - nx, b[1] - nz], [b[0] + nx, b[1] + nz], [a[0] + nx, a[1] + nz]], TERR_Y, TERR_Y + 2.4), 's'); } }
+  // 海
+  { const g = nonIndexed(new THREE.PlaneGeometry(6000, 6000)); g.rotateX(-Math.PI / 2); g.translate(0, SEA_Y, 0); const m = new THREE.Mesh(g, M.sea); m.receiveShadow = true; world.add(m); }
+  // 小岛：顶面 −12，比台地低约 11 m
+  { const c = P(ISLAND.az, ISLAND.r); addStatic(planPrism(circlePts(c.x, c.z, ISLAND.R, 40), SEA_Y - 1, ISLAND.top), M.rock, 'wslc', { zone: 'out' });
+    addStatic(latheGeo([[ISLAND.R + 3.2, 0], [ISLAND.R + 1.6, 1.4], [ISLAND.R + 0.3, 3.2], [ISLAND.R, 4.0]], new V3(c.x, SEA_Y - 0.2, c.z), 40), M.rock, 'lc');
+    for (let i = 0; i < 40; i++) { const t0 = i / 40 * Math.PI * 2, t1 = (i + 1) / 40 * Math.PI * 2; const a = [c.x + (ISLAND.R - 0.25) * Math.cos(t0), c.z + (ISLAND.R - 0.25) * Math.sin(t0)], b = [c.x + (ISLAND.R - 0.25) * Math.cos(t1), c.z + (ISLAND.R - 0.25) * Math.sin(t1)];
+      if (Math.abs(angDiff(azOf(((a[0] + b[0]) / 2) - c.x, ((a[1] + b[1]) / 2) - c.z), ISLAND.az + 180)) < 26) continue;
+      const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz), nx = -dz / L * 0.12, nz = dx / L * 0.12;
+      proxy(planPrism([[a[0] - nx, a[1] - nz], [b[0] - nx, b[1] - nz], [b[0] + nx, b[1] + nz], [a[0] + nx, a[1] + nz]], ISLAND.top, ISLAND.top + 2.4), 's'); } }
+  // 远处的岩岛（日落的遮挡）
+  { const c = P(FAR_ISLE.az, FAR_ISLE.dist); const g = nonIndexed(new THREE.ConeGeometry(150, FAR_ISLE.ridge - SEA_Y, 7, 1)); g.scale(1.6, 1, 0.8); g.rotateY(-FAR_ISLE.az * DEG); g.translate(c.x, SEA_Y + (FAR_ISLE.ridge - SEA_Y) / 2, c.z); const m = new THREE.Mesh(g, FAR_ISLE_MAT); world.add(m); }
+  // 台基与三级台阶
+  addStatic(sector(R_OUT, R_STYLO, TERR_Y, 0, 0, 360, 0, 360, { ends: false, inner: false, seg: 144 }), M.ext, 'wslc', { zone: 'out' });
+  addStatic(sector(R_STYLO, R_STYLO + 0.4, TERR_Y, -0.4, 0, 360, 0, 360, { ends: false, inner: false, seg: 144 }), M.ext, 'wslc', { zone: 'out' });
+  addStatic(sector(R_STYLO + 0.4, R_STYLO + 0.8, TERR_Y, -0.8, 0, 360, 0, 360, { ends: false, inner: false, seg: 144 }), M.ext, 'wslc', { zone: 'out' });
+  // 外圈柱廊：24 根多立克柱（直径 1.3，高 9.3），单层；檐部 9.3–11.34，屋顶平
+  for (let k = 0; k < 24; k++) { const c = P(k * 15, R_PERI); addStatic(cylGeo(new V3(c.x, 0, c.z), 0.65, 0.54, 8.85, 20), M.ext, 'slc'); addStatic(boxGeo(new V3(c.x, 9.075, c.z), 1.55, 0.45, 1.55, k * 15), M.ext, 'lc'); }
+  addStatic(sector(R_PERI - 0.9, R_PERI + 0.9, 9.3, F[1], 0, 360, 0, 360, { ends: false, seg: 144 }), M.ext, 'lc');
+  addStatic(sector(R_OUT, R_PERI - 0.9, F[1] - 0.4, F[1], 0, 360, 0, 360, { ends: false, inner: false, seg: 144 }), M.ext, 'lc');
+  // 墙顶上看不见的护栏
+  ringSlab(WALL_TOP, WALL_TOP + 2.4, R_IN, R_OUT, 0, 360, [], null, 's');
+  // 所有窗的外侧挡板（人出不去，光照样进）
+  for (const o of OPENINGS) if (o.kind !== 'door' && o.kind !== 'tunnel') {
+    const a = (o.b0 + o.b1) / 2, hw = (o.b1 - o.b0) / 2;
+    proxy(sector(R_OUT - 0.25, R_OUT - 0.1, o.y0 - 0.1, o.y1 + 0.1, a - hw, a + hw), 's');
+  }
+}
+
+// ────────────────────────────── 瀑布、厚墙、子午线 ──────────────────────────────
+const FALL = { a0: 358, a1: 372, top: F[2] - SLAB - 0.05, r0: R_A + 0.1, r1: R_IN - 0.05 };
+function buildWaterfall() {
+  // 瀑布本身：从 L2 楼板底下的槽口落到水庭的槽里（碰撞体：挡住水庭和 L1 两层的通行）
+  proxy(sector(R_POOL - 0.2, R_IN, -1, FALL.top, FALL.a0, FALL.a1), 'sc');
+  addStatic(sector(R_POOL - 0.25, R_POOL + 0.05, -0.55, 0.35, FALL.a0, FALL.a1), M.stone, 'lc');   // 槽口的矮沿
+  // 喷口
+  addStatic(sector(FALL.r0 - 0.2, R_IN, FALL.top - 0.5, FALL.top, FALL.a0 - 0.5, FALL.a1 + 0.5), M.bronze, 'lc');
+}
+function buildPoche() {
+  addStatic(sector(R_A, R_IN, F[2] - SLAB, CEIL, SEAM_SE[0], SEAM_SE[1]), M.stoneDark);
+}
+// 子午线：水庭东北的地面嵌一条铜线，标着时辰
+const MERID = { pts: [] };
+function buildMeridian() {
+  const v = new V3();
+  for (let H = 18; H <= 30; H += 0.25) {
+    sunDir(H, v); if (v.y <= 0) continue;
+    const pin = P(186.5, R_IN, 15.61), t = pin.y / v.y, p = pin.clone().addScaledVector(v, -t);
+    const r = rOf(p); if (r < R_POOL + 0.2 || r > R_IN - 0.2) continue;
+    MERID.pts.push({ H, p });
+  }
+  for (let i = 0; i < MERID.pts.length - 1; i++) {
+    const a = MERID.pts[i].p, b = MERID.pts[i + 1].p, mid = a.clone().add(b).multiplyScalar(0.5), len = a.distanceTo(b);
+    addStatic(boxGeo(new V3(mid.x, 0.005, mid.z), 0.05, 0.012, len + 0.02, azOf(b.x - a.x, b.z - a.z)), M.bronze, '', null, false);
+  }
+  for (const q of MERID.pts) if (Math.abs(q.H / 1.25 - Math.round(q.H / 1.25)) < 1e-6) addStatic(boxGeo(new V3(q.p.x, 0.006, q.p.z), 0.34, 0.014, 0.04, azOf(q.p.x, q.p.z) + 90), M.bronze, '', null, false);
+}
+
+
+// ────────────────────────────── 光圈、屋顶环道、虹门、浑天仪 ──────────────────────────────
+// 光圈是水平的一圈铜叶片（y 31.0–31.3），中间的孔从 0.8 m 张到 7.32 m；外沿是环道（r 11–15.45，面高 31.8）。
+const crown = { up: 0, dn: 0, iris: 0.4, gate: 0 };
+const IRIS = { mesh: null, a: -1 };
+function irisApertureAt(H, caught) { return caught ? OC_R : lerp(0.4, OC_R, smoothstep(46, 49, H)); }
+function setIris(a) {
+  if (Math.abs(a - IRIS.a) < 0.005) return;
+  IRIS.a = a;
+  const g = sector(a, IRIS_R, CEIL, IRIS_TOP, 0, 360, 0, 360, { ends: false, seg: 72 });
+  if (!IRIS.mesh) { IRIS.mesh = addDynamic(new THREE.Mesh(g, M.iris), 'wslc', { zone: 'irisTop' }); }
+  else { IRIS.mesh.geometry.dispose(); IRIS.mesh.geometry = g; g.computeBoundingSphere(); g.computeBoundingBox(); }
+  // 叶片的分缝
+  if (!IRIS.seams) { IRIS.seams = []; for (let k = 0; k < 12; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, 1), M.bronze); world.add(m); IRIS.seams.push(m); } }
+  IRIS.seams.forEach((m, k) => { const az = k * 30 + 12, r0 = a, r1 = IRIS_R, c = P(az, (r0 + r1) / 2, IRIS_TOP + 0.01); m.position.copy(c); m.scale.z = r1 - r0; m.rotation.y = -az * DEG; });
+}
+// 环道：J 顺时针到 T 是白天升起的 16 级；115°–150° 是夜里降下去的 11 级月石楼梯；其余是固定的
+const TREADS = [];
+const UP_TOP = [T_AZ - 10, T_AZ + 4];   // 最高一级：宽平台，虹门和浑天仪在上面
+const NIGHT_STAIR = { a0: 115, a1: 150, n: 11 };
+function buildCrown() {
+  const w = (UP_TOP[0] - J_AZ) / 15;
+  for (let k = 1; k <= 16; k++) {
+    const a0 = k < 16 ? J_AZ + (k - 1) * w : UP_TOP[0], a1 = k < 16 ? J_AZ + k * w : UP_TOP[1];
+    const g = sector(IRIS_R, CROWN_R1, 0, 1, a0, a1);
+    const m = addDynamic(new THREE.Mesh(g, M.stone), 'wslc', { zone: 'crown' });
+    m.position.y = CEIL; m.scale.y = CROWN_Y - CEIL; m.updateMatrixWorld(true);
+    TREADS.push({ kind: 'up', k, a0, a1, zEnd: k * CROWN.dz, z: 0, m });
+  }
+  // 夜里的月石楼梯：白天和环道齐平
+  const ns = NIGHT_STAIR, dw = (ns.a1 - ns.a0) / ns.n, drop = (CROWN_Y - F[3]) / ns.n;
+  for (let k = 1; k <= ns.n; k++) {
+    const a1 = ns.a1 - (k - 1) * dw, a0 = a1 - dw;
+    const g = sector(IRIS_R, CROWN_R1, -0.8, 0, a0, a1);
+    const m = addDynamic(new THREE.Mesh(g, M.stone), 'wslc', { zone: 'crown' });
+    m.position.y = CROWN_Y; m.updateMatrixWorld(true);
+    TREADS.push({ kind: 'dn', k, a0, a1, yDay: CROWN_Y, yNight: CROWN_Y - k * drop + (k === ns.n ? 0 : 0), y: CROWN_Y, m });
+  }
+  for (const [a0, a1] of [[UP_TOP[1], ns.a0 + 360], [ns.a1, J_AZ]]) for (const [p0, p1] of splitArc(a0, a1, 15)) addStatic(sector(IRIS_R, CROWN_R1, CEIL, CROWN_Y, p0, p1), M.stone, 'wslc', { zone: 'crown' });
+  // 最高一级尽头的栏杆
+  const b = P(UP_TOP[1] - 0.3, (IRIS_R + CROWN_R1) / 2);
+  crown.bar = addDynamic(new THREE.Mesh(boxGeo(new V3(b.x, 0, b.z), CROWN_R1 - IRIS_R, 1.0, 0.12, UP_TOP[1] - 0.3 + 90), M.bronze), '', null);
+  crown.barTall = addDynamic(new THREE.Mesh(boxGeo(new V3(b.x, 0, b.z), CROWN_R1 - IRIS_R + 0.4, 2.6, 0.4, UP_TOP[1] - 0.3 + 90), COLLIDER), 's');
+}
+// 虹门：两根墩、半圆拱，两边的小喷泉；拱门之后是浑天仪。它们都跟着最高一级升起来。
+const ARCH = { az: T_AZ - 6, r0: IRIS_R + 0.55, r1: CROWN_R1 - 0.45, h: 2.6 };
+ARCH.center = P(ARCH.az, (ARCH.r0 + ARCH.r1) / 2); ARCH.span = ARCH.r1 - ARCH.r0; ARCH.R = ARCH.span / 2;
+ARCH.T = radN(ARCH.az); ARCH.N = new V3(Math.cos(ARCH.az * DEG), 0, Math.sin(ARCH.az * DEG));   // T 沿半径，N 沿环道（顺时针为正）
+const ARM_TOP = { az: T_AZ - 1.5, r: 13.25 };
+const topGroup = new THREE.Group(); world.add(topGroup);
+function buildArch() {
+  const pier = (r) => { const c = P(ARCH.az, r); return boxGeo(new V3(c.x, ARCH.h / 2, c.z), 0.55, ARCH.h, 0.7, ARCH.az + 90); };
+  for (const r of [ARCH.r0, ARCH.r1]) { const m = new THREE.Mesh(pier(r), M.stone); m.castShadow = m.receiveShadow = true; topGroup.add(m); }
+  const n = 16;
+  for (let i = 0; i < n; i++) {
+    const t0 = Math.PI * i / n, t1 = Math.PI * (i + 1) / n, tm = (t0 + t1) / 2;
+    const rr = (ARCH.r0 + ARCH.r1) / 2 - Math.cos(tm) * (ARCH.R + 0.1), yy = ARCH.h + Math.sin(tm) * (ARCH.R + 0.1);
+    const c = P(ARCH.az, rr);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(ARCH.R * Math.PI / n + 0.05, 0.4, 0.7), M.stone);
+    m.position.set(c.x, yy, c.z); m.rotation.y = -(ARCH.az + 90) * DEG; m.rotateZ(tm - Math.PI / 2); m.castShadow = true; topGroup.add(m);
+  }
+  for (const s of [-1, 1]) {   // 拱门两边的小喷泉（水盆）
+    const c = P(ARCH.az + s * 1.6, (ARCH.r0 + ARCH.r1) / 2 + s * 0);
+    void c;
+  }
+  const basinL = P(ARCH.az, ARCH.r0 - 0.05), basinR = P(ARCH.az, ARCH.r1 + 0.05);
+  for (const c of [basinL, basinR]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.26, 0.35, 16), M.bronze); m.position.set(c.x, 0.18, c.z); topGroup.add(m); }
+  // 浑天仪（屋顶）：金苹果就是它的太阳
+  const c = P(ARM_TOP.az, ARM_TOP.r);
+  const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 1.0, 16), M.stone); ped.position.set(c.x, 0.5, c.z); ped.castShadow = true; topGroup.add(ped);
+  ARM_TOP.group = armillary(new V3(c.x, 1.55, c.z), 0.55, true);
+  topGroup.add(ARM_TOP.group);
+  // 顶部平台上的碰撞：拱墩、浑天仪
+  ARCH.colliders = [];
+  for (const r of [ARCH.r0, ARCH.r1]) { const m = new THREE.Mesh(pier(r), COLLIDER); topGroup.add(m); ARCH.colliders.push(m); SOLID.push(m); LIGHT.push(m); CAMB.push(m); }
+  const pc = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 2.2, 12), COLLIDER); pc.position.set(c.x, 1.1, c.z); topGroup.add(pc); SOLID.push(pc);
+}
+// 浑天仪：三道铜环（子午、赤道、黄道），外加日、月两颗珠子
+function armillary(center, R, top) {
+  const g = new THREE.Group(); g.position.copy(center);
+  const ring = (r, mat, rx, rz) => { const m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.018, 8, 64), mat); m.rotation.x = rx; m.rotation.z = rz; m.castShadow = true; g.add(m); return m; };
+  ring(R, M.bronze, 0, 0);
+  ring(R, M.bronze, Math.PI / 2 - LAT, 0).rotation.y = Math.PI / 2;
+  ring(R * 0.96, M.gold, Math.PI / 2, 0.41);
+  ring(R * 0.92, M.silver, Math.PI / 2, -0.35);
+  const axis = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, R * 2.3, 6), M.bronze); axis.rotation.x = Math.PI / 2 - LAT; g.add(axis);
+  if (top) {
+    const apple = new THREE.Mesh(new THREE.SphereGeometry(0.12, 24, 18), M.apple); apple.castShadow = true;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.01, 0.06, 6), M.bronze); stem.position.y = 0.13; apple.add(stem);
+    g.add(apple); g.userData.bead = apple;
+    const mb = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), M.silver); g.add(mb); g.userData.moonBead = mb;
+  } else {
+    const sb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 14), M.gold); g.add(sb); g.userData.bead = sb;
+    const holder = new THREE.Group();
+    const cup = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M.silver); holder.add(cup);
+    const ringH = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.012, 6, 24), M.silver); ringH.rotation.x = Math.PI / 2; holder.add(ringH);
+    g.add(holder); g.userData.moonBead = holder;
+  }
+  g.userData.R = R;
+  return g;
+}
+
+// ────────────────────────────── 水面、水亭、两段半桥 ──────────────────────────────
+const PAV = { r: 3.0, top: 0.2, colR: 1.95, eave: 3.5, eaveY: 3.2 };
+const BRIDGE = { az: 318, w: 1.6, A: [6.5, R_POOL + 0.05], B: [PAV.r - 0.05, 6.5], y: 0.2 };
+const ARM_L0 = {};
+function buildPavilion() {
+  // 水面
+  { const g = nonIndexed(new THREE.RingGeometry(PAV.r, R_POOL, 96, 1)); g.rotateX(-Math.PI / 2); g.translate(0, WATER_Y, 0); const m = new THREE.Mesh(g, M.water); m.renderOrder = 2; world.add(m); }
+  addStatic(sector(0, PAV.r, POOL_BOTTOM, PAV.top, 0, 360, 0, 360, { inner: false, ends: false, seg: 48 }), M.stone, 'wslc', { zone: 'pav' });
+  for (let k = 0; k < 8; k++) { const c = P(k * 45 + 22.5, PAV.colR); addStatic(cylGeo(new V3(c.x, PAV.top, c.z), 0.12, 0.1, PAV.eaveY - PAV.top, 12), M.column, 'slc'); }
+  addStatic(sector(0, PAV.eave, PAV.eaveY, PAV.eaveY + 0.25, 0, 360, 0, 360, { inner: false, ends: false, seg: 48 }), M.stone, 'lc');
+  addStatic(latheGeo([[PAV.eave - 0.2, 0], [2.4, 0.55], [1.2, 1.05], [0.2, 1.3], [0, 1.32]], new V3(0, PAV.eaveY + 0.25, 0), 32), M.stone, 'lc');
+  // 浑天仪（水亭）：日是一颗大珠子，月是一个空着的金属小托
+  addStatic(cylGeo(new V3(0, PAV.top, 0), 0.32, 0.24, 1.0, 16), M.stone, 'slc');
+  ARM_L0.group = armillary(new V3(0, PAV.top + 1.6, 0), 0.52, false); world.add(ARM_L0.group);
+}
+
+// ────────────────────────────── 月石 ──────────────────────────────
+// 月石：被月光（直射，或经铜镜反射）照着时显形，光离开后约 2 秒合上；脚下的不会合上。
+// 每一处月石有若干取样点，全部被照亮才算亮（整段同时在月光里）。
+const MOONSTONES = [];
+const MS_REVEAL = new THREE.MeshStandardMaterial({ color: 0xeef2ff, roughness: 0.3, transparent: true, opacity: 0.95, emissive: 0xa9c1ff, emissiveIntensity: 0.35 });
+function moonstone(id, parts, samples, o = {}) {
+  // parts: [{geo, walk:bool, solid:bool}]，hiddenBlock: 合上时挡路的几何（墙面、门）
+  const ms = { id, parts: [], samples, k: 0, lit: false, litFrac: 0, source: o.source || 'moon', hold: 0, name: o.name, perm: false, hiddenBlock: [], opened: o.opened || null };
+  for (const p of parts) {
+    const mat = MS_REVEAL.clone(); mat.opacity = 0.1; mat.emissiveIntensity = 0;
+    const m = addDynamic(new THREE.Mesh(p.geo, mat), '', { moonstone: ms, zone: p.zone }, false, true);
+    ms.parts.push({ m, walk: p.walk !== false, solid: !!p.solid, mat });
+  }
+  for (const g of o.block || []) {
+    const mat = M.moonstone.clone(); mat.opacity = 0.85; mat.depthWrite = true; mat.transparent = true;
+    const m = addDynamic(new THREE.Mesh(g, mat), 'slc', { moonstone: ms });
+    ms.hiddenBlock.push({ m, mat });
+  }
+  MOONSTONES.push(ms);
+  return ms;
+}
+function setMoonstoneState(ms, k) {
+  ms.k = k;
+  const shown = k > 0.5;
+  for (const p of ms.parts) {
+    p.mat.opacity = lerp(0.08, 0.95, k); p.mat.emissiveIntensity = 0.1 + 0.5 * k; p.m.castShadow = shown;
+    setIn(WALK, p.m, shown && p.walk); setIn(SOLID, p.m, shown && p.solid); setIn(CAMB, p.m, shown);
+  }
+  for (const b of ms.hiddenBlock) { b.mat.opacity = lerp(0.85, 0.12, k); setIn(SOLID, b.m, !shown); setIn(CAMB, b.m, !shown); setIn(LIGHT, b.m, !shown && false); b.m.castShadow = !shown; }
+}
+
+// ────────────────────────────── 雕像 ──────────────────────────────
+function figureGeo(h = 2.1) {
+  const s = h / 2.1;
+  return latheGeo([[0, 0], [0.34, 0], [0.32, 0.4], [0.25, 1.05], [0.2, 1.45], [0.26, 1.6], [0.14, 1.72], [0.12, 1.78], [0.13, 1.9], [0.1, 2.02], [0, 2.1]], new V3(), 20, s);
+}
+// 托镜像：双手托一面大铜镜，站在两级圆台上（或高台上）。镜子的下沿和站台面一样高，反射出来的光一步就能踩上去。
+const MIRRORS = {};
+function mirrorStatue(id, az, r, y, o) {
+  const c = P(az, r, y);
+  const S = { id, az, r, c, y, w: o.w ?? 2.6, h: o.h ?? 1.6, dais: o.dais ?? [0.45, 0.9], plinth: o.plinth ?? 0, slots: o.slots, k: o.k0 ?? 0, yaw: 0, yawNow: null, tilt: 0, form: 'dark', w3: { sun: 0, moon: 0, dark: 1 }, n: new V3(0, 0, -1), center: new V3(), U: new V3(), V: new V3(), tiltSun: o.tiltSun ?? 20, tiltMoon: o.tiltMoon ?? 20, name: o.name };
+  let top = y;
+  if (S.plinth) { addStatic(cylGeo(new V3(c.x, y, c.z), 0.75, 0.7, S.plinth, 24), M.stone, 'wslc', { zone: o.zone }); top = y + S.plinth; }
+  else S.dais.forEach((h, i) => { const R = o.daisR ? o.daisR[i] : 1.1 - i * 0.4; addStatic(cylGeo(new V3(c.x, y, c.z), R, R, h, 32), M.stone, 'wslc', { zone: o.zone }); top = y + h; });
+  S.top = top;
+  const g = new THREE.Group(); g.position.set(c.x, top, c.z); world.add(g);
+  const body = new THREE.Mesh(figureGeo(2.0), M.statue); body.castShadow = true; g.add(body);
+  const mg = new THREE.Group(); g.add(mg);
+  const mirror = new THREE.Mesh(new THREE.BoxGeometry(S.w, S.h, 0.06), M.mirror); mirror.castShadow = true; mg.add(mirror);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(S.w + 0.12, S.h + 0.12, 0.04), M.bronze); frame.position.z = 0.05; mg.add(frame);
+  S.g = g; S.mg = mg; S.mirror = mirror;
+  S.col = proxy(cylGeo(new V3(c.x, top, c.z), 0.42, 0.42, 2.1, 12), 's');
+  S.mirrorOffset = o.mirrorOffset ?? 0.62;
+  S.mirrorY = o.mirrorY ?? S.h / 2 + 0.05;
+  MIRRORS[id] = S;
+  S.yawNow = S.slots[S.k];
+  placeMirror(S);
+  return S;
+}
+function placeMirror(S) {
+  const yaw = S.yawNow ?? S.slots[S.k], wt = S.w3;
+  const tl = wt.sun * S.tiltSun + wt.moon * S.tiltMoon + wt.dark * -30;
+  S.yaw = yaw; S.tilt = tl;
+  S.n.set(Math.sin(yaw * DEG) * Math.cos(tl * DEG), Math.sin(tl * DEG), -Math.cos(yaw * DEG) * Math.cos(tl * DEG));
+  S.g.rotation.set(0, -yaw * DEG, 0);
+  S.mg.position.set(0, S.mirrorY, -S.mirrorOffset);
+  S.mg.rotation.set(tl * DEG, 0, 0);
+  S.g.updateMatrixWorld(true);
+  S.mg.getWorldPosition(S.center);
+  S.U.set(Math.cos(yaw * DEG), 0, Math.sin(yaw * DEG));
+  S.V.crossVectors(S.n, S.U).normalize(); if (S.V.y < 0) S.V.negate();
+}
+
+
+// ────────────────────────────── 雾 ──────────────────────────────
+// 瀑布终年不停，中庭里一直有雾；回廊里很淡。海峡上是瀑布的水从北门下泄入海溅起的水沫。
+// 台地北沿（沿 22.5° 方位）离殿心的距离
+const TERR_EDGE_N = (() => { const d = new V3(Math.sin(22.5 * DEG), 0, -Math.cos(22.5 * DEG)); const b = d.x * -TERR_C.x + d.z * -TERR_C.z, c = TERR_C.x ** 2 + TERR_C.z ** 2 - TERR_R ** 2; return -b + Math.sqrt(b * b - c); })();
+const STRAIT = { az: ISLAND.az, r0: 25.5, r1: ISLAND.r + 1, halfW: 4.5, y0: SEA_Y, y1: TERR_Y + 0.3 };
+STRAIT.ax = new V3(Math.sin(STRAIT.az * DEG), 0, -Math.cos(STRAIT.az * DEG));
+function mistAt(p) {
+  const r = rOf(p); let m = 0;
+  if (p.y > -0.6 && p.y < CEIL) m += r < R_A ? 1 : r < R_IN ? 0.25 : 0;
+  const d = p.x * STRAIT.ax.x + p.z * STRAIT.ax.z, lat = Math.abs(p.x * STRAIT.ax.z - p.z * STRAIT.ax.x);
+  if (d > STRAIT.r0 && d < STRAIT.r1 && lat < STRAIT.halfW && p.y > STRAIT.y0 && p.y < STRAIT.y1) m += 1;
+  return m;
+}
+
+// ────────────────────────────── 光路 ──────────────────────────────
+const rc = new THREE.Raycaster();
+const rcSun = new THREE.Raycaster(); rcSun.layers.enable(1);
+function makeBeam(id, kind, o = {}) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3)); g.setIndex([0, 1, 2, 0, 2, 3]);
+  const walk = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, visible: false }));
+  const b = { id, kind, valid: false, walkable: false, lit: 0, gain: 1, clean: false, O: new V3(), U: new V3(), V: new V3(), L: new V3(), c: [0, 0, 0, 0], M: new THREE.Matrix3(), far: new V3(), b0: new V3(), b1: new V3(), walk, ...o };
+  walk.userData.beam = b;
+  return b;
+}
+const BEAMS = [
+  makeBeam('isle', 'win', { win: WIN.isle }),
+  makeBeam('b1', 'win', { win: WIN.b1 }),
+  makeBeam('b2', 'win', { win: WIN.b2 }),
+  makeBeam('p', 'win', { win: WIN.p }),
+  makeBeam('r', 'win', { win: WIN.r, needLen: 19 }),
+  makeBeam('mirror', 'mirror', { gain: 0.8 }),
+  makeBeam('oculus', 'oculus', { gain: 1.1 }),
+  makeBeam('mmoon', 'mmoon', { gain: 0.5, moon: true }),     // 月光经托镜像反射（不能踩）
+  makeBeam('m3moon', 'mmoon', { gain: 0.5, moon: true }),    // 岸边托镜像的反射（不能踩）
+];
+const beamById = Object.fromEntries(BEAMS.map((b) => [b.id, b]));
+const BEAM_PAD = 0.35;
+function setBeamFrame(b, C, L, blockers, startOff, o = {}) {
+  b.O.copy(C[0]); b.U.subVectors(C[1], C[0]); b.V.subVectors(C[2], C[0]); b.L.copy(L);
+  for (let k = 0; k < 4; k++) {
+    rc.set(C[k].clone().addScaledVector(L, startOff), L); rc.near = 0; rc.far = 120;
+    const h = rc.intersectObjects(blockers, false)[0];
+    b.c[k] = h ? h.distance + startOff : 120;
+  }
+  // 下沿上多取几条光线，看有没有被柱子、栏杆从中间切断
+  const NE = 7; b.edge = [];
+  for (let i = 0; i < NE; i++) {
+    const p = C[0].clone().lerp(C[1], (i + 0.5) / NE);
+    rc.set(p.addScaledVector(L, startOff), L); rc.near = 0; rc.far = 120;
+    const h = rc.intersectObjects(blockers, false)[0]; b.edge.push(h ? h.distance + startOff : 120);
+  }
+  const U = b.U, V = b.V;
+  b.M.set(U.x, V.x, L.x, U.y, V.y, L.y, U.z, V.z, L.z).invert();
+  const f = -BEAM_PAD / U.length();
+  b.b0.copy(C[0]).addScaledVector(U, f); b.b1.copy(C[0]).addScaledVector(U, 1 - f);
+  const back = o.back ?? 0;
+  const s0 = o.walkFrom ?? -back, s1 = Math.min(...b.edge) + 0.05;
+  b.s0 = s0; b.s1 = s1;
+  const e0 = b.b0.clone().addScaledVector(L, s1), e1 = b.b1.clone().addScaledVector(L, s1);
+  const q0 = b.b0.clone().addScaledVector(L, s0), q1 = b.b1.clone().addScaledVector(L, s0);
+  const a = b.walk.geometry.attributes.position;
+  a.setXYZ(0, q0.x, q0.y, q0.z); a.setXYZ(1, q1.x, q1.y, q1.z); a.setXYZ(2, e1.x, e1.y, e1.z); a.setXYZ(3, e0.x, e0.y, e0.z);
+  a.needsUpdate = true; b.walk.geometry.computeBoundingBox(); b.walk.geometry.computeBoundingSphere();
+  b.far.set(0, 0, 0); for (let k = 0; k < 4; k++) b.far.add(C[k].clone().addScaledVector(L, b.c[k])); b.far.multiplyScalar(0.25);
+  b.valid = true;
+}
+// 窗：在窗洞内侧取样，向太阳发射线。墙厚、窗框、柱子、岛影都会挡光。
+const _sph = new THREE.Sphere();
+function nearList(list, c, rad) {
+  return list.filter((o) => { const g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere(); _sph.copy(g.boundingSphere).applyMatrix4(o.matrixWorld); return _sph.center.distanceTo(c) - _sph.radius < rad; });
+}
+function occFor(w) {
+  if (w._occ) return w._occ;
+  w._occ = nearList(LIGHT, P(w.az, R_OUT, w.y0 + w.h / 2), 30).concat([occluder]);
+  return w._occ;
+}
+function computeWindowBeam(b) {
+  const w = b.win; b.valid = false; b.lit = 0; b.clean = false;
+  if (sunV.y < 0.003) return;
+  if (Math.abs(angDiff(azV(sunV), w.az)) > 85) return;
+  const sy = shadowY(sunV);
+  const NU = 8, NV = 5; let umin = 2, umax = -1, vmin = 2, vmax = -1, lit = 0;
+  const hw = halfOf(w.w);
+  for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {
+    const u = (i + 0.5) / NU, v = (j + 0.5) / NV;
+    const p = P(w.az - hw + 2 * hw * u, R_IN - 0.02, lerp(w.y0, w.y0 + w.h, v));
+    if (p.y < sy) continue;
+    rcSun.set(p, sunV); rcSun.near = 0.001; rcSun.far = 400;
+    if (rcSun.intersectObjects(occFor(w), false).length === 0) {
+      lit++; umin = Math.min(umin, u - 0.5 / NU); umax = Math.max(umax, u + 0.5 / NU); vmin = Math.min(vmin, v - 0.5 / NV); vmax = Math.max(vmax, v + 0.5 / NV);
+    }
+  }
+  b.lit = lit / (NU * NV);
+  if (!lit) return;
+  const a0 = w.az - hw + 2 * hw * umin, a1 = w.az - hw + 2 * hw * umax;
+  let y0 = lerp(w.y0, w.y0 + w.h, vmin); const y1 = lerp(w.y0, w.y0 + w.h, vmax);
+  const L = sunV.clone().negate(), hz = Math.hypot(L.x, L.z), tn = sunV.y / hz;
+  let walkFrom = 0, need;
+  if (b.id === 'isle') {
+    // 崖边把光束的下半截切掉：能踩的下表面正好擦过崖边，人从岛上走上来，在崖边踏上台地
+    const x = R_IN + TERR_EDGE_N;
+    y0 = Math.max(y0, TERR_Y + 0.18 + x * tn);
+    if (y0 > y1 - 0.2) return;
+    walkFrom = (x - 0.3) / hz;
+    need = (y0 - ISLAND.top) / sunV.y - 0.8;
+  } else need = b.needLen ?? (w.y0 - (b.id === 'b1' ? F[0] : b.id === 'b2' ? F[1] : F[2])) / Math.max(0.05, sunV.y) - 1.5;
+  setBeamFrame(b, [P(a0, R_IN, y0), P(a1, R_IN, y0), P(a0, R_IN, y1), P(a1, R_IN, y1)], L, LIGHT, 0.05, { walkFrom });
+  b.need = need;
+  b.clean = b.lit > 0.3 && Math.min(...b.edge) >= Math.min(need, 100);
+  b.gain = 1;
+}
+function beamLocal(b, p) {
+  const E = new V3().subVectors(b.b1, b.b0), d = new V3().subVectors(p, b.b0), L = b.L;
+  const ee = E.dot(E), el = E.dot(L), ll = L.dot(L), ed = E.dot(d), ld = L.dot(d), det = ee * ll - el * el;
+  return { a: (ed * ll - ld * el) / det, s: (ld * ee - ed * el) / det };
+}
+const beamWorld = (b, a, s) => new V3().copy(b.b0).addScaledVector(new V3().subVectors(b.b1, b.b0), a).addScaledVector(b.L, s);
+function insidePrism(b, p, tol = 0.15) {
+  const q = new V3().subVectors(p, b.O).applyMatrix3(b.M);
+  if (q.x < -0.02 || q.x > 1.02 || q.y < -0.02 || q.y > 1.02 || q.z < 0) return false;
+  const cl = lerp(lerp(b.c[0], b.c[1], q.x), lerp(b.c[2], b.c[3], q.x), q.y);
+  return q.z <= cl + tol;
+}
+// 托镜像：镜面被照着、朝着光时，按反射定律再射出去
+const reflect = (d, n) => d.clone().addScaledVector(n, -2 * d.dot(n)).normalize();
+function mirrorLitBy(S, dirTo) {   // 镜面上哪一块被这个方向来的光照着（6 × 4 取样），返回比例和被照亮的子矩形
+  S.litBox = null;
+  if (dirTo.y <= 0.003 || S.n.dot(dirTo) <= 0.05) return 0;
+  const NU = 6, NV = 4; let hit = 0, u0 = 2, u1 = -1, v0 = 2, v1 = -1;
+  for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {
+    const u = (i + 0.5) / NU, v = (j + 0.5) / NV;
+    const p = S.center.clone().addScaledVector(S.U, (u - 0.5) * S.w).addScaledVector(S.V, (v - 0.5) * S.h).addScaledVector(S.n, 0.08);
+    rcSun.set(p, dirTo); rcSun.near = 0.02; rcSun.far = 400;
+    if (!rcSun.intersectObjects(mirrorOcc(S), false).length) { hit++; u0 = Math.min(u0, u - 0.5 / NU); u1 = Math.max(u1, u + 0.5 / NU); v0 = Math.min(v0, v - 0.5 / NV); v1 = Math.max(v1, v + 0.5 / NV); }
+  }
+  if (hit) S.litBox = [u0, u1, v0, v1];
+  return hit / (NU * NV);
+}
+function mirrorOcc(S) { if (!S._occ) S._occ = nearList(LIGHT, S.center, 40).filter((o) => o !== S.col).concat([occluder]); return S._occ; }
+function mirrorFrame(S, R) {
+  const [u0, u1, v0, v1] = S.litBox || [0, 1, 0, 1];
+  const C0 = S.center.clone().addScaledVector(S.U, (u0 - 0.5) * S.w).addScaledVector(S.V, (v0 - 0.5) * S.h);
+  const C1 = C0.clone().addScaledVector(S.U, (u1 - u0) * S.w), C2 = C0.clone().addScaledVector(S.V, (v1 - v0) * S.h), C3 = C1.clone().addScaledVector(S.V, (v1 - v0) * S.h);
+  // 能踩的一面是光束的下表面：取两条长边里靠下的那一条
+  const probe = (A) => A.clone().addScaledVector(R, 3).y;
+  return probe(C0) <= probe(C2) ? [C0, C1, C2, C3] : [C2, C3, C0, C1];
+}
+function computeMirrorBeam(b, S, lightDir, form) {
+  b.valid = false; b.lit = 0; b.clean = false;
+  if (!S || S.form !== form || S.w3[form] < 0.95) return;
+  b.lit = mirrorLitBy(S, lightDir);
+  if (b.lit < 0.34) return;
+  const R = reflect(lightDir.clone().negate(), S.n); b.src = S;
+  const blockers = mirrorOcc(S);
+  setBeamFrame(b, mirrorFrame(S, R), R, blockers, 0.08, { back: 0.6 });
+  b.clean = b.lit > 0.5 && b.U.length() > 1.5 && Math.min(...b.edge) > (form === 'sun' ? MPLAN.len - 3.0 : 3);
+}
+// 圆眼光柱：沿半径从光圈中间射下来。能踩的是光柱的上表面（从 L3 的光脚一直通到圆眼西南边沿）。
+function computeOculusBeam(b) {
+  b.valid = false; b.lit = 0; b.clean = false;
+  const a = IRIS.a; if (a < 2.5 || sunV.y < 0.01) return;
+  if (sunV.y > 0 && IRIS_TOP < shadowY(sunV)) return;
+  const L = sunV.clone().negate(), h = new V3(L.x, 0, L.z).normalize(), side = new V3(-h.z, 0, h.x), half = 1.3;
+  const top = h.clone().multiplyScalar(-a).setY(IRIS_TOP), bot = h.clone().multiplyScalar(a).setY(CEIL);
+  const C0 = top.clone().addScaledVector(side, -half), C1 = top.clone().addScaledVector(side, half);
+  const C2 = bot.clone().addScaledVector(side, -half), C3 = bot.clone().addScaledVector(side, half);
+  const blockers = LIGHT.filter((o) => o !== IRIS.mesh);
+  // 光先要穿过叶片的孔：上表面那条光线在光圈底面处的位置要在孔里
+  setBeamFrame(b, [C0, C1, C2, C3], L, blockers, 0.35, { back: 0.3 });
+  b.lit = 1; b.gain = 1.1;
+  const need = (IRIS_TOP - F[3]) / Math.max(0.05, -L.y) - 0.5;
+  b.clean = Math.min(...b.edge) >= need;
+}
+const _s = new V3();
+function beamIsWalkable(b) {
+  if (!b.valid || b.moon || !b.clean) return false;
+  const on = player.carry && player.carry.b === b;
+  if (Math.abs(Math.asin(clamp(b.L.y, -1, 1))) > (on ? 38 : 35) * DEG) return false;
+  // 雾：光路上有一段在中庭或海峡的雾里
+  const mid = b.b0.clone().lerp(b.b1, 0.5); let inMist = 0, n = 0;
+  for (let s = Math.max(b.s0, 0); s <= b.s1; s += 0.5) { _s.copy(mid).addScaledVector(b.L, s); _s.y += 0.3; n++; if (mistAt(_s) >= 0.9) inMist++; }
+  return n > 0 && inMist / n > (on ? 0.15 : 0.25);
+}
+// 远处岩岛的影子：只给阴影相机看的挡板，挡板的上沿跟着太阳高度挪，让岛影的边正好落在 shadowY
+const occluder = new THREE.Mesh(new THREE.PlaneGeometry(400, 200), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, colorWrite: false }));
+occluder.layers.set(1); occluder.castShadow = true; scene.add(occluder);
+function placeOccluder() {
+  const alt = Math.asin(clamp(sunV.y, -1, 1)), sy = shadowY(sunV), D = 70;
+  const h = new V3(sunV.x, 0, sunV.z).normalize();
+  const topY = sy + D * Math.tan(Math.max(alt, 0.002));
+  occluder.position.copy(h).multiplyScalar(D).setY(topY - 100);
+  occluder.lookAt(occluder.position.clone().add(h));
+  occluder.updateMatrixWorld(true);
+}
+let beamH = 1e9;
+function computeBeams() {
+  for (const b of BEAMS) if (b.kind === 'win') computeWindowBeam(b);
+  computeMirrorBeam(beamById.mirror, MIRRORS.M, sunV, 'sun');
+  computeOculusBeam(beamById.oculus);
+  computeMirrorBeam(beamById.mmoon, MIRRORS.M, moonV, 'moon');
+  computeMirrorBeam(beamById.m3moon, MIRRORS.M3, moonV, 'moon');
+}
+
+// ────────────────────────────── 月光照没照到 ──────────────────────────────
+function moonstoneOcc(ms) { if (!ms._occ) { const c = ms.samples.reduce((a, p) => a.add(p), new V3()).multiplyScalar(1 / ms.samples.length); ms._occ = nearList(LIGHT, c, 45).concat([occluder]); } return ms._occ; }
+function sampleLit(ms, p) {
+  if (ms.source === 'moon') {
+    if (moonV.y < 0.01) return false;
+    rcSun.set(p, moonV); rcSun.near = 0.05; rcSun.far = 400;
+    return rcSun.intersectObjects(moonstoneOcc(ms), false).length === 0;
+  }
+  const b = beamById[ms.source];   // 经托镜像反射的月光：从取样点沿反射光倒推回镜面，看落点在不在镜子被照亮的那一块上、中间有没有东西挡着
+  const S = b.src; if (!b.valid || !S || !S.litBox) return false;
+  const R = b.L, rn = R.dot(S.n); if (rn <= 0.01) return false;
+  const s = p.clone().sub(S.center).dot(S.n) / rn; if (s <= 0.3) return false;
+  const h = p.clone().addScaledVector(R, -s), q = h.clone().sub(S.center);
+  const u = q.dot(S.U) / S.w + 0.5, v = q.dot(S.V) / S.h + 0.5, B = S.litBox;
+  if (u < B[0] || u > B[1] || v < B[2] || v > B[3]) return false;
+  rc.set(h.addScaledVector(R, 0.12), R); rc.near = 0; rc.far = s - 0.4;
+  return rc.intersectObjects(mirrorOcc(S), false).length === 0;
+}
+function moonstoneLitFrac(ms) { let n = 0; for (const p of ms.samples) if (sampleLit(ms, p)) n++; return n / ms.samples.length; }
+
+
+// ────────────────────────────── 关卡布置：雕像的位置和朝向按光反推 ──────────────────────────────
+// 托镜像 M（L2 西）：白天把日常窗的阳光反射成一条能踩的光路，通到东墙上的日之龛石台；夜里把月光反射进双子后面的龛。
+const M_DEF = { az: 270, r: 13.6, w: 2.6, h: 1.6, dais: [0.45, 0.9], daisR: [0.95, 0.62], offset: 0.62 };
+const LEDGE = { y: F[2] + 3.4, r0: 13.6, half: 5 };
+const H_M = ZD.L2.f(M_DEF.az);
+const H_TW = 119;                                    // 双子合拢的时刻（L2 西北，站在断口前）
+function mirrorGeom(D, top, yaw, tilt, mirrorY) {   // 按朝向算镜面中心、法线、下沿中点
+  const c = P(D.az, D.r), f = new V3(Math.sin(yaw * DEG), 0, -Math.cos(yaw * DEG));
+  const n = new V3(Math.sin(yaw * DEG) * Math.cos(tilt * DEG), Math.sin(tilt * DEG), -Math.cos(yaw * DEG) * Math.cos(tilt * DEG));
+  const center = new V3(c.x, top + mirrorY, c.z).addScaledVector(f, D.offset);
+  const U = new V3(Math.cos(yaw * DEG), 0, Math.sin(yaw * DEG)), V = new V3().crossVectors(n, U).normalize(); if (V.y < 0) V.negate();
+  return { center, n, U, V, low: center.clone().addScaledVector(V, -D.h / 2) };
+}
+function aimMirror(D, top, dirIn, target, mirrorY, useLow) {   // 求镜面朝向，让反射光（下沿或中心）对准目标
+  let yaw = azOf(target.x - P(D.az, D.r).x, target.z - P(D.az, D.r).z), tilt = 10;
+  for (let it = 0; it < 30; it++) {
+    const g = mirrorGeom(D, top, yaw, tilt, mirrorY);
+    const from = useLow ? g.low : g.center;
+    const R = target.clone().sub(from).normalize();
+    const n = R.clone().sub(dirIn).normalize();
+    yaw = azOf(n.x, n.z); tilt = Math.asin(clamp(n.y, -1, 1)) / DEG;
+  }
+  const g = mirrorGeom(D, top, yaw, tilt, mirrorY);
+  return { yaw, tilt, ...g, R: reflect(dirIn, g.n) };
+}
+// 光路扫过内圈柱子吗（设计时的解析检查）
+function segHitsColumns(C, R, len, fi) {
+  const spec = COL_SPEC[fi];
+  for (const k of [...Array(12).keys()]) {
+    const c = P(k * 30, R_COL);
+    for (const a of C) for (let t = 0; t < len; t += 0.1) { const p = a.clone().addScaledVector(R, t); if (p.y < spec.y0 || p.y > spec.y1) continue; if (Math.hypot(p.x - c.x, p.z - c.z) < spec.D / 2 + 0.15) return k * 30; }
+  }
+  return null;
+}
+const MPLAN = (() => {
+  const top = F[2] + M_DEF.dais[1], sunIn = sunDir(H_M).negate();
+  let best = null;
+  for (let az = 60; az <= 140; az += 1) {
+    const target = P(az, LEDGE.r0 + 0.7, LEDGE.y + 0.1);
+    let mirrorY = 0.9;
+    let a = null;
+    for (let it = 0; it < 4; it++) { a = aimMirror(M_DEF, top, sunIn, target, mirrorY, true); mirrorY = 0.06 + (M_DEF.h / 2) * Math.cos(a.tilt * DEG); }
+    const C = [a.low.clone().addScaledVector(a.U, -M_DEF.w / 2), a.low.clone().addScaledVector(a.U, M_DEF.w / 2), a.center.clone().addScaledVector(a.U, -M_DEF.w / 2).addScaledVector(a.V, M_DEF.h / 2), a.center.clone().addScaledVector(a.U, M_DEF.w / 2).addScaledVector(a.V, M_DEF.h / 2)];
+    const len = a.low.distanceTo(target);
+    const hit = segHitsColumns(C, a.R, len - 0.3, 2);
+    // 光路要穿过中庭（雾），离殿心至少近到 9 m
+    let rmin = 99; for (let t = 0; t < len; t += 0.5) rmin = Math.min(rmin, rOf(a.low.clone().addScaledVector(a.R, t)));
+    const slope = Math.asin(a.R.y) / DEG;
+    const score = (hit == null ? 0 : 100) + (rmin < 9 ? 0 : 50) + Math.abs(slope - 6);
+    if (!best || score < best.score) best = { az, target, a, mirrorY, len, hit, rmin, slope, score };
+  }
+  return best;
+})();
+LEDGE.az = MPLAN.az;
+// M 旁边照亮它的日常窗：从镜面中心向太阳看，穿过内墙的那一点
+{
+  const s = sunDir(H_M), c = MPLAN.a.center.clone(); let p = c.clone();
+  for (let t = 0; t < 20; t += 0.02) { p = c.clone().addScaledVector(s, t); if (rOf(p) >= R_IN) break; }
+  M_DEF.win = opening('mwin', azOf(p.x, p.z), 3.2, p.y - 1.2, p.y + 2.0, azV(s), 'daily');
+}
+// 夜里：把月光反射进双子后面的龛（波吕丢刻斯）
+const TWIN_DEF = { castor: { az: TWINS.az - 1.9, r: 13.75 }, pollux: { az: TWINS.az + 1.6, r: 16.2 } };
+const MNIGHT = (() => {
+  const top = F[2] + M_DEF.dais[1], moonIn = moonDir(H_TW).negate();
+  const target = P(TWIN_DEF.pollux.az, TWIN_DEF.pollux.r - 0.2, F[2] + 1.3);
+  return aimMirror(M_DEF, top, moonIn, target, MPLAN.mirrorY, false);
+})();
+// 天鹅（L3 东北，天鹅窗里面）
+const H_SW = 90;
+const SWAN = { az: 65, r: 14.55, plinth: 0.5 };
+{
+  const m = moonDir(H_SW), Lh = new V3(-m.x, 0, -m.z).normalize();
+  SWAN.c = P(SWAN.az, SWAN.r); SWAN.yawOK = wrap360(azV(m) + 90);
+  // 浮雕屏：沿月光方向往里，立在栏杆外侧 r ≈ 12.9 处，正对天鹅
+  let q = SWAN.c.clone(); for (let t = 0; t < 6; t += 0.02) { q = SWAN.c.clone().addScaledVector(Lh, t); if (rOf(q) <= 12.95) break; }
+  SWAN.screen = { c: q.setY(F[3] + 1.35), n: Lh.clone().negate(), w: 3.4, h: 2.7, th: 0.22 };
+  SWAN.dist = q.distanceTo(new V3(SWAN.c.x, q.y, SWAN.c.z));
+}
+// 岸边的托镜像 M3（水庭西北）：把月光送进亭檐下的半桥 B
+const M3_DEF = { az: 309, r: 10.75, w: 2.2, h: 2.0, plinth: 2.2, offset: 0.55 };
+const H_BR = ZN.L0.f(BRIDGE.az);
+const M3PLAN = (() => {
+  const top = F[0] + M3_DEF.plinth, moonIn = moonDir(H_BR).negate();
+  const target = P(BRIDGE.az, (BRIDGE.B[0] + BRIDGE.B[1]) / 2, BRIDGE.y + 0.1);
+  return aimMirror(M3_DEF, top, moonIn, target, 0.85, false);
+})();
+
+
+// ────────────────────────────── 合成：体积光、雾、彩虹 ──────────────────────────────
+const NB = BEAMS.length;
+const gateBox = { O: new V3(), O0: new V3(), M: new THREE.Matrix3() };   // 虹门喷泉水雾（跟着最高一级升起）
+{
+  const w = ARCH.R + 0.5, h0 = 0, h1 = ARCH.h + ARCH.R + 0.6, t = 0.5;
+  gateBox.O0.copy(ARCH.center).addScaledVector(ARCH.T, -w).addScaledVector(ARCH.N, -t); gateBox.O0.y = CROWN_Y + h0; gateBox.O.copy(gateBox.O0);
+  const U = ARCH.T.clone().multiplyScalar(2 * w), V = new V3(0, h1 - h0, 0), W = ARCH.N.clone().multiplyScalar(2 * t);
+  gateBox.M.set(U.x, V.x, W.x, U.y, V.y, W.y, U.z, V.z, W.z).invert();
+}
+const postMat = new THREE.ShaderMaterial({
+  depthTest: false, depthWrite: false,
+  uniforms: {
+    tColor: { value: rt.texture }, tDepth: { value: rt.depthTexture },
+    cNear: { value: camera.near }, cFar: { value: camera.far },
+    uProjInv: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() }, uCamPos: { value: new V3() },
+    uL: { value: new V3() }, uSunCol: { value: new V3(1.0, 0.93, 0.82) }, uMoonCol: { value: new V3(0.55, 0.65, 0.9) }, uTime: { value: 0 },
+    uStraitAx: { value: STRAIT.ax }, uStrait: { value: new THREE.Vector4(STRAIT.r0, STRAIT.r1, STRAIT.halfW, 0) },
+    uBO: { value: BEAMS.map(() => new V3()) }, uBM: { value: BEAMS.map(() => new THREE.Matrix3()) },
+    uBC: { value: BEAMS.map(() => new THREE.Vector4()) }, uBOn: { value: BEAMS.map(() => 0) }, uBMoon: { value: BEAMS.map((b) => (b.moon ? 1 : 0)) },
+    uGateO: { value: gateBox.O }, uGateM: { value: gateBox.M }, uGateOn: { value: 0 }, uShadowY: { value: -1e4 },
+    uBeamK: { value: 0.55 }, uRainK: { value: 2.4 },
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: `
+    #include <common>
+    #include <packing>
+    #define NB ${NB}
+    varying vec2 vUv;
+    uniform sampler2D tColor; uniform sampler2D tDepth;
+    uniform float cNear; uniform float cFar;
+    uniform mat4 uProjInv; uniform mat4 uCamWorld; uniform vec3 uCamPos;
+    uniform vec3 uL; uniform vec3 uSunCol; uniform vec3 uMoonCol; uniform float uTime;
+    uniform vec3 uStraitAx; uniform vec4 uStrait;
+    uniform vec3 uBO[NB]; uniform mat3 uBM[NB]; uniform vec4 uBC[NB]; uniform float uBOn[NB]; uniform float uBMoon[NB];
+    uniform vec3 uGateO; uniform mat3 uGateM; uniform float uGateOn; uniform float uShadowY;
+    uniform float uBeamK; uniform float uRainK;
+    float hash3(vec3 p){ p = fract(p*0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+    float vnoise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f);
+      return mix(mix(mix(hash3(i),hash3(i+vec3(1,0,0)),f.x), mix(hash3(i+vec3(0,1,0)),hash3(i+vec3(1,1,0)),f.x), f.y),
+                 mix(mix(hash3(i+vec3(0,0,1)),hash3(i+vec3(1,0,1)),f.x), mix(hash3(i+vec3(0,1,1)),hash3(i+vec3(1,1,1)),f.x), f.y), f.z); }
+    float fbm(vec3 p){ return 0.62*vnoise(p) + 0.38*vnoise(p*2.17 + 7.3); }
+    float mistAt(vec3 p){
+      float r = length(p.xz), m = 0.0;
+      if (p.y > -0.6 && p.y < 31.0) m += r < 12.19 ? 1.0 : (r < 15.5 ? 0.25 : 0.0);
+      float d = dot(p.xz, uStraitAx.xz), lat = abs(p.x*uStraitAx.z - p.z*uStraitAx.x);
+      m += smoothstep(uStrait.x, uStrait.x + 1.5, d) * (1.0 - smoothstep(uStrait.y - 2.0, uStrait.y, d)) * (1.0 - smoothstep(uStrait.z - 1.5, uStrait.z, lat)) * step(-16.0, p.y) * (1.0 - smoothstep(-2.2, -0.8, p.y)) * 1.3;
+      return m;
+    }
+    float hg(float c, float g){ float g2 = g*g; return (1.0-g2) / (4.0*PI*pow(1.0 + g2 - 2.0*g*c, 1.5)); }
+    vec3 spectral(float x){
+      vec3 c = vec3(smoothstep(0.42, 0.78, x) + 0.4*smoothstep(0.0, 0.1, x)*(1.0 - smoothstep(0.1, 0.28, x)),
+                    smoothstep(0.18, 0.45, x) * (1.0 - smoothstep(0.62, 0.88, x)),
+                    1.0 - smoothstep(0.22, 0.5, x));
+      return c * smoothstep(0.0, 0.1, x) * (1.0 - smoothstep(0.9, 1.0, x));
+    }
+    vec3 bow(float ang){
+      float x1 = (ang - 40.6) / 1.7, x2 = (ang - 50.3) / 3.1;
+      vec3 c = spectral(clamp(x1, 0.0, 1.0)) * step(0.0, x1) * step(x1, 1.0);
+      c += 0.3 * spectral(1.0 - clamp(x2, 0.0, 1.0)) * step(0.0, x2) * step(x2, 1.0);
+      c += vec3(0.06) * smoothstep(28.0, 40.6, ang) * step(ang, 40.6);
+      return c;
+    }
+    bool slab(vec3 q0, vec3 qd, vec3 hi, float tMax, out float te, out float tx){
+      vec3 t0 = (vec3(0.0) - q0) / qd, t1 = (hi - q0) / qd;
+      vec3 tn = min(t0, t1), tf = max(t0, t1);
+      te = max(max(tn.x, tn.y), max(tn.z, 0.0));
+      tx = min(min(tf.x, tf.y), min(tf.z, tMax));
+      return tx > te;
+    }
+    void main(){
+      vec3 col = texture2D(tColor, vUv).rgb;
+      vec4 vp = uProjInv * vec4(vUv*2.0 - 1.0, 1.0, 1.0);
+      vec3 dv = normalize(vp.xyz / vp.w);
+      vec3 dir = normalize((uCamWorld * vec4(dv, 0.0)).xyz);
+      float dep = texture2D(tDepth, vUv).x;
+      float tMax = 1e4;
+      if (dep < 1.0) tMax = perspectiveDepthToViewZ(dep, cNear, cFar) / dv.z;
+      float jit = fract(sin(dot(gl_FragCoord.xy + fract(uTime)*97.0, vec2(12.9898, 78.233))) * 43758.5453);
+      vec3 bowC = bow(degrees(acos(clamp(dot(dir, uL), -1.0, 1.0))));
+      vec3 add = vec3(0.0);
+      for (int i = 0; i < NB; i++) {
+        if (uBOn[i] <= 0.0) continue;
+        vec3 q0 = uBM[i] * (uCamPos - uBO[i]);
+        vec3 qd = uBM[i] * dir + vec3(1e-7);
+        vec4 C = uBC[i];
+        float cmax = max(max(C.x, C.y), max(C.z, C.w));
+        float te, tx;
+        if (!slab(q0, qd, vec3(1.0, 1.0, cmax), tMax, te, tx)) continue;
+        float dt = (tx - te) / 18.0, scat = 0.0;
+        for (int k = 0; k < 18; k++) {
+          float t = te + (float(k) + jit) * dt;
+          vec3 q = q0 + qd * t;
+          float cl = mix(mix(C.x, C.y, q.x), mix(C.z, C.w, q.x), q.y);
+          if (q.z > cl) continue;
+          vec3 p = uCamPos + dir * t;
+          float edge = smoothstep(0.0, 0.06, q.x) * smoothstep(1.0, 0.94, q.x) * smoothstep(0.0, 0.06, q.y) * smoothstep(1.0, 0.94, q.y);
+          float n = fbm(p * 0.85 + vec3(uTime*0.05, -uTime*0.08, uTime*0.03));
+          scat += (0.08 + mistAt(p)) * (0.3 + 1.1*n) * edge * dt;
+        }
+        vec3 lc = mix(uSunCol, uMoonCol, uBMoon[i]);
+        float ph = uBMoon[i] > 0.5 ? 0.8 : 0.45 + 3.0 * hg(dot(uL, -dir), 0.4);
+        add += uBOn[i] * lc * (1.0 - exp(-scat * 0.35)) * ph * uBeamK;
+      }
+      if (uGateOn > 0.0) {
+        vec3 q0 = uGateM * (uCamPos - uGateO);
+        vec3 qd = uGateM * dir + vec3(1e-7);
+        float te, tx;
+        if (slab(q0, qd, vec3(1.0), tMax, te, tx)) {
+          float dt = (tx - te) / 16.0, spr = 0.0;
+          for (int k = 0; k < 16; k++) {
+            float t = te + (float(k) + jit) * dt;
+            vec3 q = q0 + qd * t; vec3 p = uCamPos + dir * t;
+            float edge = smoothstep(0.0, 0.12, q.x) * smoothstep(1.0, 0.88, q.x) * smoothstep(0.0, 0.08, q.y) * smoothstep(1.0, 0.8, q.y) * smoothstep(0.0, 0.3, q.z) * smoothstep(1.0, 0.7, q.z);
+            float n = fbm(p * 1.3 + vec3(0.0, -uTime*0.6, 0.0));
+            spr += (0.35 + 0.9*n) * edge * step(uShadowY, p.y) * dt;
+          }
+          add += uGateOn * (bowC * spr * uRainK * 0.42 + uSunCol * spr * 0.03);
+        }
+      }
+      col += add;
+      vec2 v = vUv - 0.5; col *= 1.0 - 0.45 * dot(v, v);
+      gl_FragColor = vec4(col, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+});
+const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+{ const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat); q.frustumCulled = false; postScene.add(q); }
+
+// 水沫粒子：瀑布脚下、海峡上、虹门两边
+function sprayCloud(N, color, size) {
+  const pos = new Float32Array(N * 3), seed = [];
+  for (let i = 0; i < N; i++) seed.push([Math.random() * Math.PI * 2, Math.random(), Math.random(), 0.25 + Math.random() * 0.6]);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const cx = cv.getContext('2d'); const gr = cx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
+  const m = new THREE.PointsMaterial({ size, map: new THREE.CanvasTexture(cv), color, transparent: true, opacity: 0, depthWrite: false });
+  const pts = new THREE.Points(g, m); pts.frustumCulled = false; pts.renderOrder = 3; scene.add(pts);
+  return { pts, seed, pos, m };
+}
+const fallCloud = sprayCloud(260, 0xb8c0c2, 0.22), gateCloud = sprayCloud(140, 0xd8dcdc, 0.07), straitCloud = sprayCloud(220, 0xc8d0d4, 0.5);
+// 瀑布的水帘：一张随时间流动的半透明面
+const fallMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 }, uLight: { value: 1 } },
+  vertexShader: `varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform float uTime; uniform float uLight; varying vec2 vU;
+    float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main(){ float x = floor(vU.x * 60.0); float s = fract(vU.y * 3.0 + uTime * (1.4 + 0.6 * h(vec2(x, 1.0))) + h(vec2(x, 2.0)));
+      float a = (0.28 + 0.4 * smoothstep(0.6, 1.0, s)) * (0.6 + 0.4 * h(vec2(x, 3.0)));
+      gl_FragColor = vec4(vec3(0.82, 0.88, 0.9) * uLight, a); }`,
+});
+{
+  const g = new THREE.BufferGeometry(), pos = [], uv = [];
+  const n = 12, yT = FALL.top, yB = -0.45;
+  for (let i = 0; i < n; i++) for (const [rr, off] of [[FALL.r0 + 0.2, 0], [(FALL.r0 + FALL.r1) / 2, 0.33], [FALL.r1 - 0.2, 0.66]]) {
+    const a0 = lerp(FALL.a0 + 0.6, FALL.a1 - 0.6, i / n), a1 = lerp(FALL.a0 + 0.6, FALL.a1 - 0.6, (i + 1) / n);
+    const A = P(a0, rr), B = P(a1, rr);
+    const quad = [[A, yB, 0], [B, yB, 1], [B, yT, 1], [A, yB, 0], [B, yT, 1], [A, yT, 0]];
+    for (const [p, y, u] of quad) { pos.push(p.x, y, p.z); uv.push((i + u) / n + off, (y - yB) / (yT - yB) * 4); }
+  }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  const m = new THREE.Mesh(g, fallMat); m.renderOrder = 2; world.add(m);
+}
+
+
+// ────────────────────────────── 建起来 ──────────────────────────────
+planSerliana(); buildWall(); buildTunnels(); buildFloors(); buildParapets(); buildColonnades(); buildSerliana();
+buildOutside(); buildWaterfall(); buildPoche(); buildMeridian(); buildCrown(); buildArch(); buildPavilion(); setIris(0.4);
+
+// 月门的两根竖棂（挡月光：它们的影子把楼梯截成几段）
+for (const az of MOONWIN.gate.mullions) { const ax = moonAzAt(MOONWIN.gate.axisH), c = P(az, R_IN, 0).add(new V3(Math.sin(ax * DEG), 0, -Math.cos(ax * DEG)).multiplyScalar(0.3)); addStatic(boxGeo(new V3(c.x, MOONWIN.gate.y0 + MOONWIN.gate.h / 2, c.z), 0.14, MOONWIN.gate.h, 0.6, ax), M.stone, 'lc'); }
+// 光阶 P 穿过 L3 楼板内沿的缺口：外面立一道铜栅（人过不去，光照样过）
+{
+  const r = P_NOTCH.r1 + 0.08, y0 = F[3], y1 = CEIL;
+  proxy(sector(r - 0.08, r + 0.08, y0, y0 + 3.2, P_NOTCH.a0, P_NOTCH.a1), 's');
+  for (const a of [P_NOTCH.a0, P_NOTCH.a1]) { addStatic(sector(R_A, r + 0.08, y0, y0 + 3.2, a - 0.35, a + 0.35), M.bronze, 'sc'); }
+  addStatic(sector(r - 0.05, r + 0.05, y0 + 3.0, y0 + 3.12, P_NOTCH.a0, P_NOTCH.a1), M.grille, '');
+  addStatic(sector(r - 0.05, r + 0.05, y0 + 0.02, y0 + 0.12, P_NOTCH.a0, P_NOTCH.a1), M.grille, '');
+  for (let a = P_NOTCH.a0 + 0.8; a < P_NOTCH.a1 - 0.4; a += 0.9) { const c = P(a, r); addStatic(cylGeo(new V3(c.x, y0, c.z), 0.018, 0.018, 3.1, 6), M.grille, '', null, false); }
+}
+// 日之龛石台（L2 层东墙上，只有托镜像反射的光路能到）
+const SUNN = { t: 0, open: false };
+{
+  addStatic(sector(LEDGE.r0, R_IN, LEDGE.y - 0.45, LEDGE.y, LEDGE.az - LEDGE.half, LEDGE.az + LEDGE.half), M.stone, 'wslc', { zone: 'ledge' });
+  for (const s of [-1, 1]) addStatic(sector(LEDGE.r0 + 0.5, R_IN, LEDGE.y - 1.3, LEDGE.y - 0.45, LEDGE.az + s * (LEDGE.half - 0.8) - 0.6, LEDGE.az + s * (LEDGE.half - 0.8) + 0.6), M.stone, 'lc');
+  // 石台两端的护栏（正面留空：反射来的光从这里落上来）
+  for (const a of [LEDGE.az - LEDGE.half, LEDGE.az + LEDGE.half]) addStatic(sector(LEDGE.r0, R_IN, LEDGE.y, LEDGE.y + 0.9, a - 0.25, a + 0.25), M.bronze, 'slc');
+  const c = P(LEDGE.az + 2.6, R_IN - 0.45, LEDGE.y);
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.55, 0.6), M.bronze); box.position.set(c.x, LEDGE.y + 0.28, c.z); box.rotation.y = -(LEDGE.az + 2.6) * DEG; box.castShadow = true; world.add(box);
+  const lid = new THREE.Group(); lid.position.set(c.x, LEDGE.y + 0.56, c.z); lid.rotation.y = -(LEDGE.az + 2.6) * DEG; world.add(lid);
+  const lm = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.08, 0.64), M.gold); lm.position.z = 0.32; lid.add(lm);
+  const shard = new THREE.Mesh(new THREE.TetrahedronGeometry(0.16), new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0xffb040, emissiveIntensity: 1.2, metalness: 0.4, roughness: 0.3 }));
+  shard.position.set(c.x, LEDGE.y + 0.5, c.z); shard.visible = false; world.add(shard);
+  Object.assign(SUNN, { pos: c, lid, shard, box });
+  SOLID.push(proxy(boxGeo(new V3(c.x, LEDGE.y + 0.3, c.z), 0.8, 0.6, 0.6, LEDGE.az + 2.6), 's'));
+}
+
+// 托镜像 M、岸边的 M3
+function slotList(main, n = 6) {
+  const out = [...main];
+  for (let k = 1; out.length < n && k < 36; k++) { const c = wrap360(main[0] + k * 53); if (out.every((y) => Math.abs(angDiff(y, c)) > 30)) out.push(c); }
+  return out.sort((a, b) => a - b);
+}
+{
+  const slots = slotList([MPLAN.a.yaw, MNIGHT.yaw]);
+  const k0 = slots.findIndex((y) => Math.abs(angDiff(y, MPLAN.a.yaw)) > 30 && Math.abs(angDiff(y, MNIGHT.yaw)) > 30);
+  mirrorStatue('M', M_DEF.az, M_DEF.r, F[2], { slots, k0: Math.max(0, k0), tiltSun: MPLAN.a.tilt, tiltMoon: MNIGHT.tilt, w: M_DEF.w, h: M_DEF.h, dais: M_DEF.dais, daisR: M_DEF.daisR, mirrorY: MPLAN.mirrorY, mirrorOffset: M_DEF.offset, zone: 'mdais', name: '托镜像' });
+  MIRRORS.M.daySlot = slots.findIndex((y) => Math.abs(angDiff(y, MPLAN.a.yaw)) < 0.01); MIRRORS.M.nightSlot = slots.findIndex((y) => Math.abs(angDiff(y, MNIGHT.yaw)) < 0.01);
+  const s3 = slotList([M3PLAN.yaw]);
+  mirrorStatue('M3', M3_DEF.az, M3_DEF.r, F[0], { slots: s3, k0: (s3.findIndex((y) => Math.abs(angDiff(y, M3PLAN.yaw)) < 0.01) + 2) % s3.length, tiltSun: 15, tiltMoon: M3PLAN.tilt, w: M3_DEF.w, h: M3_DEF.h, plinth: M3_DEF.plinth, mirrorY: 0.85, mirrorOffset: M3_DEF.offset, zone: 'L0', name: '岸边的托镜像' });
+  MIRRORS.M3.nightSlot = s3.findIndex((y) => Math.abs(angDiff(y, M3PLAN.yaw)) < 0.01);
+}
+
+// 天鹅：白天是女神像；月光照着时是一只白天鹅，墙上的影子是黑天鹅
+{
+  addStatic(cylGeo(new V3(SWAN.c.x, F[3], SWAN.c.z), 0.55, 0.55, SWAN.plinth, 24), M.stone, 'wslc', { zone: 'L3' });
+  const g = new THREE.Group(); g.position.set(SWAN.c.x, F[3] + SWAN.plinth, SWAN.c.z); world.add(g);
+  const goddess = new THREE.Mesh(figureGeo(1.9), M.statue); goddess.castShadow = true; g.add(goddess);
+  const swan = new THREE.Group(); g.add(swan);
+  const sm = MS_REVEAL.clone(); sm.opacity = 0.97;
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 14), sm); body.scale.set(0.62, 0.52, 1.15); body.position.set(0, 0.55, 0.05); swan.add(body);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.75, 10), sm); neck.position.set(0, 1.0, -0.42); neck.rotation.x = -0.35; swan.add(neck);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 10), sm); head.position.set(0, 1.38, -0.58); swan.add(head);
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.2, 8), sm); beak.position.set(0, 1.36, -0.75); beak.rotation.x = -Math.PI / 2; swan.add(beak);
+  for (const s of [-1, 1]) { const w = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.85), sm); w.position.set(s * 0.33, 0.85, 0.15); w.rotation.z = s * 0.45; w.rotation.x = 0.25; swan.add(w); }
+  swan.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  goddess.castShadow = true;
+  Object.assign(SWAN, { g, goddess, swan, sm, head, k: 3, yawNow: 0, lit: 0, form: 0, solvedT: 0, solved: false, slots: [...Array(8).keys()].map((k) => wrap360(SWAN.yawOK + k * 45)) });
+  SWAN.col = proxy(cylGeo(new V3(SWAN.c.x, F[3], SWAN.c.z), 0.55, 0.55, 2.4, 12), 's');
+  // 浮雕屏：几只天鹅中间空着一块
+  const S = SWAN.screen, yaw = azOf(S.n.x, S.n.z);
+  addStatic(boxGeo(S.c, S.w, S.h, S.th, yaw), M.relief, 'slc');
+  // 计算空白处：正确的朝向、设计时刻的月光下，天鹅头部影子的位置
+  const m = moonDir(H_SW), Lm = m.clone().negate();
+  g.rotation.y = -SWAN.yawOK * DEG; g.updateMatrixWorld(true);
+  const hp = head.getWorldPosition(new V3());
+  const face = S.c.clone().addScaledVector(S.n, S.th / 2);
+  const t = face.clone().sub(hp).dot(S.n) / Lm.dot(S.n);
+  SWAN.gap = hp.clone().addScaledVector(Lm, t);
+  const right = new V3(Math.cos(yaw * DEG), 0, Math.sin(yaw * DEG));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.02, 6, 32), M.gold); ring.position.copy(SWAN.gap).addScaledVector(S.n, 0.02); ring.lookAt(ring.position.clone().add(S.n)); world.add(ring);
+  // 浮雕上的另外几只天鹅（浅浮雕）
+  for (const dx of [-1.25, -0.7, 0.7, 1.25]) {
+    const c = SWAN.gap.clone().addScaledVector(right, dx).addScaledVector(S.n, 0.03);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), M.stoneDark); b.scale.set(1.6, 0.8, 0.25); b.position.copy(c).add(new V3(0, -0.45, 0)); b.lookAt(b.position.clone().add(S.n)); world.add(b);
+  }
+  g.rotation.y = -SWAN.slots[SWAN.k] * DEG; SWAN.yawNow = SWAN.slots[SWAN.k];
+}
+// 天鹅揭开的门（T2 顶上，L3）
+const T2 = TUNNELS[0], T3 = TUNNELS[1], T4 = TUNNELS[2];
+{
+  const d = T2.doors[0], m = addDynamic(new THREE.Mesh(sector(R_IN - 0.06, TUN_R0 - 0.02, d.y, d.y + d.h, d.az - d.hw, d.az + d.hw), M.relief), 'slc');
+  SWAN.door = m;
+}
+// 双子：卡斯托耳（固定，站在断口前）与波吕丢刻斯（藏在龛里）
+const TWN = { joined: false, t: 0, both: 0 };
+{
+  const make = (def, face) => {
+    const c = P(def.az, def.r, F[2]); const g = new THREE.Group(); g.position.copy(c); world.add(g);
+    const fig = new THREE.Mesh(figureGeo(2.0), M.statue); fig.castShadow = true; g.add(fig);
+    g.rotation.y = -face * DEG;
+    return { g, c, def };
+  };
+  TWN.castor = make(TWIN_DEF.castor, TWINS.az);
+  TWN.pollux = make(TWIN_DEF.pollux, TWINS.az + 180);
+  TWN.castor.col = proxy(cylGeo(TWN.castor.c, 0.36, 0.36, 2.1, 12), 's');
+  // 两段半拱（月石）：照亮时显形
+  const arch = (from, to, y0) => { const a = P(from.az, from.r, F[2] + y0), b = P(to.az, to.r, F[2] + y0 + 0.4); const mid = a.clone().lerp(b, 0.5).add(new V3(0, 0.25, 0)); const len = a.distanceTo(b); const g = boxGeo(new V3(0, 0, 0), 0.22, 0.22, len, 0); g.translate(0, 0, 0); const m = new THREE.Matrix4().lookAt(a, b, UP); g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, 0, 0))); void m; return { a, b, mid }; };
+  void arch;
+  const halfArch = (from, towardR) => {
+    const pts = []; for (let i = 0; i <= 10; i++) { const t = i / 10; pts.push(P(from.az + (TWINS.az - from.az) * t, lerp(from.r, towardR, t), F[2] + 1.6 + 0.9 * Math.sin(t * Math.PI / 2))); }
+    const g = GB(); for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1], d = b.clone().sub(a).normalize(), s = new V3(-d.z, 0, d.x).normalize().multiplyScalar(0.13), u = new V3(0, 0.13, 0);
+      const q = [a.clone().add(s).add(u), b.clone().add(s).add(u), b.clone().sub(s).add(u), a.clone().sub(s).add(u)]; g.quad(q[0], q[1], q[2], q[3], UP);
+      const w = [a.clone().add(s).sub(u), b.clone().add(s).sub(u), b.clone().sub(s).sub(u), a.clone().sub(s).sub(u)]; g.quad(w[0], w[1], w[2], w[3], DOWN);
+      g.quad(q[0], q[1], w[1], w[0], s.clone().normalize()); g.quad(q[3], q[2], w[2], w[3], s.clone().normalize().negate()); }
+    return g.geo();
+  };
+  const mid = (TWINS.pitR[0] + TWINS.pitR[1]) / 2;
+  const samp = (def) => [0.6, 1.2, 1.8].map((y) => P(def.az, def.r + (def.r < 15 ? 0.3 : -0.35), F[2] + y));
+  TWN.msC = moonstone('castor', [{ geo: halfArch(TWIN_DEF.castor, mid), walk: false }], samp(TWIN_DEF.castor), { source: 'moon', name: '卡斯托耳（固定的一尊）' });
+  TWN.msP = moonstone('pollux', [{ geo: halfArch(TWIN_DEF.pollux, mid), walk: false }], samp(TWIN_DEF.pollux), { source: 'mmoon', name: '波吕丢刻斯（藏在龛里）' });
+  TWN.msC.statue = TWN.msP.statue = true;
+  TWN.deck = addDynamic(new THREE.Mesh(sector(TWINS.pitR[0] - 0.05, TWINS.pitR[1] + 0.3, F[2] - 0.35, F[2], TWINS.az - 2.3, TWINS.az + 2.3), M.statue), '', { zone: 'L2' });
+  TWN.deck.visible = false;
+}
+// 月4：L1 西墙的月石门（T4 的入口），月之龛（支路）
+const MOONN = { t: 0, open: false };
+{
+  const d = T4.doors[0];
+  const samples = []; for (const da of [-0.7, 0, 0.7]) for (const y of [0.5, 1.8]) samples.push(P(d.az + da * d.hw, R_IN - 0.05, d.y + y));
+  T4.ms = moonstone('T4door', [], samples, { source: 'moon', name: 'L1 西墙的月石门', block: [sector(R_IN - 0.06, TUN_R0 - 0.02, d.y, d.y + d.h, d.az - d.hw, d.az + d.hw)] });
+  T4.ms.door = d;
+  const az = 283, y0 = F[1] + 0.9;
+  const s2 = []; for (const da of [-0.5, 0.5]) for (const y of [0.25, 0.75]) s2.push(P(az + da, R_IN - 0.06, y0 + y));
+  MOONN.ms = moonstone('moonNiche', [], s2, { source: 'moon', name: '月之龛', block: [sector(R_IN - 0.08, R_IN + 0.02, y0, y0 + 1.0, az - 1.6, az + 1.6)] });
+  const c = P(az, R_IN + 0.25, y0 + 0.5);
+  addStatic(sector(R_IN - 0.02, R_IN + 0.5, y0 - 0.05, y0 + 1.05, az - 1.7, az + 1.7, az - 1.7, az + 1.7, { outer: true }), M.stoneDark, '');
+  MOONN.shard = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16), new THREE.MeshStandardMaterial({ color: 0xdfe8ff, emissive: 0x9fb8ff, emissiveIntensity: 1.2, metalness: 0.3, roughness: 0.25 }));
+  MOONN.shard.position.copy(c); world.add(MOONN.shard); MOONN.pos = P(az, R_IN - 0.9, F[1]); MOONN.az = az;
+}
+// 月1：环道东南落下去的楼梯（11 级）。上面 3 级是普通石阶，下面 7 级是月石：东边月门的月光整段照亮时才显出来
+const STAIR1 = { firstMs: 4 };
+{
+  const dn = TREADS.filter((t) => t.kind === 'dn' && t.k >= STAIR1.firstMs && t.k < NIGHT_STAIR.n);
+  const parts = [], samples = [];
+  for (const t of dn) {
+    const y = t.yNight;
+    parts.push({ geo: sector(IRIS_R, CROWN_R1, y - 0.35, y, t.a0, t.a1), walk: true, solid: true, zone: 'stair1' });
+    samples.push(P((t.a0 + t.a1) / 2, 13.4, y + 0.05));
+  }
+  STAIR1.ms = moonstone('stair1', parts, samples, { source: 'moon', name: '月1 读墙楼梯' });
+  STAIR1.ms.parts.forEach((p) => { p.m.visible = false; });
+  STAIR1.ms.dormant = true;
+  STAIR1.a0 = Math.min(...dn.map((t) => t.a0)); STAIR1.a1 = Math.max(...dn.map((t) => t.a1));
+}
+// 月5：两段半桥（月石）
+const BRG = {};
+{
+  const rect = (r0, r1) => { const a = P(BRIDGE.az, r0), b = P(BRIDGE.az, r1), s = new V3(Math.cos(BRIDGE.az * DEG), 0, Math.sin(BRIDGE.az * DEG)).multiplyScalar(BRIDGE.w / 2);
+    return planPrism([[a.x - s.x, a.z - s.z], [b.x - s.x, b.z - s.z], [b.x + s.x, b.z + s.z], [a.x + s.x, a.z + s.z]], BRIDGE.y - 0.3, BRIDGE.y); };
+  const samp = (r0, r1) => [0.15, 0.5, 0.85].map((t) => P(BRIDGE.az, lerp(r0, r1, t), BRIDGE.y + 0.06));
+  BRG.A = moonstone('bridgeA', [{ geo: rect(...BRIDGE.A), walk: true, solid: false, zone: 'pav' }], samp(...BRIDGE.A), { source: 'moon', name: '半桥 A（岸边）' });
+  BRG.B = moonstone('bridgeB', [{ geo: rect(...BRIDGE.B), walk: true, solid: false, zone: 'pav' }], samp(...BRIDGE.B), { source: 'm3moon', name: '半桥 B（亭檐下）' });
+}
+mergeRender();
+for (const ms of MOONSTONES) setMoonstoneState(ms, 0);
+
+// 金苹果（接住以后跟着人走）
+const apple = new THREE.Mesh(new THREE.SphereGeometry(0.12, 24, 18), M.apple); apple.visible = false; apple.castShadow = true; scene.add(apple);
+const appleLight = new THREE.PointLight(0xffc070, 0, 9, 2); scene.add(appleLight);
+
+// ────────────────────────────── 等时线（按 T） ──────────────────────────────
+const hourLines = new THREE.Group(); hourLines.visible = false; scene.add(hourLines);
+const HL_MAT = new THREE.MeshBasicMaterial({ color: 0xc49a5a, transparent: true, opacity: 0.8, depthWrite: false });
+const HL_MAJ = new THREE.MeshBasicMaterial({ color: 0xf2c46a, transparent: true, opacity: 0.95, depthWrite: false });
+function buildHourLines(night) {
+  while (hourLines.children.length) hourLines.remove(hourLines.children[0]);
+  const Z = night ? ZN : ZD, floors = [['L0', F[0], R_POOL], ['L1', F[1], R_A], ['L2', F[2], R_A], ['L3', F[3], R_A]];
+  for (const [k, y, r0] of floors) {
+    const z = Z[k], step = night ? (k === 'L0' ? 1 : 1) : 0.5, H0 = z.f(z.lo + 0.01), H1 = z.f(z.hi - 0.01);
+    const lo = Math.min(H0, H1), hi = Math.max(H0, H1);
+    for (let H = Math.ceil(lo / step) * step; H <= hi; H += step) {
+      const az = z.a0 + (H - z.h0) / z.k; if (az < z.lo || az > z.hi) continue;
+      const maj = Math.abs(H / 5 - Math.round(H / 5)) < 1e-6;
+      const a = P(az, r0 + 0.1, y + 0.012), b = P(az, R_IN - 0.1, y + 0.012), mid = a.clone().lerp(b, 0.5);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(maj ? 0.07 : 0.035, 0.01, a.distanceTo(b)), maj ? HL_MAJ : HL_MAT);
+      m.position.copy(mid); m.rotation.y = -az * DEG; hourLines.add(m);
+    }
+  }
+}
+buildHourLines(false);
+
+// ────────────────────────────── 玩家 ──────────────────────────────
+const SPAWN = { pos: P(ISLAND.az, ISLAND.r - 1.2, ISLAND.top), yaw: ISLAND.az + 180 };
+const player = {
+  pos: SPAWN.pos.clone(), vy: 0, grounded: true, ground: null, zone: 'out', fallFrom: SPAWN.pos.y,
+  yaw: SPAWN.yaw, pitch: 0.22, dist: 4.6, mode: 'third', heading: SPAWN.yaw,
+  lastSafe: { pos: SPAWN.pos.clone() }, safeT: 0, carry: null, coyote: 0,
+};
+const state = { started: false, H: H_I, t: 0, respawning: false, level: 0, seenLevel: -1, caught: false, cine: 0, placed: false, fin: 0, sticky: H_I, forceH: null, shards: { sun: false, rainbow: false, moon: false }, nightT: 0 };
+const keys = {}, touchMove = { x: 0, y: 0 };
+const _p = new V3(), BODY_R = 0.3, STEP = 0.55, SNAP = 0.42;
+// 碰撞：沿移动方向在三个高度各打三条射线，碰到就沿墙滑；再往八个方向推一推，免得卡进墙里
+const HEIGHTS = [0.62, 1.12, 1.72];
+const _dir = new V3(), _n = new V3(), _o = new V3(), _perp = new V3();
+let nearSolid = [], nearWalk = [], nearCam = [];
+function worldSphere(o) {
+  const g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+  if (o.userData.ws && !o.parent) return o.userData.ws;
+  const s = g.boundingSphere.clone().applyMatrix4(o.matrixWorld); if (!o.parent) o.userData.ws = s; return s;
+}
+function refreshNear() {
+  const p = player.pos;
+  const f = (list, R) => list.filter((o) => { const s = worldSphere(o); return s.center.distanceTo(p) - s.radius < R; });
+  nearSolid = f(SOLID, 6); nearWalk = f(WALK, 12);
+  for (const b of BEAMS) if (b.walkable) nearWalk.push(b.walk);
+  nearCam = f(CAMB, 9);
+}
+function firstHit(list) { const h = rc.intersectObjects(list, false); return h.length ? h[0] : null; }
+function slideMove(p, dx, dz) {
+  let len = Math.hypot(dx, dz); if (len < 1e-7) return;
+  _dir.set(dx / len, 0, dz / len);
+  for (let it = 0; it < 3 && len > 1e-6; it++) {
+    let best = null;
+    _perp.set(-_dir.z, 0, _dir.x);
+    for (const h of HEIGHTS) for (const off of [-0.2, 0, 0.2]) {
+      _o.set(p.x + _perp.x * off, p.y + h, p.z + _perp.z * off);
+      rc.set(_o, _dir); rc.near = 0; rc.far = len + BODY_R;
+      const hit = firstHit(nearSolid);
+      if (hit && (!best || hit.distance < best.distance)) best = hit;
+    }
+    if (!best) { p.x += _dir.x * len; p.z += _dir.z * len; break; }
+    const mv = Math.max(0, best.distance - BODY_R);
+    p.x += _dir.x * mv; p.z += _dir.z * mv;
+    _n.copy(best.face.normal).transformDirection(best.object.matrixWorld); _n.y = 0;
+    if (_n.lengthSq() < 1e-6) break; _n.normalize(); if (_n.dot(_dir) > 0) _n.negate();
+    const rest = len - mv; const vx = _dir.x * rest, vz = _dir.z * rest, d = vx * _n.x + vz * _n.z;
+    const sx = vx - _n.x * d, sz = vz - _n.z * d; len = Math.hypot(sx, sz); if (len < 1e-6) break;
+    _dir.set(sx / len, 0, sz / len);
+  }
+  for (const h of [0.62, 1.3]) for (let k = 0; k < 8; k++) {
+    const a = k * Math.PI / 4; _dir.set(Math.cos(a), 0, Math.sin(a));
+    _o.set(p.x, p.y + h, p.z); rc.set(_o, _dir); rc.near = 0; rc.far = BODY_R;
+    const hit = firstHit(nearSolid); if (hit) { p.x -= _dir.x * (BODY_R - hit.distance + 0.002); p.z -= _dir.z * (BODY_R - hit.distance + 0.002); }
+  }
+}
+function probe(x, y, z, down) {
+  rc.set(_p.set(x, y + STEP, z), DOWN); rc.near = 0; rc.far = STEP + down;
+  return firstHit(nearWalk);
+}
+// 光路两侧是深渊时有一道看不见的护栏：往边上走会顺着光滑过去，而不是掉下去
+function beamRail(b, p) {
+  const nH = _s.set(-b.L.z, 0, b.L.x); if (nH.lengthSq() < 1e-8) return; nH.normalize();
+  const l1 = (b.b1.x - b.b0.x) * nH.x + (b.b1.z - b.b0.z) * nH.z, lo = Math.min(0, l1) + 0.06, hi = Math.max(0, l1) - 0.06;
+  const l = (p.x - b.b0.x) * nH.x + (p.z - b.b0.z) * nH.z;
+  if (l >= lo && l <= hi) return;
+  rc.set(_p.set(p.x, p.y + STEP, p.z), DOWN); rc.near = 0; rc.far = STEP + 6.2;
+  if (rc.intersectObjects(nearWalk.filter((o) => o !== b.walk), false).length) return;
+  const lc = clamp(l, lo, hi); p.x -= nH.x * (l - lc); p.z -= nH.z * (l - lc);
+}
+function inNightStairWell(p) { const az = azOf(p.x, p.z), r = rOf(p); return inArc(az, [NIGHT_STAIR.a0, STAIR1.a1 + 0.5]) && r > IRIS_R - 0.3 && r < CROWN_R1 + 0.2 && p.y > F[3] + 0.3 && p.y < CROWN_Y - 0.3; }
+function updatePlayer(dt) {
+  let mx = 0, mz = 0;
+  if (keys.KeyW || keys.ArrowUp) mz += 1;
+  if (keys.KeyS || keys.ArrowDown) mz -= 1;
+  if (keys.KeyD || keys.ArrowRight) mx += 1;
+  if (keys.KeyA || keys.ArrowLeft) mx -= 1;
+  mx += touchMove.x; mz += touchMove.y;
+  const len = Math.hypot(mx, mz); if (len > 1) { mx /= len; mz /= len; }
+  const speed = (keys.ShiftLeft || keys.ShiftRight) ? 5.2 : 3.1;
+  const fx = Math.sin(player.yaw * DEG), fz = -Math.cos(player.yaw * DEG), rx = Math.cos(player.yaw * DEG), rz = Math.sin(player.yaw * DEG);
+  const vx = (fx * mz + rx * mx) * speed, vz = (fz * mz + rz * mx) * speed;
+  const p = player.pos;
+  if (len > 0.05) player.heading = azOf(vx, vz);
+  refreshNear();
+  slideMove(p, vx * dt, vz * dt);
+  const onBeam = player.grounded && player.ground && player.ground.userData.beam;
+  if (onBeam && onBeam.walkable) beamRail(onBeam, p);
+  let y = p.y;
+  if (player.grounded) {
+    const h = probe(p.x, y, p.z, onBeam ? 0.75 : SNAP);
+    if (h) { y = h.point.y; player.ground = h.object; player.coyote = 0; }
+    else if ((player.coyote += dt) < 0.14) { /* 刚踏空的一小会儿还站得住 */ }
+    else { player.grounded = false; player.vy = 0; player.ground = null; player.fallFrom = y; player.coyote = 0; }
+  }
+  if (!player.grounded) {
+    player.vy = Math.max(player.vy - 22 * dt, -30);
+    const dy = player.vy * dt;
+    const h = player.vy <= 0 ? probe(p.x, y, p.z, Math.max(0, -dy) + 0.02) : null;
+    if (h && h.point.y >= y + dy - 0.02) {
+      y = h.point.y; player.vy = 0; player.grounded = true; player.ground = h.object;
+      if (player.fallFrom - y > 6.5 && !state.respawning) { p.y = y; respawn(); return; }
+    } else y += dy;
+    // 头顶碰到东西
+    if (player.vy > 0) { rc.set(_p.set(p.x, y + 1.0, p.z), UP); rc.near = 0; rc.far = 0.85; if (firstHit(nearSolid)) player.vy = 0; }
+  }
+  p.y = y;
+  const gb = player.grounded && player.ground && player.ground.userData.beam;
+  player.carry = gb ? { b: gb, ...beamLocal(gb, p) } : null;
+  if (player.grounded && player.ground) {
+    const z = zoneOf(player.ground, p); if (z) player.zone = z;
+    const ud = player.ground.userData;
+    player.safeT += dt;
+    if (player.safeT > 0.4 && !ud.beam && !ud.moonstone && ud.zone !== 'pav' && ud.zone !== 'ledge') { player.lastSafe = { pos: p.clone() }; player.safeT = 0; }
+  }
+  if (!state.respawning) {
+    const r = rOf(p);
+    if ((r < R_POOL && p.y < WATER_Y - 0.5) || p.y < SEA_Y + 1.5) respawn();
+    else if (!player.grounded && state.caught && STAIR1.ms.k < 0.5 && inNightStairWell(p) && player.fallFrom > F[3] + 2.5) respawn();
+  }
+}
+function applyCarry() {
+  const c = player.carry;
+  if (!c || !c.b.walkable) return;
+  const np = beamWorld(c.b, c.a, c.s);
+  const before = player.pos.clone();
+  player.pos.x = np.x; player.pos.z = np.z;
+  refreshNear(); slideMove(player.pos, 0, 0);
+  if (Math.hypot(player.pos.x - np.x, player.pos.z - np.z) > 0.05) { player.pos.copy(before); return; }
+  player.pos.y = np.y;
+}
+function jump() {
+  if (!state.started || state.respawning || !(player.grounded || player.coyote > 0)) return;
+  player.grounded = false; player.ground = null; player.carry = null; player.coyote = 0;
+  player.vy = 7.6; player.fallFrom = player.pos.y;
+}
+function respawn() {
+  state.respawning = true;
+  $('fade').style.opacity = '1';
+  setTimeout(() => {
+    player.pos.copy(player.lastSafe.pos); player.vy = 0; player.grounded = true; player.carry = null; player.ground = null;
+    refreshNear(); const h = probe(player.pos.x, player.pos.y + 0.3, player.pos.z, 1.5); if (h) { player.pos.y = h.point.y; player.ground = h.object; }
+    $('fade').style.opacity = '0'; state.respawning = false; toast('回到上一个落脚点');
+  }, 380);
+}
+
+// ────────────────────────────── 时间：由站在哪里决定 ──────────────────────────────
+function zoneOf(ground, p) {
+  const ud = ground.userData;
+  if (ud.beam) return 'beam:' + ud.beam.id;
+  if (ud.moonstone) return ud.zone || 'ms:' + ud.moonstone.id;
+  if (ud.zone === 'tun') return 'tun:' + ud.T.id;
+  if (ud.zone) return ud.zone;
+  // 雕像底座等：按高度判断在哪一层
+  if (p.y > CROWN_Y - 0.3) return 'crown';
+  if (p.y >= F[3] - 0.3) return 'L3'; if (p.y >= F[2] - 0.3) return 'L2'; if (p.y >= F[1] - 0.3) return 'L1'; if (p.y > -1) return 'L0';
+  return 'out';
+}
+function tunnelTime(T, y) {
+  const Z = state.caught ? ZN : ZD;
+  const fl = (yy) => (yy === F[0] ? 'L0' : yy === F[1] ? 'L1' : yy === F[2] ? 'L2' : 'L3');
+  const hTop = Z[fl(T.yTop)].f(T.topDoor), hBot = Z[fl(T.yBot)].f(T.botDoor);
+  return lerp(hTop, hBot, clamp((T.yTop - y) / (T.yTop - T.yBot), 0, 1));
+}
+function timeAt(zone, pos) {
+  if (state.forceH != null) return state.forceH;
+  const az = azOf(pos.x, pos.z), Z = state.caught ? ZN : ZD;
+  if (zone.startsWith('beam:')) {
+    const b = beamById[zone.slice(5)];
+    if (b.id === 'isle') return H_I;
+    if (b.id === 'oculus') return H_OC;
+    if (b.id === 'mirror') return H_M;
+    const ty = b.win && b.win.timeY; if (!ty) return state.sticky;
+    return lerp(ty[1], ty[3], clamp((pos.y - ty[0]) / (ty[2] - ty[0]), 0, 1));
+  }
+  if (zone.startsWith('tun:')) { const T = TUNNELS.find((t) => t.id === zone.slice(4)); return tunnelTime(T, pos.y); }
+  switch (zone) {
+    case 'out': return state.caught ? state.sticky : H_I;
+    case 'L0': case 'L1': case 'L2': case 'L3': return Z[zone].f(az);
+    case 'crown': return state.caught ? crownNight(az) : crownDay(az);
+    case 'irisTop': return state.caught ? state.sticky : H_OC;
+    case 'ledge': return H_M;
+    case 'mdais': return state.caught ? ZN.L2.f(M_DEF.az) : H_M;   // 托镜像的圆台上时间不动（站上去就是镜子被照亮的那一刻）
+    case 'stair1': return lerp(H_NIGHT.ring150, H_NIGHT.L3a, clamp((CROWN_Y - pos.y) / (CROWN_Y - F[3]), 0, 1));
+    case 'pav': return state.caught ? H_BR : state.sticky;
+    case 'pool': return state.sticky;
+  }
+  return state.sticky;
+}
+
+// ────────────────────────────── 关卡 ──────────────────────────────
+const LEVELS = [
+  { name: '序 · 登殿' }, { name: '日1 · 午后·水庭' }, { name: '日2 · 未时·柱廊' }, { name: '日3 · 申时·光阶' }, { name: '日4 · 酉时·圆眼' }, { name: '日5 · 日落·最后一缕' },
+  { name: '月1 · 月升·读墙' }, { name: '月2 · 初夜·天鹅' }, { name: '月3 · 中夜·双子' }, { name: '月4 · 夜半·沉光' }, { name: '月5 · 子夜·水亭' },
+];
+function levelOf(zone) {
+  if (!state.caught) {
+    if (zone === 'out' || zone === 'beam:isle') return 0;
+    if (zone === 'L0' || zone === 'beam:b1') return 1;
+    if (zone === 'L1' || zone === 'beam:b2') return 2;
+    if (zone === 'L2' || zone === 'beam:p' || zone === 'beam:r' || zone === 'beam:mirror' || zone === 'ledge' || zone === 'mdais') return 3;
+    if (zone === 'L3' || zone === 'beam:oculus') return 4;
+    if (zone === 'crown' || zone === 'irisTop') return 5;
+    return null;
+  }
+  if (zone === 'crown' || zone === 'stair1' || zone === 'irisTop') return 6;
+  if (zone === 'L3' || zone === 'tun:T2') return 7;
+  if (zone === 'L2' || zone === 'tun:T3' || zone === 'mdais') return 8;
+  if (zone === 'L1' || zone === 'tun:T4') return 9;
+  if (zone === 'L0' || zone === 'pav') return 10;
+  return null;
+}
+function updateLevel() {
+  const lv = levelOf(player.zone) ?? state.level;
+  if (lv !== state.level || state.seenLevel < 0) {
+    state.level = lv; $('lvlName').textContent = LEVELS[lv].name;
+    if (lv > state.seenLevel) { state.seenLevel = lv; const [n, sub] = LEVELS[lv].name.split(' · '); showTitle(`${n}<small>${sub}</small>`); }
+  }
+}
+
+// ────────────────────────────── 屋顶：台阶、光圈、虹门 ──────────────────────────────
+function updateCrown(dt) {
+  const upSpan = UP_TOP[0] - J_AZ + 3;
+  if (state.started && player.grounded && player.zone === 'crown') {
+    const psi = wrap360(azOf(player.pos.x, player.pos.z) - J_AZ);
+    crown.up = psi < 200 ? smoothstep(0, upSpan, psi) : 0;
+  }
+  let moved = false;
+  for (const t of TREADS) {
+    if (t.kind === 'up') {
+      const z = t.zEnd * crown.up;
+      if (Math.abs(z - t.z) > 1e-4) { t.z = z; t.m.scale.y = CROWN_Y + z - CEIL; t.m.updateMatrixWorld(true); moved = true; }
+    } else {
+      const target = state.caught ? t.yNight : t.yDay;
+      const y = toward(t.y, target, 1.2, dt);
+      if (y !== t.y) { t.y = y; t.m.position.y = y; t.m.updateMatrixWorld(true); moved = true; }
+      if (state.caught && Math.abs(t.y - t.yNight) < 1e-4 && t.m.visible && t.k >= STAIR1.firstMs) { t.m.visible = false; removeFrom(WALK, t.m); removeFrom(SOLID, t.m); removeFrom(LIGHT, t.m); removeFrom(CAMB, t.m); STAIR1.ms.dormant = false; STAIR1.ms.parts.forEach((p) => { p.m.visible = true; }); }
+    }
+  }
+  const top = TREADS.find((t) => t.kind === 'up' && t.k === 16);
+  const ty = top.z;
+  if (topGroup.position.y !== CROWN_Y + ty - 0) { topGroup.position.y = CROWN_Y + ty; topGroup.updateMatrixWorld(true); for (const c of ARCH.colliders) c.updateMatrixWorld(true); }
+  gateBox.O.copy(gateBox.O0); gateBox.O.y = CROWN_Y + ty;
+  if (moved) beamH = 1e9;
+  const a = irisApertureAt(state.H, state.caught);
+  if (Math.abs(a - IRIS.a) > 0.005) { setIris(a); beamH = 1e9; }
+  crown.bar.position.y = CROWN_Y; crown.barTall.position.y = CROWN_Y; crown.bar.updateMatrixWorld(true); crown.barTall.updateMatrixWorld(true);
+}
+
+// ────────────────────────────── 雕像：托镜像、天鹅、双子 ──────────────────────────────
+function facing(S, dirTo) { const f = new V3(Math.sin(S.yaw * DEG), 0, -Math.cos(S.yaw * DEG)); return dirTo.y > 0.01 && (f.x * dirTo.x + f.z * dirTo.z) / Math.max(1e-6, Math.hypot(dirTo.x, dirTo.z)) > Math.cos(100 * DEG); }
+function centerLit(S, dirTo) { const f = new V3(Math.sin(S.yaw * DEG), 0.3, -Math.cos(S.yaw * DEG)); rcSun.set(S.center.clone().addScaledVector(f, 0.15), dirTo); rcSun.near = 0.05; rcSun.far = 400; return rcSun.intersectObjects(mirrorOcc(S), false).length === 0; }
+function updateMirrors(dt) {
+  for (const S of Object.values(MIRRORS)) {
+    const day = !state.caught && sunV.y > 0.01, night = state.caught && moonV.y > 0.01;
+    let form = 'dark';
+    if (day && facing(S, sunV) && centerLit(S, sunV)) form = 'sun';
+    else if (night && facing(S, moonV) && centerLit(S, moonV)) form = 'moon';
+    S.form = form;
+    let ch = false;
+    for (const k of ['sun', 'moon', 'dark']) { const v = toward(S.w3[k], k === form ? 1 : 0, 1.6, dt); if (v !== S.w3[k]) { S.w3[k] = v; ch = true; } }
+    const want = S.slots[S.k]; const d = angDiff(want, S.yawNow ?? want);
+    if (S.yawNow == null) S.yawNow = want;
+    if (Math.abs(d) > 1e-3) { S.yawNow = S.yawNow + clamp(d, -90 * dt, 90 * dt); ch = true; }
+    if (Math.abs(angDiff(S.yaw, S.yawNow)) > 1e-4) ch = true;
+    if (ch) { placeMirror(S); beamH = 1e9; }
+    M.statue.emissive.setRGB(0, 0, 0);
+  }
+}
+function updateSwan(dt) {
+  const want = SWAN.slots[SWAN.k], d = angDiff(want, SWAN.yawNow);
+  if (Math.abs(d) > 1e-3) { SWAN.yawNow += clamp(d, -90 * dt, 90 * dt); SWAN.g.rotation.y = -SWAN.yawNow * DEG; SWAN.g.updateMatrixWorld(true); }
+  // 月光照着它吗
+  let lit = 0;
+  if (state.caught && moonV.y > 0.01) {
+    if (!SWAN.occ) SWAN.occ = nearList(LIGHT, SWAN.c, 40).filter((o) => o !== SWAN.col).concat([occluder]);
+    const pts = [new V3(0, 0.5, 0), new V3(0, 0.9, -0.4), new V3(0, 1.38, -0.58)].map((v) => v.applyMatrix4(SWAN.g.matrixWorld));
+    for (const q of pts) { rcSun.set(q, moonV); rcSun.near = 0.3; rcSun.far = 400; if (!rcSun.intersectObjects(SWAN.occ, false).length) lit++; }
+    lit /= pts.length;
+  }
+  SWAN.lit = lit;
+  SWAN.form = toward(SWAN.form, lit > 0.6 ? 1 : 0, 1.2, dt);
+  SWAN.swan.visible = SWAN.form > 0.02; SWAN.goddess.visible = SWAN.form < 0.98;
+  SWAN.sm.opacity = 0.97 * SWAN.form; SWAN.swan.scale.setScalar(0.4 + 0.6 * SWAN.form); SWAN.goddess.scale.setScalar(1 - 0.6 * SWAN.form);
+  // 影子落在哪里
+  SWAN.miss = 9;
+  if (lit > 0.6) {
+    const Lm = moonV.clone().negate(), S = SWAN.screen, hp = SWAN.head.getWorldPosition(new V3()), face = S.c.clone().addScaledVector(S.n, S.th / 2);
+    const t = face.clone().sub(hp).dot(S.n) / Lm.dot(S.n); SWAN.shadow = hp.clone().addScaledVector(Lm, t); SWAN.miss = SWAN.shadow.distanceTo(SWAN.gap);
+  }
+  const ok = !SWAN.solved && SWAN.form > 0.95 && SWAN.k === 0 && Math.abs(angDiff(SWAN.yawNow, SWAN.slots[0])) < 1 && SWAN.miss < 0.12;
+  SWAN.solvedT = ok ? SWAN.solvedT + dt : 0;
+  if (SWAN.solvedT > 0.7 && !SWAN.solved) { SWAN.solved = true; SWAN.openT = 0.001; toast('黑天鹅落进了浮雕的空白。旁边的墙往下沉开，露出一道楼梯。', 4200); }
+  if (SWAN.openT > 0) { SWAN.openT += dt; const k = smoothstep(0, 2.2, SWAN.openT); SWAN.door.position.y = -2.5 * k; SWAN.door.updateMatrixWorld(true); if (k > 0.5) { removeFrom(SOLID, SWAN.door); removeFrom(LIGHT, SWAN.door); removeFrom(CAMB, SWAN.door); } }
+}
+function updateTwins(dt) {
+  if (TWN.joined) {
+    TWN.t += dt; const k = smoothstep(0, 2.5, TWN.t);
+    const from = P(TWIN_DEF.pollux.az, TWIN_DEF.pollux.r, F[2]), to = P(TWIN_DEF.pollux.az - 2.4, 15.75, F[2]);
+    TWN.pollux.g.position.copy(from.lerp(to, k));
+    TWN.msP.parts[0].m.position.copy(TWN.pollux.g.position.clone().sub(P(TWIN_DEF.pollux.az, TWIN_DEF.pollux.r, F[2])));
+    return;
+  }
+  const both = TWN.msC.litFrac > 0.66 && TWN.msP.litFrac > 0.66;
+  TWN.both = both ? TWN.both + dt : 0;
+  if (TWN.both > 0.5) {
+    TWN.joined = true; TWN.msC.perm = TWN.msP.perm = true;
+    TWN.deck.visible = true; WALK.push(TWN.deck); SOLID.push(TWN.deck); LIGHT.push(TWN.deck); CAMB.push(TWN.deck);
+    TWINS.rail.visible = false; removeFrom(SOLID, TWINS.rail); removeFrom(SOLID, TWINS.railTall); removeFrom(LIGHT, TWINS.rail); removeFrom(CAMB, TWINS.rail);
+    toast('两尊像同时亮了。藏着的那一尊从龛里走出来，两段半拱合成一座桥，跨过断口。', 4800);
+  }
+}
+
+// ────────────────────────────── 月石 ──────────────────────────────
+let msTick = 0;
+function playerOn(ms) {
+  const g = player.ground; if (g && g.userData.moonstone === ms && player.grounded) return true;
+  if (ms.door) { const p = player.pos, r = rOf(p), az = azOf(p.x, p.z); if (r > R_IN - 0.8 && r < R_OUT && Math.abs(angDiff(az, ms.door.az)) < halfOf(2.2, 15.6) && p.y > ms.door.y - 0.5 && p.y < ms.door.y + 2.5) return true; }
+  return false;
+}
+function updateMoonstones(dt) {
+  msTick += dt; const eval_ = msTick > 0.08; if (eval_) msTick = 0;
+  for (const ms of MOONSTONES) {
+    if (ms.dormant) continue;
+    if (eval_) ms.litFrac = state.caught ? moonstoneLitFrac(ms) : 0;
+    const need = ms.statue ? 0.66 : 0.999;
+    ms.lit = ms.litFrac >= need;
+    const on = playerOn(ms);
+    const target = ms.perm || ms.lit || (on && ms.k > 0.3) ? 1 : 0;
+    const k = toward(ms.k, target, target ? 2.5 : 0.5, dt);   // 显形约 0.4 秒，合上约 2 秒
+    if (k !== ms.k) setMoonstoneState(ms, k);
+    for (const p of ms.parts) p.mat.emissiveIntensity = 0.1 + 0.5 * ms.k + (ms.lit ? 0.35 : 0);
+  }
+}
+
+// ────────────────────────────── 接光、放苹果 ──────────────────────────────
+function armTopPos() { return ARM_TOP.group.getWorldPosition(new V3()); }
+function catchLight() {
+  if (state.caught) return;
+  if (crown.up < 0.98) { toast('台阶还没有完全升起来。', 2400); return; }
+  const lifted = player.pos.clone().add(new V3(0, 1.95, 0));
+  const blocked = sunV.y <= 0 || lifted.y < shadowY(sunV);
+  if (blocked) { toast('岛影已经漫过这里了。往回走几步，时间会倒回一点。', 3600); return; }
+  state.caught = true; state.cine = 0.001; state.sticky = state.H;
+  ARM_TOP.group.userData.bead.visible = false; apple.visible = true;
+  toast('金苹果接住了最后一缕阳光', 3200);
+  buildHourLines(true);
+}
+function placeApple() {
+  if (!state.caught || state.placed) return;
+  state.placed = true; state.fin = 0; toast('金苹果放上了月亮的位置。', 2600);
+}
+function updateCatch(dt) {
+  const bead = ARM_TOP.group.userData.bead;
+  if (!state.caught) { M.apple.emissiveIntensity = toward(M.apple.emissiveIntensity, crown.up > 0.98 ? 1.1 : 0, 1.5, dt); appleLight.intensity = crown.up > 0.98 ? 6 : 0; bead.getWorldPosition(appleLight.position); return; }
+  state.cine += dt;
+  if (state.placed) {
+    state.fin += dt;
+    const holder = ARM_L0.group.userData.moonBead.getWorldPosition(new V3());
+    apple.position.lerp(holder, Math.min(1, dt * 3));
+    M.apple.color.lerp(new THREE.Color(0xeef2ff), Math.min(1, dt * 0.8)); M.apple.emissive.lerp(new THREE.Color(0xdfe6ff), Math.min(1, dt * 0.8));
+    M.apple.metalness = lerp(M.apple.metalness, 0.1, Math.min(1, dt));
+    appleLight.color.lerp(new THREE.Color(0xcfdcff), Math.min(1, dt)); appleLight.intensity = 10 + 20 * smoothstep(0.5, 3, state.fin); appleLight.position.copy(apple.position);
+    if (state.fin > 4 && state.fin - dt <= 4) {
+      const n = Object.values(state.shards).filter(Boolean).length;
+      $('doneShards').textContent = n ? `你找到了 ${n} 个神龛。` : '';
+      $('done').hidden = false; if (document.pointerLockElement) document.exitPointerLock();
+    }
+    return;
+  }
+  M.apple.emissiveIntensity = 1.1;
+  appleLight.intensity = 6;
+  const right = new V3(Math.cos(player.yaw * DEG), 0, Math.sin(player.yaw * DEG));
+  const held = player.mode === 'first' ? camera.position.clone().add(camF.clone().multiplyScalar(0.95)).addScaledVector(right, 0.5).add(new V3(0, -0.36, 0)) : player.pos.clone().add(new V3(0.35 * right.x, 1.25, 0.35 * right.z));
+  apple.position.lerp(held, Math.min(1, dt * 6)); appleLight.position.copy(apple.position);
+  if (state.cine > 5 && state.cine - dt <= 5) { showTitle('日落之后<small>入夜</small>'); toast('入夜以后，逆时针走才是向前。顺着台阶往回走，升起的台阶会落平。', 6000); }
+}
+
+// ────────────────────────────── 神龛 ──────────────────────────────
+function updateNiches(dt) {
+  if (SUNN.t > 0) { const a0 = SUNN.t; SUNN.t += dt; const T = SUNN.t; SUNN.lid.rotation.x = -1.9 * smoothstep(0, 1, T); SUNN.shard.visible = T > 0.5 && T < 2.8; SUNN.shard.rotation.y += dt * 2; SUNN.shard.position.y = LEDGE.y + 0.5 + 0.4 * smoothstep(1, 2, T);
+    if (a0 < 2.6 && T >= 2.6) { state.shards.sun = true; updateShardHud(); toast('你得到了一片太阳碎片（正四面体）。', 3200); } }
+  MOONN.shard.rotation.y += dt; MOONN.shard.visible = !MOONN.taken && MOONN.ms.k > 0.2;
+  if (MOONN.t > 0) { const a0 = MOONN.t; MOONN.t += dt; MOONN.shard.scale.setScalar(1 - smoothstep(0.5, 1.5, MOONN.t) * 0.999); if (a0 < 1.5 && MOONN.t >= 1.5) { MOONN.taken = true; state.shards.moon = true; updateShardHud(); toast('你得到了一片月亮碎片（正二十面体）。', 3200); } }
+}
+function updateShardHud() { const n = Object.values(state.shards).filter(Boolean).length; $('shardHud').textContent = n ? `灰盒 v0.4 · 神龛 ${n}/3` : '灰盒 v0.4'; }
+
+// ────────────────────────────── 互动 ──────────────────────────────
+const INTERACTS = [
+  { p: () => MIRRORS.M.c, y: [F[2] - 0.2, F[2] + 2], r: 2.3, label: () => '转动托镜像的底座', act: () => { const S = MIRRORS.M; S.k = (S.k + 1) % S.slots.length; } },
+  { p: () => MIRRORS.M3.c, y: [F[0] - 0.2, F[0] + 2], r: 2.2, label: () => '转动岸边托镜像的底座', act: () => { const S = MIRRORS.M3; S.k = (S.k + 1) % S.slots.length; } },
+  { p: () => SWAN.c, y: [F[3] - 0.2, F[3] + 2], r: 2.2, label: () => (state.caught ? '转动天鹅的底座' : '转动女神像的底座'), act: () => { SWAN.k = (SWAN.k + 1) % 8; } },
+  { p: () => SWAN.screen.c, y: [F[3] - 0.2, F[3] + 2], r: 2.0, label: () => '看看浮雕', act: () => toast('浮雕上刻着几只天鹅，中间空着一只的位置，描着金边。下面刻着一行字：湖上七只天鹅，第七只只在月光里回来。', 5200) },
+  { p: () => armTopPos(), y: () => [armTopPos().y - 2.2, armTopPos().y + 0.2], r: 1.8, when: () => !state.caught, label: () => '取下金苹果', act: catchLight },
+  { p: () => new V3(0, 0, 0), y: [PAV.top - 0.3, PAV.top + 1.6], r: 2.6, when: () => state.caught && !state.placed, label: () => '把金苹果放上浑天仪的月托', act: placeApple },
+  { p: () => SUNN.pos, y: [LEDGE.y - 0.3, LEDGE.y + 1.6], r: 1.6, when: () => !SUNN.open, label: () => '打开日之龛', act: () => { SUNN.open = true; SUNN.t = 0.001; } },
+  { p: () => MOONN.pos, y: [F[1] - 0.3, F[1] + 1.8], r: 1.6, when: () => MOONN.ms.k > 0.6 && !MOONN.taken && !(MOONN.t > 0), label: () => '取出月之龛里的碎片', act: () => { MOONN.t = 0.001; } },
+];
+function nearestInteract() {
+  const p = player.pos; let best = null, bd = 1e9;
+  for (const it of INTERACTS) {
+    const yr = typeof it.y === 'function' ? it.y() : it.y, q = it.p();
+    if (p.y < yr[0] || p.y > yr[1] || (it.when && !it.when())) continue;
+    const d = Math.hypot(p.x - q.x, p.z - q.z);
+    if (d < it.r && d < bd) { best = it; bd = d; }
+  }
+  return best;
+}
+function interact() { const it = nearestInteract(); if (it) it.act(); }
+
+// ────────────────────────────── 相机 ──────────────────────────────
+const camTarget = new V3(), camF = new V3();
+const avatar = new THREE.Group();
+{
+  const prof = [[0, 0], [0.33, 0], [0.31, 0.35], [0.24, 0.95], [0.18, 1.3], [0.12, 1.4], [0, 1.43]].map(([x, y]) => new THREE.Vector2(x, y));
+  const body = new THREE.Mesh(new THREE.LatheGeometry(prof, 28), M.robe); body.castShadow = true; avatar.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.125, 20, 16), M.robe); head.position.y = 1.56; head.castShadow = true; avatar.add(head);
+  const veil = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.55, 20, 1, true), M.robe); veil.position.set(0, 1.46, 0.05); veil.castShadow = true; avatar.add(veil);
+  scene.add(avatar);
+}
+function showAvatar(on) { if (avatar.userData.shown === on) return; avatar.userData.shown = on; M.robe.colorWrite = M.robe.depthWrite = on; }
+function updateCamera(dt) {
+  if (!state.started) {
+    const a = (200 + state.t * 2.4) * DEG;
+    camera.position.set(Math.sin(a) * 105, 22, -Math.cos(a) * 105);
+    camera.lookAt(new V3(0, 12, 0)); avatar.visible = false; return;
+  }
+  avatar.visible = true;
+  const p = player.pos;
+  camF.set(Math.sin(player.yaw * DEG) * Math.cos(player.pitch), -Math.sin(player.pitch), -Math.cos(player.yaw * DEG) * Math.cos(player.pitch));
+  if (player.mode === 'first') { camera.position.set(p.x, p.y + 1.62, p.z); camera.lookAt(camera.position.clone().add(camF)); showAvatar(false); }
+  else {
+    camTarget.set(p.x + Math.cos(player.yaw * DEG) * 0.55, p.y + 1.5, p.z + Math.sin(player.yaw * DEG) * 0.55);
+    const back = camF.clone().negate();
+    rc.set(camTarget, back); rc.near = 0; rc.far = player.dist;
+    const h = firstHit(nearCam);
+    const d = h ? Math.max(0.45, h.distance - 0.3) : player.dist;
+    camera.position.copy(camTarget).addScaledVector(back, d); camera.lookAt(camTarget);
+    showAvatar(d > 0.9);
+  }
+  avatar.position.copy(p);
+  const want = -player.heading * DEG; let dr = want - avatar.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); avatar.rotation.y += dr * Math.min(1, dt * 10);
+}
+function setMode(m) { player.mode = m; }
+
+
+// ────────────────────────────── HUD ──────────────────────────────
+const svgNS = 'http://www.w3.org/2000/svg';
+const DW_ = 212, DH_ = 92;
+const DIAL = [
+  { fn: sunDir, a0: 170, span: 90, alt: 40, col: '#f2c46a', glow: 'rgba(242,196,106,0.18)', path: 'rgba(242,196,106,0.3)', seg: '#c49a5a', full: [0, 74], levels: [[0, H_I, H_I], [1, H_I, 23], [2, 23, 29], [3, 29, R_STEP.H], [4, R_STEP.H, H_OC], [5, H_OC, H_TOP]] },
+  { fn: moonDir, a0: 55, span: 150, alt: 80, col: '#dfe6f5', glow: 'rgba(210,222,245,0.2)', path: 'rgba(200,212,235,0.3)', seg: '#9fb0cc', full: [75, 182], levels: [[6, H_TOP, H_NIGHT.L3a], [7, H_NIGHT.L3a, H_NIGHT.L2a], [8, H_NIGHT.L2a, H_NIGHT.L1a], [9, H_NIGHT.L1a, H_NIGHT.L0a], [10, H_NIGHT.L0a, H_NIGHT.end]] },
+];
+const levelPaths = [];
+(function buildDial() {
+  const svg = $('dialSvg');
+  DIAL.forEach((D, n) => {
+    const grp = document.createElementNS(svgNS, 'g'); svg.appendChild(grp); D.g = grp; if (n) grp.style.display = 'none';
+    const el = (tag, attrs) => { const e = document.createElementNS(svgNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); grp.appendChild(e); return e; };
+    D.dx = (az) => 10 + (az - D.a0) / D.span * (DW_ - 20);
+    D.dy = (alt) => DH_ - 18 - alt / D.alt * (DH_ - 30);
+    el('line', { x1: 6, y1: D.dy(0), x2: DW_ - 6, y2: D.dy(0), stroke: 'rgba(239,230,214,0.35)', 'stroke-width': 1 });
+    if (!n) { el('line', { x1: 6, y1: D.dy(35), x2: DW_ - 6, y2: D.dy(35), stroke: 'rgba(196,154,90,0.55)', 'stroke-width': 1, 'stroke-dasharray': '3 3' }); el('text', { x: DW_ - 6, y: D.dy(35) - 4, fill: '#c49a5a', 'font-size': 9, 'text-anchor': 'end' }).textContent = '35° 光路坡度上限'; }
+    const v = new V3(); const pathFor = (h0, h1) => { let d = ''; for (let H = h0; H <= h1 + 1e-6; H += 0.5) { D.fn(H, v); const alt = altOf(v); if (alt < 0) continue; d += (d ? ' L' : 'M') + `${D.dx(azV(v)).toFixed(1)},${D.dy(alt).toFixed(1)}`; } return d; };
+    el('path', { d: pathFor(D.full[0], D.full[1]), fill: 'none', stroke: D.path, 'stroke-width': 1.2 });
+    for (const [i, h0, h1] of D.levels) levelPaths[i] = el('path', { d: pathFor(Math.min(h0, h1), Math.max(h0, h1) + 0.01), fill: 'none', stroke: D.seg, 'stroke-width': 1.6, 'stroke-linecap': 'round', opacity: 0.5 });
+    D.glowEl = el('circle', { r: 7, fill: D.glow }); D.dot = el('circle', { r: 3.2, fill: D.col });
+  });
+})();
+let hudT = 0;
+function updateHud(dt) {
+  hudT += dt; if (hudT < 0.08) return; hudT = 0;
+  const night = state.caught && sunV.y < 0, D = DIAL[night ? 1 : 0], v = night ? moonV : sunV;
+  DIAL[0].g.style.display = night ? 'none' : ''; DIAL[1].g.style.display = night ? '' : 'none';
+  const alt = altOf(v), az = azV(v);
+  for (const e of [D.dot, D.glowEl]) { e.setAttribute('cx', D.dx(az)); e.setAttribute('cy', D.dy(Math.max(alt, -3))); }
+  $('rBody').textContent = night ? '月亮' : '太阳';
+  $('rAlt').textContent = alt.toFixed(1) + '°';
+  $('rAz').textContent = Math.round(az) + '°';
+  const hrs = 12 + state.H / 15, hh = Math.floor(hrs), mm = Math.floor((hrs - hh) * 60);
+  $('rClock').textContent = `${hh % 24}:${String(mm).padStart(2, '0')}`;
+  $('rHour').textContent = `时角 ${state.H.toFixed(1)}°`;
+  levelPaths.forEach((p, i) => { if (!p) return; p.setAttribute('opacity', i === state.level ? 1 : 0.35); p.setAttribute('stroke-width', i === state.level ? 2.6 : 1.4); });
+  const it = nearestInteract(), pr = $('prompt');
+  if (it && state.started) { pr.hidden = false; pr.innerHTML = `<span class="kbd">${touch ? '互动' : 'E'}</span>${it.label()}`; } else pr.hidden = true;
+}
+let toastTimer = 0;
+function toast(msg, ms = 2400) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms); }
+let titleTimer = 0;
+function showTitle(html) { const t = $('title'); t.innerHTML = html; t.style.opacity = '1'; clearTimeout(titleTimer); titleTimer = setTimeout(() => { t.style.opacity = '0'; }, 2800); }
+
+// ────────────────────────────── 声音 ──────────────────────────────
+const CHORDS = [[146.83, 220.0, 261.63, 329.63], [174.61, 261.63, 329.63, 440.0], [110.0, 164.81, 196.0, 261.63], [98.0, 146.83, 220.0, 261.63], [130.81, 196.0, 246.94, 329.63], [116.54, 174.61, 220.0, 293.66]];
+const score = {
+  ctx: null, muted: false, k: null,
+  start(H) {
+    if (this.ctx) return;
+    try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    const ctx = this.ctx, t = ctx.currentTime;
+    this.master = ctx.createGain(); this.master.gain.value = 0; this.master.connect(ctx.destination);
+    this.lp = ctx.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 1200; this.lp.Q.value = 0.3;
+    const dly = ctx.createDelay(1.0), fb = ctx.createGain(), wet = ctx.createGain();
+    dly.delayTime.value = 0.37; fb.gain.value = 0.38; wet.gain.value = 0.32;
+    this.lp.connect(this.master); this.lp.connect(dly); dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(this.master);
+    this.k = Math.floor((H + 90) / 15);
+    const ch = CHORDS[((this.k % CHORDS.length) + CHORDS.length) % CHORDS.length];
+    this.voices = ch.map((f, i) => {
+      const o = ctx.createOscillator(); o.type = i % 2 ? 'triangle' : 'sine'; o.frequency.value = f;
+      const g = ctx.createGain(); g.gain.value = i === 0 ? 0.05 : 0.03;
+      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.045 + 0.027 * i; lg.gain.value = 0.011;
+      lfo.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(this.lp); o.start(); lfo.start(); return o;
+    });
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 950; bp.Q.value = 0.6;
+    this.wg = ctx.createGain(); this.wg.gain.value = 0; src.connect(bp); bp.connect(this.wg); this.wg.connect(this.master); src.start();
+    this.master.gain.setTargetAtTime(this.muted ? 0 : 0.9, t, 1.2);
+  },
+  update(H, water) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime, k = Math.floor((H + 90) / 15);
+    if (k !== this.k) { this.k = k; const ch = CHORDS[((k % CHORDS.length) + CHORDS.length) % CHORDS.length]; this.voices.forEach((o, i) => o.frequency.setTargetAtTime(ch[i], t, 0.55)); }
+    this.lp.frequency.setTargetAtTime(950 + 650 * Math.cos(H * DEG * 1.5), t, 0.4);
+    this.wg.gain.setTargetAtTime(water * 0.09, t, 0.3);
+  },
+  toggle() { this.muted = !this.muted; if (this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.9, this.ctx.currentTime, 0.2); return this.muted; },
+};
+
+// ────────────────────────────── 输入 ──────────────────────────────
+function start() {
+  if (state.started) return;
+  state.started = true; $('intro').hidden = true; $('hud').hidden = false;
+  if (touch) $('touch').hidden = false;
+  score.start(state.H);
+  if (!touch) canvas.requestPointerLock?.();
+  refreshNear(); const h = probe(player.pos.x, player.pos.y + 0.3, player.pos.z, 2); if (h) { player.pos.y = h.point.y; player.ground = h.object; }
+}
+$('go').addEventListener('click', start);
+$('helpClose').addEventListener('click', () => { $('help').hidden = true; });
+$('talkClose').addEventListener('click', () => { $('talk').hidden = true; });
+$('doneClose').addEventListener('click', () => { $('done').hidden = true; });
+addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (!state.started) return;
+  if (e.code === 'Space') { jump(); e.preventDefault(); }
+  if (e.code === 'KeyE') interact();
+  if (e.code === 'KeyT') hourLines.visible = !hourLines.visible;
+  if (e.code === 'KeyV') setMode(player.mode === 'first' ? 'third' : 'first');
+  if (e.code === 'KeyH') $('help').hidden = !$('help').hidden;
+  if (e.code === 'KeyM') toast(score.toggle() ? '静音' : '声音开');
+  if (e.code === 'KeyR') respawn();
+});
+addEventListener('keyup', (e) => { keys[e.code] = false; });
+canvas.addEventListener('click', () => { if (state.started && !touch && !document.pointerLockElement) canvas.requestPointerLock?.(); });
+addEventListener('mousemove', (e) => {
+  if (!state.started || document.pointerLockElement !== canvas) return;
+  player.yaw += e.movementX * 0.12; player.pitch = clamp(player.pitch + e.movementY * 0.0022, -1.2, 1.25);
+});
+addEventListener('wheel', (e) => { player.dist = clamp(player.dist + e.deltaY * 0.004, 2.2, 9); });
+// 触屏：左下摇杆、右侧拖动转视角
+{
+  let stickId = null, lookId = null, sx = 0, sy = 0, lx = 0, ly = 0;
+  const stick = $('stick'), knob = $('knob');
+  canvas.addEventListener('touchstart', (e) => { for (const t of e.changedTouches) { if (t.clientX > innerWidth * 0.45 && lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; } } }, { passive: true });
+  stick.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; stickId = t.identifier; const r = stick.getBoundingClientRect(); sx = r.left + r.width / 2; sy = r.top + r.height / 2; e.preventDefault(); }, { passive: false });
+  addEventListener('touchmove', (e) => { for (const t of e.changedTouches) {
+    if (t.identifier === stickId) { const dx = t.clientX - sx, dy = t.clientY - sy, d = Math.min(1, Math.hypot(dx, dy) / 48); const a = Math.atan2(dy, dx); touchMove.x = Math.cos(a) * d; touchMove.y = -Math.sin(a) * d; knob.style.transform = `translate(${Math.cos(a) * d * 36}px, ${Math.sin(a) * d * 36}px)`; }
+    if (t.identifier === lookId) { player.yaw += (t.clientX - lx) * 0.25; player.pitch = clamp(player.pitch + (t.clientY - ly) * 0.004, -1.2, 1.25); lx = t.clientX; ly = t.clientY; } } }, { passive: true });
+  addEventListener('touchend', (e) => { for (const t of e.changedTouches) { if (t.identifier === stickId) { stickId = null; touchMove.x = touchMove.y = 0; knob.style.transform = ''; } if (t.identifier === lookId) lookId = null; } });
+  for (const [id, fn] of [['bJ', jump], ['bE', interact], ['bT', () => { hourLines.visible = !hourLines.visible; }], ['bV', () => setMode(player.mode === 'first' ? 'third' : 'first')], ['bH', () => { $('help').hidden = !$('help').hidden; }]]) $(id).addEventListener('click', fn);
+}
+if (touch) { $('ctrlDesk').hidden = true; $('ctrlTouch').hidden = false; }
+
+// ────────────────────────────── 主循环 ──────────────────────────────
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  rt.setSize(Math.max(1, Math.floor(w * DPR)), Math.max(1, Math.floor(h * DPR)));
+}
+addEventListener('resize', resize); resize();
+const POLE = new V3(0, Math.sin(LAT), -Math.cos(LAT));
+function setTime(H) {
+  state.H = H;
+  sunDir(H, sunV); moonDir(H, moonV);
+  sky.material.uniforms.sunPosition.value.copy(sunV);
+  const alt = altOf(sunV), mAlt = altOf(moonV), k = smoothstep(2, 25, alt);
+  const dusk = smoothstep(1.5, -9, alt);
+  for (const s of [sky, envSky]) { const su = s.material.uniforms; su.turbidity.value = lerp(7, 2.4, k); su.rayleigh.value = lerp(2.4, 1.05, k); su.mieCoefficient.value = lerp(0.008, 0.004, k); }
+  sunCol.copy(SUN_LO).lerp(SUN_HI, k);
+  if (alt > -0.8) { sun.position.copy(sunV).multiplyScalar(120).add(sun.target.position); sun.color.copy(sunCol); sun.intensity = lerp(2.4, 3.6, k) * smoothstep(-0.8, 1.2, alt); }
+  else { sun.position.copy(moonV).multiplyScalar(120).add(sun.target.position); sun.color.copy(MOON_COL); sun.intensity = 0.55 * smoothstep(0, 7, mAlt) * smoothstep(-0.8, -5, alt); }
+  renderer.toneMappingExposure = lerp(0.95, 1.9, dusk);
+  nightAmb.intensity = 0.45 * dusk; dayAmb.intensity = 0.35 * (1 - dusk);
+  nightDome.material.uniforms.uO.value = smoothstep(-2, -10, alt); nightDome.material.uniforms.uMoon.value.copy(moonV); nightDome.position.copy(camera.position);
+  stars.userData.m.opacity = smoothstep(-4, -13, alt);
+  stars.quaternion.setFromAxisAngle(POLE, -H * DEG);
+  const mo = smoothstep(-1.5, 1, mAlt) * smoothstep(4, -2, alt);
+  moonDisc.position.copy(moonV).multiplyScalar(8000); moonHalo.position.copy(moonV).multiplyScalar(7990);
+  moonDisc.material.opacity = mo; moonHalo.material.uniforms.uO.value = mo; moonDisc.visible = moonHalo.visible = mo > 0.001;
+  FAR_ISLE_MAT.color.copy(ISLE_DAY).lerp(ISLE_NIGHT, dusk);
+  postMat.uniforms.uSunCol.value.set(sunCol.r, sunCol.g, sunCol.b);
+  for (const g of [ARM_L0.group, ARM_TOP.group]) { if (!state.caught || g !== ARM_TOP.group) g.userData.bead.position.copy(sunV).multiplyScalar(g.userData.R); g.userData.moonBead.position.copy(moonV).multiplyScalar(g.userData.R * 0.92); }
+  placeOccluder();
+  postMat.uniforms.uShadowY.value = shadowY(sunV);
+  if (Math.abs(H - envH) > 1.5) updateEnv(H);
+  if (Math.abs(H - beamH) > 0.004) { computeBeams(); beamH = H; }
+}
+function updateSpray(dt) {
+  const t = state.t;
+  const fc = fallCloud; fc.m.opacity = 0.2;
+  for (let i = 0; i < fc.seed.length; i++) { const sd = fc.seed[i]; sd[2] += dt * sd[3] / 2.6; if (sd[2] > 1) { sd[2] = 0; sd[0] = Math.random(); sd[1] = Math.random(); }
+    const a = lerp(FALL.a0, FALL.a1, sd[0]), r = lerp(R_POOL + 0.5, FALL.r1, sd[1]) - sd[2] * 1.6, p = P(a, r, -0.3 + sd[2] * 2.8); fc.pos.set([p.x, p.y, p.z], i * 3); }
+  fc.pts.geometry.attributes.position.needsUpdate = true;
+  const sc = straitCloud; sc.m.opacity = 0.18;
+  for (let i = 0; i < sc.seed.length; i++) { const sd = sc.seed[i]; sd[2] += dt * sd[3] / 9; if (sd[2] > 1) { sd[2] = 0; sd[0] = Math.random(); sd[1] = Math.random(); }
+    const d = lerp(STRAIT.r0, STRAIT.r1, sd[1]), lat = (sd[0] - 0.5) * 2 * STRAIT.halfW, y = SEA_Y + 0.5 + sd[2] * (TERR_Y - SEA_Y);
+    sc.pos.set([STRAIT.ax.x * d - STRAIT.ax.z * lat, y, STRAIT.ax.z * d + STRAIT.ax.x * lat], i * 3); }
+  sc.pts.geometry.attributes.position.needsUpdate = true;
+  const g = gateCloud; const on = !state.caught ? smoothstep(0.3, 0.95, crown.up) : 0; g.m.opacity = 0.14 * on * smoothstep(-2, 2, altOf(sunV));
+  for (let i = 0; i < g.seed.length; i++) { const sd = g.seed[i]; sd[2] += dt * sd[3] * 0.35; if (sd[2] > 1) { sd[2] = 0; sd[1] = Math.random(); sd[0] = Math.random(); }
+    const along = (sd[1] * 2 - 1) * ARCH.R, y = gateBox.O.y + 0.3 + Math.sin(sd[2] * Math.PI) * (ARCH.R + 1.4) * (1 - Math.abs(along) / (ARCH.R * 1.6));
+    const p = ARCH.center.clone().addScaledVector(ARCH.T, along).addScaledVector(ARCH.N, (sd[0] - 0.5) * 0.8); g.pos.set([p.x, y, p.z], i * 3); }
+  g.pts.geometry.attributes.position.needsUpdate = true;
+  fallMat.uniforms.uTime.value = t; fallMat.uniforms.uLight.value = state.caught ? 0.35 : 1;
+}
+const clock = new THREE.Clock();
+function tick(dt) {
+  state.t += dt;
+  if (state.started && !state.respawning) updatePlayer(dt);
+  const zone = state.started ? player.zone : 'out';
+  const onGround = player.grounded || !state.started;
+  const H = onGround ? timeAt(zone, player.pos) : state.sticky;
+  state.sticky = H;
+  updateCrown(dt);
+  setTime(H);
+  updateMirrors(dt);
+  if (beamH > 1e8) { computeBeams(); beamH = H; }
+  for (const b of BEAMS) b.walkable = beamIsWalkable(b);
+  if (state.started && !state.respawning) applyCarry();
+  updateSwan(dt); updateMoonstones(dt); updateTwins(dt); updateNiches(dt);
+  updateLevel();
+  updateCamera(dt);
+  moonDisc.quaternion.copy(camera.quaternion); moonHalo.quaternion.copy(camera.quaternion);
+  updateCatch(dt);
+  updateSpray(dt);
+  let best = null, bd = 1e9;
+  for (const b of BEAMS) { if (!b.valid || b.moon) continue; const d = b.far.distanceTo(player.pos); if (d < bd) { bd = d; best = b; } }
+  bounce.intensity = best && !state.caught ? 40 * best.lit : 0;
+  if (best) bounce.position.copy(best.far).addScaledVector(best.L, -0.6);
+  const u = postMat.uniforms;
+  camera.updateMatrixWorld();
+  u.uProjInv.value.copy(camera.projectionMatrixInverse); u.uCamWorld.value.copy(camera.matrixWorld); u.uCamPos.value.copy(camera.position);
+  u.uL.value.copy(sunV).negate(); u.uTime.value = state.t;
+  u.uGateOn.value = !state.caught ? smoothstep(-0.5, 1, altOf(sunV)) * smoothstep(0.3, 0.95, crown.up) : 0;
+  BEAMS.forEach((b, i) => {
+    const vis = b.valid && (b.moon ? state.caught : true);
+    u.uBOn.value[i] = vis ? (b.moon ? 0.9 : b.lit * b.gain * (b.walkable ? 1 : 0.55)) : 0;
+    if (vis) { u.uBO.value[i].copy(b.O); u.uBM.value[i].copy(b.M); u.uBC.value[i].set(...b.c); }
+  });
+  score.update(H, state.started ? clamp(1 - rOf(player.pos.clone().sub(P(5, 13, player.pos.y))) / 25, 0, 1) : 0);
+  updateHud(dt);
+}
+function render() {
+  renderer.setRenderTarget(rt); renderer.render(scene, camera);
+  renderer.setRenderTarget(null); renderer.render(postScene, postCam);
+}
+function frame() {
+  const dt = Math.min(clock.getDelta(), 1 / 20);
+  tick(dt); render();
+  requestAnimationFrame(frame);
+}
+sunDir(H_I, sunV); moonDir(H_I, moonV); updateEnv(H_I);
+setTime(H_I); computeBeams();
+if (!window.__noLoop) requestAnimationFrame(frame);
+
+// ────────────────────────────── 调试接口（测试脚本用） ──────────────────────────────
+window.__dysis = {
+  THREE, state, player, P, azOf, rOf, WIN, ZD, ZN, TUNNELS, BEAMS, beamById, MOONSTONES, MIRRORS, SWAN, TWN, MPLAN, MNIGHT, M3PLAN, LEDGE, SERLIANA, P_NOTCH, PARA_GAPS, SLAB_CUTS, COLUMNS, COL_SKIPPED, OPENINGS, CROWN, TREADS, IRIS, crown, H_I, H_OC, H_TOP, H_M, H_TW, H_SW, H_BR, AZ_OC, J_AZ, T_AZ, TOP_Y, MOONWIN, STAIR1, BRG, T2, T3, T4, MOONN, SUNN, ARCH, BRIDGE, TWINS,
+  F1: F[1], F2: F[2], F3: F[3], sunDir, moonDir, shadowY, timeAt, zoneOf, tick, render, setTime, computeBeams, beamIsWalkable, moonstoneLitFrac, refreshNear, probe, jump, interact, catchLight, placeApple, respawn, keys, camera, scene, renderer, start,
+  go(az, r, y, yaw) { const p = P(az, r, y); player.pos.copy(p); player.vy = 0; player.grounded = true; player.carry = null; if (yaw != null) player.yaw = yaw; refreshNear(); const h = probe(p.x, p.y + 0.4, p.z, 3); if (h) { player.pos.y = h.point.y; player.ground = h.object; player.zone = zoneOf(h.object, player.pos) || player.zone; } return { ground: h ? (h.object.userData.zone || (h.object.userData.beam && 'beam:' + h.object.userData.beam.id)) : null, y: player.pos.y }; },
+  step(n = 1, dt = 1 / 30) { for (let i = 0; i < n; i++) tick(dt); },
+  beam(id) { const b = beamById[id]; return b && { valid: b.valid, walkable: b.walkable, clean: b.clean, lit: +b.lit.toFixed(2), edge: b.edge && b.edge.map((x) => +x.toFixed(2)), need: b.need && +b.need.toFixed(2), c: b.c.map((x) => +x.toFixed(2)), slope: +(Math.asin(clamp(b.L.y, -1, 1)) / DEG).toFixed(1), s0: b.s0, s1: b.s1, b0: b.b0.toArray().map((x) => +x.toFixed(2)), b1: b.b1.toArray().map((x) => +x.toFixed(2)) }; },
+};
+
+</script>
