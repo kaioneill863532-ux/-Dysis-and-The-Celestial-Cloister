@@ -506,8 +506,104 @@ function addDynamic(mesh, flags = '', data, cast = true, receive = true) {
   for (const f of flags) LISTS[f].push(mesh);
   return mesh;
 }
-function removeFrom(list, obj) { const i = list.indexOf(obj); if (i >= 0) list.splice(i, 1); }
-function setIn(list, obj, on) { const i = list.indexOf(obj); if (on && i < 0) list.push(obj); else if (!on && i >= 0) list.splice(i, 1); }
+let LIST_VER = 0;   // 检测列表每变一次加一（挡光检测按它刷新动态物体的缓存）
+function removeFrom(list, obj) { const i = list.indexOf(obj); if (i >= 0) { list.splice(i, 1); LIST_VER++; } }
+function setIn(list, obj, on) { const i = list.indexOf(obj); if (on && i < 0) { list.push(obj); LIST_VER++; } else if (!on && i >= 0) { list.splice(i, 1); LIST_VER++; } }
+
+// ────────────────────────────── 挡光检测的加速：静态几何的 BVH ──────────────────────────────
+// 挡光的静态几何（addStatic 进了 LIGHT 的那些，不在场景里、永远不动）合成一棵包围盒树，一条光线只测它经过的几个三角形。
+// 会动、会显隐的（屋顶台阶和叶片、推拉石板、月石、岛影挡板……）照旧逐个测。判定和 three.js 的一样：只算正面（COLLIDER 是 FrontSide）。
+const SBVH = { ready: false };
+function buildStaticBVH() {
+  const objs = LIGHT.filter((o) => !o.parent), v = new V3();
+  let n = 0;
+  for (const o of objs) { const g = o.geometry, p = g.attributes.position; if (p) n += (g.index ? g.index.count : p.count) / 3 | 0; }
+  const T = new Float32Array(n * 9); let k = 0;
+  for (const o of objs) {
+    const g = o.geometry, p = g.attributes.position, ix = g.index; if (!p) continue;
+    const cnt = ((ix ? ix.count : p.count) / 3 | 0) * 3;
+    for (let i = 0; i < cnt; i++) { v.fromBufferAttribute(p, ix ? ix.getX(i) : i).applyMatrix4(o.matrixWorld); T[k++] = v.x; T[k++] = v.y; T[k++] = v.z; }
+  }
+  const C = new Float32Array(n * 3), idx = new Uint32Array(n);
+  for (let i = 0; i < n; i++) { idx[i] = i; for (let a = 0; a < 3; a++) C[i * 3 + a] = (T[i * 9 + a] + T[i * 9 + 3 + a] + T[i * 9 + 6 + a]) / 3; }
+  const B = new Float32Array(Math.max(2, 2 * n) * 6), I = new Int32Array(Math.max(2, 2 * n) * 3); let nn = 0;
+  const build = (s, e) => {
+    const id = nn++;
+    let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+    let cx0 = Infinity, cy0 = Infinity, cz0 = Infinity, cx1 = -Infinity, cy1 = -Infinity, cz1 = -Infinity;
+    for (let i = s; i < e; i++) {
+      const t = idx[i] * 9;
+      for (let q = 0; q < 9; q += 3) { const X = T[t + q], Y = T[t + q + 1], Z = T[t + q + 2]; if (X < x0) x0 = X; if (X > x1) x1 = X; if (Y < y0) y0 = Y; if (Y > y1) y1 = Y; if (Z < z0) z0 = Z; if (Z > z1) z1 = Z; }
+      const c = idx[i] * 3, X = C[c], Y = C[c + 1], Z = C[c + 2]; if (X < cx0) cx0 = X; if (X > cx1) cx1 = X; if (Y < cy0) cy0 = Y; if (Y > cy1) cy1 = Y; if (Z < cz0) cz0 = Z; if (Z > cz1) cz1 = Z;
+    }
+    B.set([x0 - 1e-4, y0 - 1e-4, z0 - 1e-4, x1 + 1e-4, y1 + 1e-4, z1 + 1e-4], id * 6);
+    const ex = [cx1 - cx0, cy1 - cy0, cz1 - cz0], ax = ex[0] >= ex[1] && ex[0] >= ex[2] ? 0 : ex[1] >= ex[2] ? 1 : 2;
+    if (e - s <= 6 || ex[ax] < 1e-6) { I[id * 3] = -1; I[id * 3 + 1] = s; I[id * 3 + 2] = e - s; return id; }
+    const mid = ([cx0, cy0, cz0][ax] + [cx1, cy1, cz1][ax]) / 2;
+    let m = s; for (let i = s; i < e; i++) if (C[idx[i] * 3 + ax] < mid) { const tmp = idx[i]; idx[i] = idx[m]; idx[m] = tmp; m++; }
+    if (m === s || m === e) m = (s + e) >> 1;
+    const l = build(s, m), r = build(m, e);
+    I[id * 3] = l; I[id * 3 + 1] = r; I[id * 3 + 2] = 0;
+    return id;
+  };
+  if (n) build(0, n);
+  Object.assign(SBVH, { ready: true, T, idx, B, I, n, stack: new Int32Array(256) });
+}
+// 最近的交点距离（any：碰到就返回）；没碰到返回 -1
+function bvhCast(ox, oy, oz, dx, dy, dz, near, far, any) {
+  if (!SBVH.n) return -1;
+  const { T, idx, B, I, stack } = SBVH, ix = 1 / dx, iy = 1 / dy, iz = 1 / dz;
+  let sp = 0, best = far, hit = false; stack[sp++] = 0;
+  while (sp) {
+    const nd = stack[--sp], b = nd * 6;
+    let t0 = (B[b] - ox) * ix, t1 = (B[b + 3] - ox) * ix; if (t0 > t1) { const t = t0; t0 = t1; t1 = t; }
+    let u0 = (B[b + 1] - oy) * iy, u1 = (B[b + 4] - oy) * iy; if (u0 > u1) { const t = u0; u0 = u1; u1 = t; }
+    if (u0 > t0) t0 = u0; if (u1 < t1) t1 = u1;
+    let w0 = (B[b + 2] - oz) * iz, w1 = (B[b + 5] - oz) * iz; if (w0 > w1) { const t = w0; w0 = w1; w1 = t; }
+    if (w0 > t0) t0 = w0; if (w1 < t1) t1 = w1;
+    if (!(t1 >= t0) || t1 < near || t0 > best) continue;
+    if (I[nd * 3] >= 0) { stack[sp++] = I[nd * 3]; stack[sp++] = I[nd * 3 + 1]; continue; }
+    const s = I[nd * 3 + 1], e = s + I[nd * 3 + 2];
+    for (let i = s; i < e; i++) {
+      const t = idx[i] * 9;
+      const ax = T[t], ay = T[t + 1], az = T[t + 2];
+      const e1x = T[t + 3] - ax, e1y = T[t + 4] - ay, e1z = T[t + 5] - az, e2x = T[t + 6] - ax, e2y = T[t + 7] - ay, e2z = T[t + 8] - az;
+      const nx = e1y * e2z - e1z * e2y, ny = e1z * e2x - e1x * e2z, nz = e1x * e2y - e1y * e2x;
+      let DdN = dx * nx + dy * ny + dz * nz;
+      if (DdN >= 0) continue;   // 背面不算（和 FrontSide 的 three.js 一样）
+      DdN = -DdN;
+      const qx = ox - ax, qy = oy - ay, qz = oz - az;
+      const a1 = -(dx * (qy * e2z - qz * e2y) + dy * (qz * e2x - qx * e2z) + dz * (qx * e2y - qy * e2x)); if (a1 < 0) continue;
+      const a2 = -(dx * (e1y * qz - e1z * qy) + dy * (e1z * qx - e1x * qz) + dz * (e1x * qy - e1y * qx)); if (a2 < 0 || a1 + a2 > DdN) continue;
+      const QdN = qx * nx + qy * ny + qz * nz; if (QdN < 0) continue;
+      const tt = QdN / DdN;
+      if (tt < near || tt > best) continue;
+      if (any) return tt;
+      best = tt; hit = true;
+    }
+  }
+  return hit ? best : -1;
+}
+// 挡光检测：list 是从 LIGHT 里挑出来的一组（静态的部分全交给 BVH，动态的部分逐个测）。返回最近交点的距离，没挡住返回 -1
+const DYN_CACHE = new WeakMap();
+function dynOf(list) {
+  let c = DYN_CACHE.get(list);
+  if (!c || c.v !== LIST_VER || c.n !== list.length) { c = { v: LIST_VER, n: list.length, d: list.filter((o) => o.parent) }; DYN_CACHE.set(list, c); }
+  return c.d;
+}
+function castLight(ray, list, any = false) {
+  if (!SBVH.ready) buildStaticBVH();
+  const o = ray.ray.origin, d = ray.ray.direction;
+  let best = bvhCast(o.x, o.y, o.z, d.x, d.y, d.z, ray.near, ray.far, any);
+  if (best >= 0 && any) return best;
+  const dyn = dynOf(list);
+  if (dyn.length) {
+    const far0 = ray.far; if (best >= 0) ray.far = best;
+    const h = ray.intersectObjects(dyn, false); ray.far = far0;
+    if (h.length && (best < 0 || h[0].distance < best)) best = h[0].distance;
+  }
+  return best;
+}
 
 // 三角形收集器：给出想要的法线方向，绕向自动翻正
 function GB() {
@@ -1436,14 +1532,14 @@ function setBeamFrame(b, C, L, blockers, startOff, o = {}) {
   b.O.copy(C[0]); b.U.subVectors(C[1], C[0]); b.V.subVectors(C[2], C[0]); b.L.copy(L);
   for (let k = 0; k < 4; k++) {
     rc.set(C[k].clone().addScaledVector(L, startOff), L); rc.near = 0; rc.far = 120;
-    const h = rc.intersectObjects(blockers, false)[0];
-    b.c[k] = h ? h.distance + startOff : 120;
+    const h = castLight(rc, blockers);
+    b.c[k] = h >= 0 ? h + startOff : 120;
   }
   const NE = 7; b.edge = [];
   for (let i = 0; i < NE; i++) {
     const p = C[0].clone().lerp(C[1], (i + 0.5) / NE);
     rc.set(p.addScaledVector(L, startOff), L); rc.near = 0; rc.far = 120;
-    const h = rc.intersectObjects(blockers, false)[0]; b.edge.push(h ? h.distance + startOff : 120);
+    const h = castLight(rc, blockers); b.edge.push(h >= 0 ? h + startOff : 120);
   }
   const U = b.U, V = b.V;
   b.M.set(U.x, V.x, L.x, U.y, V.y, L.y, U.z, V.z, L.z).invert();
@@ -1481,7 +1577,7 @@ function computeWindowBeam(b) {
     const p = P(w.az - hw + 2 * hw * u, R_IN - 0.02, lerp(w.y0, w.y0 + w.h, v));
     if (p.y < sy) continue;
     rcSun.set(p, sunV); rcSun.near = 0.001; rcSun.far = 400;
-    if (rcSun.intersectObjects(occFor(w), false).length === 0) {
+    if (castLight(rcSun, occFor(w), true) < 0) {
       lit++; umin = Math.min(umin, u - 0.5 / NU); umax = Math.max(umax, u + 0.5 / NU); vmin = Math.min(vmin, v - 0.5 / NV); vmax = Math.max(vmax, v + 0.5 / NV);
     }
   }
@@ -1525,7 +1621,7 @@ function mirrorLitBy(S, dirTo) {   // 镜面上哪一块被这个方向来的光
     const u = (i + 0.5) / NU, v = (j + 0.5) / NV;
     const p = S.center.clone().addScaledVector(S.U, (u - 0.5) * S.w).addScaledVector(S.V, (v - 0.5) * S.h).addScaledVector(S.n, 0.08);
     rcSun.set(p, dirTo); rcSun.near = 0.02; rcSun.far = 400;
-    if (!rcSun.intersectObjects(mirrorOcc(S), false).length) { hit++; u0 = Math.min(u0, u - 0.5 / NU); u1 = Math.max(u1, u + 0.5 / NU); v0 = Math.min(v0, v - 0.5 / NV); v1 = Math.max(v1, v + 0.5 / NV); }
+    if (castLight(rcSun, mirrorOcc(S), true) < 0) { hit++; u0 = Math.min(u0, u - 0.5 / NU); u1 = Math.max(u1, u + 0.5 / NU); v0 = Math.min(v0, v - 0.5 / NV); v1 = Math.max(v1, v + 0.5 / NV); }
   }
   if (hit) S.litBox = [u0, u1, v0, v1];
   return hit / (NU * NV);
@@ -1597,7 +1693,7 @@ function sampleLit(ms, p) {
   if (ms.source === 'moon') {
     if (moonV.y < 0.01) return false;
     rcSun.set(p, moonV); rcSun.near = 0.05; rcSun.far = 400;
-    return rcSun.intersectObjects(moonstoneOcc(ms), false).length === 0;
+    return castLight(rcSun, moonstoneOcc(ms), true) < 0;
   }
   const b = beamById[ms.source];   // 经三相像反射的月光：从取样点沿反射光倒推回镜面，看落点在不在镜子被照亮的那一块上、中间有没有东西挡着
   const S = b.src; if (!b.valid || !S || !S.litBox) return false;
@@ -1607,7 +1703,7 @@ function sampleLit(ms, p) {
   const u = q.dot(S.U) / S.w + 0.5, v = q.dot(S.V) / S.h + 0.5, B = S.litBox;
   if (u < B[0] || u > B[1] || v < B[2] || v > B[3]) return false;
   rc.set(h.addScaledVector(R, 0.12), R); rc.near = 0; rc.far = s - 0.4;
-  return rc.intersectObjects(mirrorOcc(S), false).length === 0;
+  return castLight(rc, mirrorOcc(S), true) < 0;
 }
 function moonstoneLitFrac(ms) { let n = 0; for (const p of ms.samples) if (sampleLit(ms, p)) n++; return n / ms.samples.length; }
 
@@ -2238,7 +2334,7 @@ function updateCrown(dt) {
 
 // ────────────────────────────── 三相像 ──────────────────────────────
 function facing(S, dirTo) { const f = new V3(Math.sin(S.yaw * DEG), 0, -Math.cos(S.yaw * DEG)); return dirTo.y > 0.01 && (f.x * dirTo.x + f.z * dirTo.z) / Math.max(1e-6, Math.hypot(dirTo.x, dirTo.z)) > Math.cos(100 * DEG); }
-function centerLit(S, dirTo) { const f = new V3(Math.sin(S.yaw * DEG), 0.3, -Math.cos(S.yaw * DEG)); rcSun.set(S.center.clone().addScaledVector(f, 0.15), dirTo); rcSun.near = 0.05; rcSun.far = 400; return rcSun.intersectObjects(mirrorOcc(S), false).length === 0; }
+function centerLit(S, dirTo) { const f = new V3(Math.sin(S.yaw * DEG), 0.3, -Math.cos(S.yaw * DEG)); rcSun.set(S.center.clone().addScaledVector(f, 0.15), dirTo); rcSun.near = 0.05; rcSun.far = 400; return castLight(rcSun, mirrorOcc(S), true) < 0; }
 function updateMirrors(dt) {
   for (const S of Object.values(MIRRORS)) {
     const day = !state.caught && sunV.y > 0.01, night = state.caught && moonV.y > 0.01;
@@ -2281,7 +2377,7 @@ function updateIrisRelief(dt) {
   }
   const b = beamById.iris; let ok = false; IRISREL.miss = 9;
   if (!IRISREL.occ) IRISREL.occ = nearList(LIGHT, IRISREL.F, 45).concat([occluder]);
-  const sunLit = (p) => { rcSun.set(p, sunV); rcSun.near = 0.05; rcSun.far = 400; return rcSun.intersectObjects(IRISREL.occ, false).length === 0; };
+  const sunLit = (p) => { rcSun.set(p, sunV); rcSun.near = 0.05; rcSun.far = 400; return castLight(rcSun, IRISREL.occ, true) < 0; };
   if (!state.caught && b.valid && player.grounded && player.zone === 'L1') {
     const head = player.pos.clone().add(new V3(0, 1.62, 0)), L = sunV.clone().negate(), n = IRISREL.n;
     const t = IRISREL.face.clone().sub(head).dot(n) / L.dot(n);
@@ -2316,7 +2412,7 @@ function updateNymph(dt) {
   let lit = 0;
   if (GOD.revealed && moonV.y > 0.05) {
     if (!GOD.occ) GOD.occ = nearList(LIGHT, NYMPH.statueC, 40).concat([occluder]);
-    for (const y of [1.2, 1.9, 2.4]) { rcSun.set(new V3(NYMPH.c.x, GOD.pedTop + y, NYMPH.c.z), moonV); rcSun.near = 0.2; rcSun.far = 400; if (!rcSun.intersectObjects(GOD.occ, false).length) lit++; }
+    for (const y of [1.2, 1.9, 2.4]) { rcSun.set(new V3(NYMPH.c.x, GOD.pedTop + y, NYMPH.c.z), moonV); rcSun.near = 0.2; rcSun.far = 400; if (castLight(rcSun, GOD.occ, true) < 0) lit++; }
     lit /= 3;
   }
   GOD.lit = lit;
@@ -2359,7 +2455,7 @@ function updateSwan(dt) {
   if (state.caught && moonV.y > 0.01) {
     if (!SWAN.occ) SWAN.occ = nearList(LIGHT, SWAN.c, 40).filter((o) => o !== SWAN.col).concat([occluder]);
     const pts = [new V3(0, 0.5, 0), new V3(0, 0.9, -0.4), new V3(0, 1.38, -0.58)].map((v) => v.applyMatrix4(SWAN.g.matrixWorld));
-    for (const q of pts) { rcSun.set(q, moonV); rcSun.near = 0.3; rcSun.far = 400; if (!rcSun.intersectObjects(SWAN.occ, false).length) lit++; }
+    for (const q of pts) { rcSun.set(q, moonV); rcSun.near = 0.3; rcSun.far = 400; if (castLight(rcSun, SWAN.occ, true) < 0) lit++; }
     lit /= pts.length;
   }
   SWAN.lit = lit;
@@ -2408,7 +2504,7 @@ function updateTwins(dt) {
   TWN.tick = (TWN.tick || 0) + dt;
   if (TWN.tick > 0.1) {
     TWN.tick = 0;
-    const litOf = (pos) => { if (!state.caught || moonV.y < 0.05) return 0; if (!TWN.occ) TWN.occ = nearList(LIGHT, P(TWINS.az, 14, F[1]), 40).filter((o) => !TWN.ms.hiddenBlock.some((b) => b.m === o)).concat([occluder]); let n = 0; for (const y of [0.9, 1.5, 2.0]) { rcSun.set(pos.clone().add(new V3(0, y, 0)), moonV); rcSun.near = 0.5; rcSun.far = 400; if (!rcSun.intersectObjects(TWN.occ, false).length) n++; } return n / 3; };
+    const litOf = (pos) => { if (!state.caught || moonV.y < 0.05) return 0; if (!TWN.occ) TWN.occ = nearList(LIGHT, P(TWINS.az, 14, F[1]), 40).filter((o) => !TWN.ms.hiddenBlock.some((b) => b.m === o)).concat([occluder]); let n = 0; for (const y of [0.9, 1.5, 2.0]) { rcSun.set(pos.clone().add(new V3(0, y, 0)), moonV); rcSun.near = 0.5; rcSun.far = 400; if (castLight(rcSun, TWN.occ, true) < 0) n++; } return n / 3; };
     TWN.lit = TWN.state === 'hidden' ? 0 : litOf(g.position); TWN.litC = litOf(TWN.castor.g.position);
   }
   for (const [s, l] of [[TWN.pollux, TWN.state === 'joined' ? 1 : TWN.lit], [TWN.castor, TWN.state === 'joined' ? 1 : TWN.litC]]) { s.mat.emissive.setRGB(0.5, 0.6, 0.95); s.mat.emissiveIntensity = toward(s.mat.emissiveIntensity ?? 0, l > 0.6 ? 0.8 : 0, 1.2, dt); }
@@ -2983,7 +3079,7 @@ if (!window.__noLoop) requestAnimationFrame(frame);
 // ────────────────────────────── 调试接口（测试脚本用） ──────────────────────────────
 window.__dysis = {
   THREE, state, player, P, azOf, rOf, WIN, ZD, ZN, TUNNELS, BEAMS, beamById, MOONSTONES, MIRRORS, SWAN, TWN, TWINS, MPLAN, MNIGHT, CROSS, HARP, RELIEF, IRISREL, SLIDER, LEVERS, MIST, FLOW, GOD, NYMPH, SLUICE, SHADOWBR, RBRIDGE, MOONBR, MOONBRIDGE, MREL, MOONREL, PARA_GAPS, SLAB_CUTS, COLUMNS, COL_SKIPPED, OPENINGS, CROWN, PIECES, IRIS, crown, H_I, H_OC, H_TOP, H_X, H_A0, H_3X, H_TW, H_SW, H_BR, H_J, H_L3A, AZ_OC, J_AZ, T_AZ, TOP_Y, SUNN, ARCH, ARM_TOP, CATCH, DN, SPINE, SEAM_L0, A_GRILLE, TS, TR, TERR_EDGE_N, ISLAND, SEA, PERI, PORCH,
-  F1: F[1], F2: F[2], F3: F[3], LIGHT, WALK, SOLID, rc, sunDir, get nearSolid() { return nearSolid; }, insidePrism, moonDir, shadowY, timeAt, zoneOf, tick, render, setTime, computeBeams, beamIsWalkable, moonstoneLitFrac, refreshNear, probe, jump, interact, catchLight, placeApple, respawn, keys, camera, scene, renderer, start, toggleSluice, pullLever, nearestInteract, roofBridgeShadow,
+  F1: F[1], F2: F[2], F3: F[3], LIGHT, WALK, SOLID, rc, _cwb: computeWindowBeam, _occFor: occFor, castLight, SBVH, _cmb: computeMirrorBeam, _cob: computeOculusBeam, rcSun, sunV, sunDir, get nearSolid() { return nearSolid; }, insidePrism, moonDir, shadowY, timeAt, zoneOf, tick, render, setTime, computeBeams, beamIsWalkable, moonstoneLitFrac, refreshNear, probe, jump, interact, catchLight, placeApple, respawn, keys, camera, scene, renderer, start, toggleSluice, pullLever, nearestInteract, roofBridgeShadow,
   go(az, r, y, yaw) { const p = P(az, r, y); player.pos.copy(p); player.vy = 0; player.grounded = true; player.carry = null; if (yaw != null) player.yaw = yaw; refreshNear(); const h = probe(p.x, p.y + 0.4, p.z, 3); if (h) { player.pos.y = h.point.y; player.ground = h.object; player.zone = zoneOf(h.object, player.pos) || player.zone; } return { ground: h ? (h.object.userData.zone || (h.object.userData.beam && 'beam:' + h.object.userData.beam.id)) : null, y: player.pos.y }; },
   step(n = 1, dt = 1 / 30) { for (let i = 0; i < n; i++) tick(dt); },
   beam(id) { const b = beamById[id]; return b && { valid: b.valid, walkable: b.walkable, clean: b.clean, lit: +b.lit.toFixed(2), edge: b.edge && b.edge.map((x) => +x.toFixed(2)), need: b.need && +b.need.toFixed(2), c: b.c.map((x) => +x.toFixed(2)), slope: +(Math.asin(clamp(b.L.y, -1, 1)) / DEG).toFixed(1), s0: b.s0, s1: b.s1, b0: b.b0.toArray().map((x) => +x.toFixed(2)), b1: b.b1.toArray().map((x) => +x.toFixed(2)) }; },
@@ -3084,7 +3180,7 @@ window.__dysis.exportSpec = function () {
   setM(M_.nightSlot, 'moon');
   const g0 = SWAN.g.rotation.y; SWAN.g.rotation.y = -SWAN.slots[0] * DEG; SWAN.g.updateMatrixWorld(true);
   const swanPts = [new V3(0, 0.5, 0), new V3(0, 0.9, -0.4), new V3(0, 1.38, -0.58)].map((v) => v.applyMatrix4(SWAN.g.matrixWorld));
-  const litPts = (pts, occ) => { let n = 0; for (const p of pts) { rcSun.set(p, moonV); rcSun.near = 0.3; rcSun.far = 400; if (!rcSun.intersectObjects(occ, false).length) n++; } return n / pts.length; };
+  const litPts = (pts, occ) => { let n = 0; for (const p of pts) { rcSun.set(p, moonV); rcSun.near = 0.3; rcSun.far = 400; if (castLight(rcSun, occ, true) < 0) n++; } return n / pts.length; };
   const occNear = (c, skip = []) => nearList(LIGHT, c, 40).filter((o) => !skip.includes(o)).concat([occluder]);
   const swanOcc = occNear(SWAN.c, [SWAN.col]), mOcc = occNear(P(M_DEF.az, M_DEF.r, M_TOP)), mPts = [MNIGHT.center.clone()];
   const godOcc = occNear(NYMPH.c), godPts = [1.2, 1.9, 2.4].map((y) => new V3(NYMPH.c.x, GOD.pedTop + y, NYMPH.c.z));
