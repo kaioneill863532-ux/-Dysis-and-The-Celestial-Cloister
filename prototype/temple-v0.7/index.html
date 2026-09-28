@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>日落回廊</title>
-<meta name="description" content="狄西斯的日落回廊 v0.8 灰盒：从海上的小岛沿光登入神殿，白天顺时针一层层往上，在屋顶用金苹果接住最后一缕阳光；入夜后追着月光一层层往下，走过影桥，把金苹果放上水亭的浑天仪。">
+<meta name="description" content="狄西斯的日落回廊 v0.7 灰盒：从海上的小岛沿光登入神殿，白天顺时针一层层往上，在屋顶用金苹果接住最后一缕阳光；入夜后追着月光一层层往下，走过影桥，把金苹果放上水亭的浑天仪。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
@@ -104,7 +104,7 @@
 <canvas id="c" tabindex="0" aria-label="游戏画面"></canvas>
 
 <div class="hud" id="hud" hidden>
-  <div id="lvl"><span id="lvlName">序 · 登殿</span><small id="shardHud">灰盒 v0.8</small></div>
+  <div id="lvl"><span id="lvlName">序 · 登殿</span><small id="shardHud">灰盒 v0.7</small></div>
   <div id="dial" aria-live="off">
     <svg id="dialSvg" viewBox="0 0 212 92" aria-hidden="true"></svg>
     <div class="row"><span><span id="rBody">太阳</span>高度 <b id="rAlt">—</b></span><span>方位 <b id="rAz">—</b></span></div>
@@ -139,25 +139,25 @@
 
 <section class="card" id="intro">
   <div class="inner">
-    <div class="eyebrow">灰盒 v0.8 · 日月十关</div>
+    <div class="eyebrow">灰盒 v0.7 · 日月十关</div>
     <h1>狄西斯的日落回廊<span class="en">DYSIS AND THE CELESTIAL CLOISTER</span></h1>
     <p class="lede">从海上的小岛沿着光登入神殿。白天顺时针一层层往上，日落时在屋顶用金苹果接住最后一缕阳光；入夜后追着月光一层层往下，把金苹果放上水亭中心的浑天仪。</p>
     <h2>白天</h2>
     <ol>
-      <li><b>序 · 登殿</b>　开局站在海上的小岛上，岛上还没有光。往神殿的方向迈一步，太阳转过来，南墙高处的光穿过中庭，从北面门廊上方的窗穿出来，落到岛上。沿着它走上崖边，穿过门廊进门。</li>
-      <li><b>日1 · 午后·开闸</b>　进门顺时针往东走。东边是神殿的“接缝”：一道从天花板一直泻到水庭的厚瀑布，每一层都被它隔开。瀑布前有一座水闸石台，走上台阶打开水闸：水雾升满中庭，第一束光显出形状，从东边的池岸斜着爬上二层。瀑布的水沫顺着水面飘到光脚上：从水闸往回走（背对太阳）时，光脚上立着一段虹。</li>
-      <li><b>日2 · 未时·双窗</b>　在二层顺时针走到西南，拉下机关 A：远处西边高处的窗打开，南边高处的窗关上。光从西窗越过中庭落到二层北边，沿着它走上三层。支线：南窗开着的时候，它的光落在二层东墙的伊莉丝浮雕上——背对太阳站好，让影子的头落进人形里，浮雕里的虹醒过来。浮雕旁边就是机关 B：拉过 A 以后浮雕是暗的，拉 B 把南窗重新打开。一道彩虹桥拱过中庭，南窗下的墙里伸出一块窗台接住它，窗台上有虹之龛和一枚棱镜。</li>
-      <li><b>日3 · 申时·光阶</b>　三层顺时针走到东边，一束光从南边四层的高窗照下来。这扇窗下面没有回廊，要从这一束跳到旁边一束，再跳到第三束，最后跳下到四层。支线：三层西边的三相像被小窗的光照醒，转她的底座，顺着她反射的光越过中庭，走到东边外墙上挑出来的石台，上面是日之龛（看完从石台的两头走下去就落回三层，也能顺着镜光走回去）。</li>
-      <li><b>日4 · 酉时·圆眼</b>　在四层顺时针走到东北，一束光从头顶很小的圆眼里落到回廊上。沿着它的上表面往里走，快碰到天花板的时候，光圈一片片旋开。接上屋顶的细桥。</li>
+      <li><b>序 · 登殿</b>　神殿南墙高处的光穿过中庭，从北面门廊上方的窗穿出来，落到海上的小岛。沿着它走上崖边，穿过门廊进门。</li>
+      <li><b>日1 · 午后·开闸</b>　进门顺时针往东走。东边是神殿的“接缝”：一道从天花板一直泻到水庭的厚瀑布，每一层都被它隔开。瀑布前有一座水闸石台，走上台阶打开水闸：水雾升满中庭，第一束光显出形状，从东边的池岸斜着爬上 L1。阳光穿过瀑布的水沫时，会出现虹。</li>
+      <li><b>日2 · 未时·双窗</b>　在 L1 顺时针走到西南，拉下机关：远处西边高处的窗打开，南边高处的窗关上。光从西窗越过中庭落到 L1 北边，沿着它走上 L2。支线：南窗开着的时候，它的光落在 L1 东墙的伊莉丝浮雕上——背对太阳站好，让影子的头落进人形里，浮雕里的虹醒过来，一道彩虹桥拱过中庭，落到南窗下的窗台上。窗台上有虹之龛和一枚棱镜。</li>
+      <li><b>日3 · 申时·光阶</b>　L2 顺时针走到东边，一束光从南边 L3 的高窗照下来。这扇窗下面没有回廊，要从这一束跳到旁边一束，再跳到第三束，最后跳下到 L3。支线：L2 西边的三相像被小窗的光照醒，转她的底座，顺着她反射的光走进瀑布里，里面的石台上是日之龛。</li>
+      <li><b>日4 · 酉时·圆眼</b>　在 L3 顺时针走到东北，一束光从头顶很小的圆眼里落到回廊上。沿着它的上表面往里走，快碰到天花板的时候，光圈一片片旋开。接上屋顶的细桥。</li>
       <li><b>日5 · 日落·最后一缕</b>　细桥尽头的桥门自己打开，横在环道上挡住逆时针那边。顺时针往上走，台阶带着叶片一级级升起来，岛影追上来。背对夕阳穿过虹门，接住最后一缕光。</li>
     </ol>
     <h2>夜里</h2>
     <ol>
-      <li><b>月1 · 月升·回廊</b>　桥门关上了。逆时针往回走，台阶落平；过了细桥那头，另外半圈降成楼梯，贴着瀑布走下去，落到四层东边。楼梯整夜都留着，想回屋顶看看随时能走上去。</li>
-      <li><b>月2 · 初夜·天鹅</b>　沿四层逆时针走大半圈，走到西边时，月眼下来的月光才照到回廊内侧的女神像：她变成白天鹅，影子是一只黑天鹅。转她，让影子落进墙上天鹅群浮雕的空白里，浮雕连同后面的墙一起沉下去，墙里的楼梯朝外的窗一扇扇打开。</li>
-      <li><b>月3 · 中夜·三相</b>　光圈张开了。三层西边的三相像被月光照着，转她的底座：镜子转过的路上，反射的月光扫过一面面墙，三层北墙上有一处会透开（月之龛）；转到夜里那一格，月光越过中庭落到东南墙的月亮浮雕上，浮雕隐去，后面是往下的楼梯。</li>
-      <li><b>月4 · 夜半·双子</b>　镜子不再转了，它反射的月光跟着月亮一路往下扫。在二层逆时针走过北边、走过卡斯托耳，一直走到东南那头的厚墙，月光正好扫到墙上，墙隐去，龛里是波吕丢刻斯。把他拉出来，顺时针一路推回卡斯托耳身边（往回走，月亮也倒回去），两尊一起在月光里，一道月桥从水亭北边绕一个圆弧，落到水庭东边。</li>
-      <li><b>月5 · 子夜·瀑布后的女神</b>　走月桥下来的一路上，三相像的月光打在瀑布上，那一块水帘就透开，照见瀑布后面一尊胸口左侧抱着月亮的巨像；光从她怀里的月亮上扫过去，只亮一下。掉头走回月桥，找到月光整个罩住那轮月亮的那一步，站住：她亮起来，水池东北边的池沿伸出一段半桥。沿水庭逆时针走到半桥上，屋顶细桥的月影正好落在水面上，从半桥尽头一直接到水亭——影桥。把金苹果放上水亭的浑天仪。</li>
+      <li><b>月1 · 月升·回廊</b>　桥门关上了。逆时针往回走，台阶落平；过了细桥那头，另外半圈降成楼梯，贴着瀑布走下去，落到 L3 东边。</li>
+      <li><b>月2 · 初夜·天鹅</b>　沿 L3 逆时针走大半圈，走到西边时，月眼下来的月光才照到回廊内侧的女神像：她变成白天鹅，影子是一只黑天鹅。转她，让影子落进墙上天鹅群浮雕的空白里，浮雕连同后面的墙一起沉下去，墙里的楼梯朝外的窗一扇扇打开。</li>
+      <li><b>月3 · 中夜·三相</b>　光圈张开了。L2 西边的三相像被月光照着，转她的底座：镜子转过的路上，反射的月光扫过一面面墙，有一处墙会透开（月之龛）；转到夜里那一格，月光越过中庭落到东南墙的月亮浮雕上，浮雕隐去，后面是往下的楼梯。</li>
+      <li><b>月4 · 夜半·双子</b>　镜子不再转了，它反射的月光跟着月亮一路往下扫。在 L1 逆时针走过北边、走过卡斯托耳，一直走到东南那头的厚墙，月光正好扫到墙上，墙隐去，龛里是波吕丢刻斯。把他拉出来，顺时针一路推回卡斯托耳身边（往回走，月亮也倒回去），两尊一起在月光里，一道月桥从水亭北边绕一个圆弧，落到水庭东边。</li>
+      <li><b>月5 · 子夜·瀑布后的女神</b>　走月桥的一路上，三相像的月光扫过瀑布后面的一尊巨像。上水闸石台关上水闸，瀑布停了，沿着瀑布后面的石沿走到她脚下：月光照亮了她，她脚下伸出一座桥，一直通到水亭。把金苹果放上水亭的浑天仪。</li>
     </ol>
     <h2>操作</h2>
     <div class="controls" id="ctrlDesk">
@@ -184,7 +184,6 @@
   <div class="eyebrow">说明</div>
   <h1>规则</h1>
   <ul>
-    <li>楼层：一层是水庭（中间是水池和水亭），往上是二层、三层、四层，再往上是屋顶的环道。</li>
     <li>沿弧走，时间流动，日月跟着动；沿半径走，时间不变。往回走，时间就倒回。每一层有自己的一段时间，同一层的等时线疏密均匀。</li>
     <li>白天顺时针是向前。接住最后一缕阳光以后，入夜，逆时针才是向前。</li>
     <li>白天：穿过中庭、有雾托着的光能踩，坡度不超过 35°。纹样窗的碎光、棱镜的色散光不能踩。</li>
@@ -194,17 +193,17 @@
   </ul>
   <h2>每一关的提示</h2>
   <ul>
-    <li><b>序</b>　开局岛上没有光，往神殿的方向走一步。光从北面门廊上方的窗穿出来，一直铺到岛上，沿着它往上走。</li>
-    <li><b>日1</b>　进门顺时针往东走，瀑布前的石台有三级台阶，台上的轮子是水闸。开闸以后等雾升起来，第一束光的脚在东边的池岸上；从水闸往回走时看看光脚那里。</li>
-    <li><b>日2</b>　机关 A 在二层西南，贴着外墙。拉下以后顺时针走到北边，光脚落在回廊边上。伊莉丝浮雕在二层东墙，机关 B 就在浮雕旁边，能把两块石板推回去；彩虹桥出现以后走上去，窗台上先开虹之龛，再转棱镜，看靛色的光落到哪里（塞勒涅在一层水庭的北墙上）。</li>
-    <li><b>日3</b>　三层东边的光脚在回廊边上。走到第一束光的高处，看旁边那一束，按住 Shift 跑两步跳过去。第三束走到四层栏杆上方时，往外跳下去。三相像在三层西边，从两级台阶走上她的底座，站在镜子前面踏上反射光；日之龛的石台在三层东边的外墙上，从石台的两头走下去就落回三层（别从正面往中庭里跳）。</li>
-    <li><b>日4</b>　在四层顺时针走到东北，光柱落到脚边时，沿半径往里走，走在光的上表面，一直走到圆眼边上的细桥。</li>
+    <li><b>序</b>　岛上时间不动。光从北面门廊上方的窗穿出来，一直铺到岛上，沿着它往上走。</li>
+    <li><b>日1</b>　进门顺时针往东走，瀑布前的石台有三级台阶，台上的轮子是水闸。开闸以后等雾升起来，第一束光的脚在东边的池岸上。</li>
+    <li><b>日2</b>　机关 A 在 L1 西南，贴着外墙。拉下以后顺时针走到北边，光脚落在回廊边上。机关 B 在 L1 南边，能把石板推回去。伊莉丝浮雕在 L1 东墙；彩虹桥出现以后走上去，窗台上先开虹之龛，再转棱镜，看靛色的光落到哪里（塞勒涅在水庭北墙上）。</li>
+    <li><b>日3</b>　L2 东边的光脚在回廊边上。走到第一束光的高处，看旁边那一束，按住 Shift 跑两步跳过去。第三束走到 L3 栏杆上方时，往外跳下去。三相像在 L2 西边，从两级台阶走上她的底座，站在镜子前面踏上反射光。</li>
+    <li><b>日4</b>　在 L3 顺时针走到东北，光柱落到脚边时，沿半径往里走，走在光的上表面，一直走到圆眼边上的细桥。</li>
     <li><b>日5</b>　走过细桥，桥门会自己开。顺时针沿环道往上走。</li>
-    <li><b>月1</b>　逆时针往回走，过了细桥那头继续走，楼梯会降下来（之后一直留着）。楼梯边有矮铜沿，别往外跳。</li>
-    <li><b>月2</b>　天鹅像在四层西边的回廊内侧，浮雕在它对面的墙上。转它，看墙上的影子。</li>
-    <li><b>月3</b>　从墙里的楼梯下到三层西北，逆时针走几步就是三相像。一格一格地转，看反射的月光落到哪里——有一格落在别处的墙上。</li>
-    <li><b>月4</b>　出了楼梯，在二层一直逆时针走到东南那头（瀑布旁边）。厚墙亮起来以后，把龛里的像拉出来，站到他逆时针那一侧，往顺时针推回卡斯托耳身边。</li>
-    <li><b>月5</b>　走月桥的时候看瀑布：女神怀里的月亮亮一下的地方，就是那一步。下了桥再掉头走回去，站在那里等一会儿（水闸不用关）。她亮了以后，沿水庭逆时针走到东北边的半桥上，等影子接上，走到水亭。</li>
+    <li><b>月1</b>　逆时针往回走，过了细桥那头继续走，楼梯会降下来。楼梯边有矮铜沿，别往外跳。</li>
+    <li><b>月2</b>　天鹅像在 L3 西边的回廊内侧，浮雕在它对面的墙上。转它，看墙上的影子。</li>
+    <li><b>月3</b>　从墙里的楼梯下到 L2 西北，逆时针走几步就是三相像。一格一格地转，看反射的月光落到哪里——有一格落在别处的墙上。</li>
+    <li><b>月4</b>　出了楼梯，在 L1 一直逆时针走到东南那头（瀑布旁边）。厚墙亮起来以后，把龛里的像拉出来，站到他逆时针那一侧，往顺时针推回卡斯托耳身边。</li>
+    <li><b>月5</b>　走过月桥，从台阶上水闸石台，关上水闸。沿瀑布后面的石沿走到女神脚下，等她的桥伸出来，走到水亭。</li>
   </ul>
   <h2>等时线</h2>
   <p>按 T 显示。地上的铜线每隔一段时间画一根：线越密，日月走得越快。每一层画的是它自己的时间。</p>
@@ -333,19 +332,7 @@ function lineZone(seam, pts) {
   const k = (h1 - h0) / (a1 - a0);
   const f = (az) => { let t = un(az); if (inArc(az, seam)) t = angDiff(az, (seam[0] + seam[1]) / 2) > 0 ? lo : hi; return h0 + k * (t - a0); };
   const at = (H) => wrap360(a0 + (H - h0) / k);   // 这个时刻在这一层的方位
-  const azAll = (H) => { const t = a0 + (H - h0) / k; return t >= lo && t <= hi ? [t] : []; };
-  return { seam, f, k, lo, hi, un, a0, h0, at, azAll };
-}
-function pieceZone(seam, pts) {
-  // 分段的时间线：几个 [az, H] 点连成折线，两头之外保持端点的时刻（同一段 H 一样时，人来回走时间不动）
-  const lo = seam[1], hi = seam[0] > seam[1] ? seam[0] : seam[0] + 360;
-  const un = (az) => { let t = wrap360(az); if (t < lo) t += 360; return t; };
-  const q = pts.map(([a, h]) => [un(a), h]).sort((x, y) => x[0] - y[0]);
-  const fU = (t) => { if (t <= q[0][0]) return q[0][1]; for (let i = 1; i < q.length; i++) if (t <= q[i][0]) return q[i - 1][1] + (q[i][1] - q[i - 1][1]) * (t - q[i - 1][0]) / (q[i][0] - q[i - 1][0]); return q[q.length - 1][1]; };
-  const f = (az) => { let t = un(az); if (inArc(az, seam)) t = angDiff(az, (seam[0] + seam[1]) / 2) > 0 ? lo : hi; return fU(t); };
-  const azAll = (H) => { const out = []; for (let i = 1; i < q.length; i++) { const [a0, h0] = q[i - 1], [a1, h1] = q[i]; if (h0 === h1 || (H - h0) * (H - h1) > 0) continue; out.push(a0 + (a1 - a0) * (H - h0) / (h1 - h0)); } return out; };
-  const at = (H) => wrap360(azAll(H)[0] ?? q[0][0]);
-  return { seam, f, lo, hi, un, at, azAll, pts: q };
+  return { seam, f, k, lo, hi, un, a0, h0, at };
 }
 // 接缝：东边一道从 L3 楼面落到水庭的瀑布，后面是通高的实体。四层都在这里断开。
 const SEAM = [116, 140];
@@ -800,7 +787,7 @@ for (const w of [WIN.h1, WIN.h2, WIN.h3]) { w.axisH = (H_H0 + H_H1) / 2; w.timeY
 ZD.L2 = lineZone(SEAM, [[WIN.b2.az + 4, H_B2TOP], [WIN.h1.footAz, H_H0]]);
 
 // 日3 支路：三相像站在 L2 西边的矮台上（三级台阶）。此刻小窗 C 的阳光照醒她，她举起铜镜，镜子下沿反射出一条光路，
-// 越过中庭通到东边外墙上的日之龛（石台挑在 L2 回廊上方，只能从这条光上去）。
+// 越过中庭通到东边瀑布出水口上面的日之龛（孤悬在接缝的实体墙上，只能从这条光上去）。
 const M_DEF = { az: 286, r: 13.5, plinth: 0.9, w: 2.2, h: 1.4, offset: 0.55, mirrorY: 0.95 };
 function mirrorGeom(D, top, yaw, tilt, mirrorY) {   // 按朝向算镜面中心、法线、下沿中点
   const c = P(D.az, D.r), f = new V3(Math.sin(yaw * DEG), 0, -Math.cos(yaw * DEG));
@@ -823,9 +810,8 @@ function aimMirror(D, top, dirIn, target, mirrorY, useLow) {   // 求镜面朝�
 }
 const M_TOP = F[2] + M_DEF.plinth;
 const H_X = ZD.L2.f(M_DEF.az);   // 走到三相像跟前的时刻
-// 日之龛的石台：L2 东边（瀑布北边一点）的外墙上挑出来的一块，在 L3 楼板底下。只有三相像的镜光通上来；
-// 看完日之龛从石台边跳下去就回到 L2 回廊（5.5 m，摔不坏）
-const LEDGE = { az: 96, half: 4.2, r0: R_PARA + 0.45, r1: R_IN, y: F[2] + 5.5 };
+// 日之龛的石台：瀑布里面，外墙上挑出来的一块
+const LEDGE = { az: (SEAM[0] + SEAM[1]) / 2, half: 5, r0: R_PARA + 0.45, r1: R_IN, y: F[2] + 6.0 };   // 挑在瀑布里面的外墙上
 const CROSS = { T: P(LEDGE.az, LEDGE.r0 + 0.35, LEDGE.y + 0.3) };
 const MPLAN = aimMirror(M_DEF, M_TOP, sunDir(H_X).negate(), CROSS.T, M_DEF.mirrorY, true);
 CROSS.Mc = MPLAN.low;
@@ -1059,11 +1045,9 @@ function ringSlab(y0, y1, rIn, rOut, a0, a1, cuts, mat, flags, data) {
 const SLAB_CUTS = { 1: [], 2: [], 3: [] };
 // 光阶的断口（L3 南）：第一、二束光在窗下越过 L3 回廊的那一段地板拿掉（窗下面没有回廊，人从光上下不来）
 SLAB_CUTS[3].push({ a0: HARP.gap[0], a1: HARP.gap[1], r0: 0, r1: 99, why: '日3 光阶的断口' });
-// 瀑布和光阶断口之间那一小段 L3 回廊也拿掉：它两头都不通（一头瀑布、一头断口），从镜光上跳上去就下不来
-SLAB_CUTS[3].push({ a0: SEAM[1], a1: HARP.gap[0], r0: 0, r1: 99, why: '瀑布到光阶断口之间的孤段' });
 
 // 接缝（东边 116°–140°）：没有墙，是一道从天花板一直泻到水庭的厚瀑布（前面两层水帘，两侧各一层，后面是外墙）。
-// 每一层走到瀑布边就到头（看不见的墙），过不去另一边。水庭那一层，瀑布后面贴着外墙有一道石沿，
+// 每一层走到瀑布边就到头（看不见的墙），过不去另一边。日之龛的石台挑在瀑布里面的外墙上；水庭那一层，瀑布后面贴着外墙有一道石沿，
 // 从水闸石台一直通到藏在水后的女神。夜里下来的楼梯贴着瀑布的正面走过去。
 const SPINE_Y0 = F[1] - SLAB;
 const WF = { a0: SEAM[0] + 0.25, a1: SEAM[1] - 0.25, r: R_PARA - 0.04, r2: R_IN - 0.05, top: CEIL, bot: WATER_Y };
@@ -1080,15 +1064,15 @@ function buildFloors() {
   // 每一层走到瀑布边就到头：两端各一道看不见的墙（在瀑布这一侧，从栏杆外沿到外墙）
   for (let i = 1; i <= 3; i++) for (const [a0, a1] of [[SEAM[0], SEAM[0] + 0.5], [SEAM[1] - 0.5, SEAM[1]]]) proxy(sector(R_PARA - 0.02, R_IN, F[i] - 0.6, i === 3 ? CEIL : F[i + 1] - SLAB, a0, a1), 's');
   // 楼板的端头：一道石檐收边
-  for (let i = 1; i <= 3; i++) for (const a of [SEAM[0], SEAM[1]]) if (!(i === 3 && a === SEAM[1])) addStatic(sector(R_A, R_IN, F[i] - SLAB - 0.25, F[i] - SLAB, a - (a === SEAM[0] ? 0.6 : 0), a + (a === SEAM[1] ? 0.6 : 0)), M.stone, 'lc');
+  for (let i = 1; i <= 3; i++) for (const a of [SEAM[0], SEAM[1]]) addStatic(sector(R_A, R_IN, F[i] - SLAB - 0.25, F[i] - SLAB, a - (a === SEAM[0] ? 0.6 : 0), a + (a === SEAM[1] ? 0.6 : 0)), M.stone, 'lc');
   // 水槽两端的矮沿（和池边一样高），看不见的高墙挡着人进水槽（逆时针一端只挡到瀑布前沿，后面是石沿）
   addStatic(sector(R_POOL - 0.05, R_PARA, POOL_BOTTOM, 0.35, SEAM[0] - 0.4, SEAM[0] + 0.4), M.stone, 'lc'); proxy(sector(R_POOL - 0.4, WFBACK.r0 - 0.05, -1, 2.55, SEAM[0] - 0.5, SEAM[0] + 0.5), 's');   // 2.55 m：站在石台上跳不过去；日1 的光从上面越过
   addStatic(sector(R_POOL - 0.05, R_IN, POOL_BOTTOM, 0.35, SEAM[1] - 0.4, SEAM[1] + 0.4), M.stone, 'lc'); proxy(sector(R_POOL - 0.4, R_IN, -1, F[1] - SLAB, SEAM[1] - 0.5, SEAM[1] + 0.5), 's');
   // 瀑布顶上（天花板下沿）一道铜唇，水从这里泻下来
   addStatic(sector(WF.r - 0.1, R_IN, CEIL - 0.25, CEIL, SEAM[0], SEAM[1]), M.bronze, 'lc');
-  // 日之龛的石台：挑在 L2 东边的外墙上（L3 楼板底下），只有三相像的镜光通上来
+  // 日之龛的石台：挑在瀑布里面的外墙上，只有三相像的镜光通上来
   addStatic(sector(LEDGE.r0, R_IN, LEDGE.y - 0.35, LEDGE.y, LEDGE.az - LEDGE.half, LEDGE.az + LEDGE.half), M.stone, 'wslc', { zone: 'ledge' });
-  // 石台两头不设挡头：看完日之龛，从石台的两头走下去就落回三层回廊（5.5 m，摔不坏）；也能顺着镜光走回三相像那边
+  for (const s2 of [-1, 1]) addStatic(sector(LEDGE.r0, R_IN, LEDGE.y, LEDGE.y + 1.0, LEDGE.az + s2 * (LEDGE.half - 0.35) - 0.35, LEDGE.az + s2 * (LEDGE.half - 0.35) + 0.35), M.stone, 'slc');
   // 瀑布后面的石沿（水庭）：从水闸石台接出去，贴着外墙走到女神身后；过了女神有一道看不见的墙
   addStatic(sector(WFBACK.r0, R_IN, POOL_BOTTOM, SLUICE_Y, SEAM[0] - 0.02, GODW.az + 2.8), M.stone, 'wslc', { zone: 'wfback' });
   proxy(sector(R_PARA, R_IN, 0, 3.2, GODW.az + 2.8, GODW.az + 3.4), 's');
@@ -1106,8 +1090,8 @@ function buildParapets() {
     const hi = [...cuts, ...PARA_OPEN[i].map((g) => ({ a0: g.a0, a1: g.a1, r0: 0, r1: 99 }))];
     ringSlab(F[i], F[i] + 2.3, R_A, R_PARA, SEAM[1], SEAM[0] + 360, hi, null, 's');
   }
-  // 光阶断口西头立一道护栏（顺着半径）；东头连着瀑布，那一段 L3 没有地板
-  for (const a of [HARP.gap[1]]) { addStatic(sector(R_A, R_IN, F[3], F[3] + PARA_H, a - 0.45, a + 0.45), M.stone, 'sc'); addStatic(sector(R_A, R_IN, F[3], F[3] + 2.3, a - 0.45, a + 0.45), null, 's'); }
+  // 光阶断口的两头各立一道护栏（顺着半径）
+  for (const a of HARP.gap) { addStatic(sector(R_A, R_IN, F[3], F[3] + PARA_H, a - 0.45, a + 0.45), M.stone, 'sc'); addStatic(sector(R_A, R_IN, F[3], F[3] + 2.3, a - 0.45, a + 0.45), null, 's'); }
 }
 // 内圈柱廊：每层 12 根，在 30° 的倍数上，站在栏杆后面（r 12.8）。挡住主光路的柱子不立（列在数据表里）。
 const COL_SPEC = [
@@ -1360,7 +1344,7 @@ function placePiece(p) {   // p.y：踏面的高度
   p.m.updateMatrixWorld(true);
   p.curb.position.y = p.y; p.curb.updateMatrixWorld(true);
   for (const w of p.walls) { w.position.y = p.y; w.updateMatrixWorld(true); }
-  if (p.blade) { p.blade.position.y = p.kind === 'dn' ? RING_Y : p.y; p.blade.updateMatrixWorld(true); }   // 夜里的楼梯降下去时叶片留在天花板的圈上
+  if (p.blade) { p.blade.position.y = p.y; p.blade.updateMatrixWorld(true); }
 }
 function buildCrown() {
   const w = (UP_TOP[0] - LAND[1] + 360) % 360 / 15;
@@ -1874,17 +1858,12 @@ const mirrorHit = (H, rStop) => traceRay(MNIGHT.center, reflectV(moonDir(H).nega
 // 月3：反射光落在 L2 东南墙上、人眼高度的时刻就是三相像的时刻；落点就是月亮浮雕
 const MOONREL = { w: 1.5, h: 2.5 };
 const H_3X = (() => { let best = null; for (let H = NIGHT_IRIS[1] + 1; H < TWINS.Hw; H += 0.05) { const h = mirrorHit(H); if (!h || h.what !== 'wall' || h.y < F[2]) continue; const d = Math.abs(h.y - (F[2] + 1.25)); if (!best || d < best.d) best = { H, d, az: h.az }; } MOONREL.az = best.az; return best.H; })();
-// 月5：女神藏在瀑布后面（水庭的水槽里，站在一个矮台上），胸口左侧抱着一轮月亮。镜子反射的月光打到瀑布上，那一块水帘就透开，
-// 光穿过去照在她身上；光正好落进她怀里那轮月亮的时刻，她亮起来。这一刻在月桥上（月桥落地要晚一点）：人要掉头走回月桥去照她。
-// moon：月亮在她身上的位置（未缩放的局部坐标；x 朝她的左手，也就是方位增大的一侧；z 朝前；R 月亮的半径）
-const GODW = { r: 14.2, top: SLUICE_Y, scale: 2.7, chest: 2.8, moon: { x: 0.13, y: 1.4, z: 0.3, R: 0.24 } };
+// 月5：女神藏在瀑布后面（水庭的水槽里，站在一个矮台上）。子夜时镜子的反射光穿过瀑布照到她胸口；关上水闸，瀑布停了，她亮起来
+const GODW = { r: 14.2, top: SLUICE_Y, scale: 2.7, chest: 2.8 };   // 一尊巨像：约 5.5 m 高，月桥上走下来的一路，镜子的月光从她肩上一直扫到腰间
 {
-  const s = GODW.scale, m = GODW.moon, rD = Math.hypot(GODW.r - m.z * s, m.x * s), yD = GODW.top + m.y * s;
   let best = null;
-  for (let H = TWINS.Hw; H < 175; H += 0.02) { const h = mirrorHit(H, rD); if (!h || h.what !== 'wall') continue; const d = Math.abs(h.y - yD); if (!best || d < best.d) best = { H, d, az: h.az }; }
-  GODW.H = best.H; GODW.moonAz = best.az; GODW.fit = best.d;
-  GODW.az = best.az - Math.atan2(m.x * s, GODW.r - m.z * s) / DEG;
-  GODW.c = P(GODW.az, GODW.r); GODW.moonC = P(best.az, rD, yD);
+  for (let H = TWINS.Hw; H < 175; H += 0.05) { const h = mirrorHit(H, GODW.r); if (!h || h.what !== 'wall') continue; const d = Math.abs(h.y - (GODW.top + GODW.chest)); if (!best || d < best.d) best = { H, d, az: h.az }; }
+  GODW.H = best.H; GODW.az = best.az; GODW.c = P(GODW.az, GODW.r);
 }
 const H_G = GODW.H;
 const NYMPH = { az: GODW.az, r: GODW.r, ped: 0.95, top: GODW.top };
@@ -1904,10 +1883,8 @@ ZN.L2 = lineZone(SEAM, [[M_DEF.az, H_3X], [MOONREL.az, TWINS.Harr - 0.4]]);
 // 月桥：从合拢的双子（L1 西边的栏杆口）画一道圆弧，从水亭北边绕过去，落到水庭东边、水闸石台台阶前的回廊上（不和女神伸出来的桥相交）
 const MOONBR = { from: { az: TWINS.castorAz, r: TWINS.rBridge, y: F[1] }, to: { az: SEAM[0] - 19, r: 12.4, y: 0 }, mid: { az: wrap360(TWINS.castorAz + wrap360(DN_LAND - TWINS.castorAz) / 2), r: 6.2 }, w: 1.5 };
 MOONBR.H0 = TWINS.Hc;
-MOONBR.H1 = H_G + 3;   // 月桥落地的时刻：女神怀里的月亮已经被照过去了，要掉头往回走上月桥几步
-// 水庭：月桥落地的地方到水闸、瀑布后面的石沿，时间停在落地那一刻（在水庭里怎么走都照不到她的月亮）；
-// 往逆时针走到东北边的半桥，月亮一路赶到子夜过后，细桥的影子转到半桥的方向上
-ZN.L0 = pieceZone(SEAM, [[SEAM[0] - 0.5, MOONBR.H1], [MOONBR.to.az, MOONBR.H1], [G_AZ, H_BR - 0.4], [G_AZ - 25, H_BR + 1.5]]);
+ZN.L0 = lineZone(SEAM, [[SEAM[0] - 0.5, H_G], [SEAM[0] - 60, H_G + 3]]);   // 水闸石台和瀑布后面的石沿就是女神被照到的那一刻
+MOONBR.H1 = ZN.L0.f(MOONBR.to.az);
 {
   // 平面上过 A、M、B 三点的圆弧；高度从 L1 均匀落到石台，中间微微拱起
   const A = P(MOONBR.from.az, MOONBR.from.r), M2 = P(MOONBR.mid.az, MOONBR.mid.r), B = P(MOONBR.to.az, MOONBR.to.r);
@@ -2031,9 +2008,8 @@ function placeSlider() {
   }
 }
 placeSlider();
-// 两个机关（拉杆），都贴着外墙：A 在 L1 西南（从上来的地方顺时针走一段），B 就在伊莉丝浮雕旁边（浮雕北侧，影子不落到浮雕上）：
-// 拉过 A 再来到浮雕前，浮雕是暗的，旁边就是能把南窗重新打开的 B
-const LEVERS = { A: { az: 226, r: 15.05, y: F[1], target: 1 }, B: { az: RELIEF.az - 8, r: 15.05, y: F[1], target: 0 } };
+// 两个机关（拉杆），都贴着外墙：A 在 L1 西南（从上来的地方顺时针走一段），B 在 L1 南（从上来的地方顺时针走几步）
+const LEVERS = { A: { az: 226, r: 15.05, y: F[1], target: 1 }, B: { az: 175, r: 15.05, y: F[1], target: 0 } };
 for (const L of Object.values(LEVERS)) {
   const g = new THREE.Group(); g.position.copy(P(L.az, L.r, L.y)); g.rotation.y = -L.az * DEG; world.add(g);
   const base = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 0.55), M.stone); base.position.y = 0.22; base.castShadow = true; g.add(base);
@@ -2115,7 +2091,7 @@ function slotList(main, n = 6) {
 // ────────────────────────────── 日3 支路：日之龛（瀑布出水口上面的石台，只有三相像的镜光通上来） ──────────────────────────────
 const SUNN = { t: 0, open: false };
 {
-  const a = LEDGE.az, c = P(a, R_IN - 0.6, LEDGE.y);   // 日之龛靠着 L2 东边的外墙（石台上）
+  const a = LEDGE.az, c = P(a, R_IN - 0.6, LEDGE.y);   // 日之龛靠着瀑布里面的外墙
   const g = new THREE.Group(); g.position.copy(c); g.rotation.y = -(a + 180) * DEG; world.add(g);
   const box = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.5, 0.34), M.bronze); box.position.y = 0.25; box.castShadow = true; g.add(box);
   SUNN.lid = new THREE.Group(); SUNN.lid.position.set(0, 0.5, -0.17); g.add(SUNN.lid);
@@ -2237,66 +2213,32 @@ const MOONBRIDGE = {};
   addStatic(sector(P0.r0, P0.r0 + 0.25, P0.y, P0.y + 0.9, P0.a0, P0.a1 - 0.2), M.stone, 'slc');
 }
 
-// ────────────────────────────── 月5：瀑布后面抱着月亮的女神、东北边的半桥、影桥 ──────────────────────────────
-// 女神站在瀑布后面水槽里的矮台上，胸口左侧抱着一轮月亮。三相像反射的月光打到瀑布上，那一块水帘透开，光穿过去；
-// 光落进她怀里的月亮，她亮起来，水池东北边的池沿伸出一段半桥（顺着细桥月影的方向）。子夜过后细桥的影子落在水面上，
-// 从半桥的尽头一直接到水亭：影桥。
-const GOD = { lit: 0, ext: 0, extended: false };
-function limb(a, b, r0, r1, mat) { const d = b.clone().sub(a), m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, d.length(), 10), mat); m.position.copy(a).lerp(b, 0.5); m.quaternion.setFromUnitVectors(new V3(0, 1, 0), d.normalize()); m.castShadow = true; return m; }
+// ────────────────────────────── 月5：瀑布后面的女神和她伸出的桥 ──────────────────────────────
+// 女神站在瀑布后面水槽里的矮台上（从水闸石台沿着外墙根的石沿能走过去）。子夜关上水闸，瀑布停了，三相像反射的月光照到她身上，
+// 她亮起来，脚下伸出一座桥，穿过瀑布原来的位置一直伸到水亭。
+const GOD = { revealed: false, lit: 0, ext: 0 };
 {
-  const c = NYMPH.c, mo = GODW.moon;
-  const g = new THREE.Group(); g.position.set(c.x, NYMPH.top, c.z); g.rotation.y = -(NYMPH.az + 180) * DEG; g.scale.setScalar(GODW.scale); world.add(g);   // 局部 -z 朝殿心，-x 是她的左手
+  const c = NYMPH.c;
+  const g = new THREE.Group(); g.position.set(c.x, NYMPH.top, c.z); g.rotation.y = -(NYMPH.az + 180) * DEG; g.scale.setScalar(GODW.scale); world.add(g);
   GOD.mat = M.statue.clone();
   const body = new THREE.Mesh(figureGeo(2.0), GOD.mat); body.castShadow = true; g.add(body);
-  // 怀里的月亮：一面银盘，贴在胸口左侧，微微仰着（朝三相像那边）
-  const mc = new V3(-mo.x, mo.y, -mo.z);
-  GOD.moonMat = new THREE.MeshStandardMaterial({ color: 0xdfe4ee, metalness: 0.55, roughness: 0.3, emissive: 0xb8c8ff, emissiveIntensity: 0 });
-  const disk = new THREE.Mesh(new THREE.CylinderGeometry(mo.R, mo.R, 0.07, 40), GOD.moonMat); disk.rotation.x = Math.PI / 2 + 0.22; disk.position.copy(mc); disk.castShadow = true; g.add(disk);
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(mo.R, 0.018, 8, 40), GOD.mat); rim.rotation.x = 0.22; rim.position.copy(mc); g.add(rim);
-  // 抱着月亮的两只手：左臂从肩上垂下、小臂托在月亮底下；右臂横过胸前，手按着月亮的另一边
-  const sh = [new V3(-0.24, 1.5, 0), new V3(0.24, 1.5, 0)];
-  const elL = new V3(-0.33, 1.13, -0.1), wrL = new V3(-0.02, 1.13, -0.36), elR = new V3(0.3, 1.18, -0.08), wrR = new V3(0.1, 1.44, -0.38);
-  for (const [p0, p1, r0, r1] of [[sh[0], elL, 0.06, 0.05], [elL, wrL, 0.05, 0.04], [sh[1], elR, 0.06, 0.05], [elR, wrR, 0.05, 0.04]]) g.add(limb(p0, p1, r0, r1, GOD.mat));
-  for (const w of [wrL, wrR]) { const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), GOD.mat); hand.position.copy(w); hand.castShadow = true; g.add(hand); }
-  g.updateMatrixWorld(true);
+  for (const s2 of [-1, 1]) { const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 0.95, 8), GOD.mat); arm.position.set(s2 * 0.2, 2.0, -0.1); arm.rotation.z = -s2 * 0.25; arm.rotation.x = -0.3; arm.castShadow = true; g.add(arm); }
   GOD.g = g; GOD.col = proxy(cylGeo(new V3(c.x, NYMPH.top, c.z), 0.75, 0.75, 5.6, 16), 's');
-  // 判定：月亮盘面上的五个点（盘面前面一点）；扫光：她身上从脚到头五个高度
-  const nrm = new V3(0, Math.sin(0.22), -Math.cos(0.22));
-  GOD.samples = [[0, 0], [0.6, 0], [-0.6, 0], [0, 0.6], [0, -0.6]].map(([u, v]) => g.localToWorld(mc.clone().add(new V3(u * mo.R, v * mo.R, 0)).addScaledVector(nrm, 0.06)));
-  GOD.moonW = g.localToWorld(mc.clone());
-  GOD.sweep = [1.2, 2.2, 3.2, 4.2, 5.0].map((y) => new V3(c.x, NYMPH.top + y, c.z).addScaledVector(radN(NYMPH.az, -1), 0.5));
-}
-// 半桥：水池东北边的池沿（细桥月影的方位 G_AZ 上），沿着半径伸向水亭，伸到影子开始的地方；女神亮起来才伸出来
-function roofBridgeShadow(H) {
-  const m = moonDir(H); if (m.y <= 0.05) return null;
-  const hw = RBRIDGE.w / 2, sd = RBRIDGE.side, yw = PAV.top;
-  const pr = (p) => p.clone().addScaledVector(m, -(p.y - yw) / m.y);
-  const a = RBRIDGE.S.clone().setY(RBRIDGE.y0), b = RBRIDGE.end.clone().setY(RBRIDGE.y0);
-  return [pr(a.clone().addScaledVector(sd, -hw)), pr(b.clone().addScaledVector(sd, -hw)), pr(b.clone().addScaledVector(sd, hw)), pr(a.clone().addScaledVector(sd, hw))];
-}
-{ const q = roofBridgeShadow(H_BR), c = q[0].clone().add(q[3]).multiplyScalar(0.5); RBRIDGE.shadowStart = rOf(c); RBRIDGE.shadowAz = azOf(c.x, c.z); }
-{
-  const az = RBRIDGE.shadowAz, side = new V3(Math.cos(az * DEG), 0, Math.sin(az * DEG)), hw = 0.75;
-  GOD.halfAz = az; GOD.halfR = [R_POOL + 0.35, RBRIDGE.shadowStart - 0.1]; GOD.side = side;
-  const gb = GB(), [r0, r1] = GOD.halfR, yA = 0, yB = PAV.top, th = 0.3;
-  const A0 = P(az, r0).addScaledVector(side, -hw), A1 = P(az, r0).addScaledVector(side, hw), B0 = P(az, r1).addScaledVector(side, -hw), B1 = P(az, r1).addScaledVector(side, hw);
-  const at = (p, y) => p.clone().setY(y);
-  gb.quad(at(A0, yA), at(B0, yB), at(B1, yB), at(A1, yA), UP);
-  gb.quad(at(A0, yA - th), at(A1, yA - th), at(B1, yB - th), at(B0, yB - th), DOWN);
-  for (const [p, q2, sg] of [[A0, B0, -1], [A1, B1, 1]]) gb.quad(at(p, yA - th), at(q2, yB - th), at(q2, yB), at(p, yA), side.clone().multiplyScalar(sg));
-  gb.quad(at(B0, yB - th), at(B1, yB - th), at(B1, yB), at(B0, yB), radN(az, -1));
-  GOD.bridge = new THREE.Mesh(gb.geo(), M.statue); GOD.bridge.castShadow = GOD.bridge.receiveShadow = true; GOD.bridge.userData.zone = 'gbridge'; world.add(GOD.bridge);
-  GOD.bridge.visible = false; GOD.bridge.geometry.computeBoundingSphere(); GOD.bridge.geometry.computeBoundingBox();
-  // 半桥两边看不见的护栏
-  GOD.rails = [-1, 1].map((sg) => { const m = new THREE.Mesh(sector(r1 + 0.3, r0 - 0.1, -0.5, 2.2, az + sg * (hw + 0.1) / ((r0 + r1) / 2) / DEG - 0.25, az + sg * (hw + 0.1) / ((r0 + r1) / 2) / DEG + 0.25), COLLIDER); m.updateMatrixWorld(true); return m; });
-}
-// 影桥：屋顶细桥的月影落在水面上（跟着时间走），人站上半桥时（H_BR）正好从半桥的尽头接到水亭；接上以后发光，能踩
-const SHADOWBR = { on: 0, mesh: null };
-{
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3)); g.setIndex([0, 1, 2, 0, 2, 3]);
-  SHADOWBR.mat = new THREE.MeshBasicMaterial({ color: 0x0a0e18, transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide });
-  SHADOWBR.mesh = new THREE.Mesh(g, SHADOWBR.mat); SHADOWBR.mesh.renderOrder = 3; SHADOWBR.mesh.visible = false; world.add(SHADOWBR.mesh);
-  SHADOWBR.mesh.userData.zone = 'shadowbr';
+  GOD.samples = [-0.7, 0, 0.7].map((dy) => new V3(c.x, NYMPH.top + GODW.chest + dy, c.z).addScaledVector(radN(NYMPH.az, -1), 0.55));
+  GOD.sweep = [1.2, 2.2, 3.2, 4.2, 5.0].map((y) => new V3(c.x, NYMPH.top + y, c.z).addScaledVector(radN(NYMPH.az, -1), 0.5));   // 月光扫过她身上时哪一段亮
+  // 女神的桥：从矮台前沿沿着半径伸到水亭，桥面从石沿的高度缓缓落到水亭的台面
+  const r0 = NYMPH.r - NYMPH.ped + 0.05, r1 = PAV.r - 0.05, L = r0 - r1, hw = 0.75;
+  GOD.bridgeR = [r0, r1];
+  const G = new THREE.Group(); G.position.copy(P(NYMPH.az, r0, 0)); G.rotation.y = -(NYMPH.az + 180) * DEG; world.add(G);   // 局部 -z 朝殿心
+  const gb = GB(), yA = NYMPH.top, yB = PAV.top, th = 0.3;
+  const q = (x, z, y) => new V3(x, y, -z);
+  gb.quad(q(-hw, 0, yA), q(-hw, L, yB), q(hw, L, yB), q(hw, 0, yA), UP);
+  gb.quad(q(-hw, 0, yA - th), q(hw, 0, yA - th), q(hw, L, yB - th), q(-hw, L, yB - th), DOWN);
+  for (const sx of [-1, 1]) gb.quad(q(sx * hw, 0, yA - th), q(sx * hw, L, yB - th), q(sx * hw, L, yB), q(sx * hw, 0, yA), new V3(sx, 0, 0));
+  GOD.bridge = new THREE.Mesh(gb.geo(), Object.assign(M.statue.clone(), { side: THREE.DoubleSide })); GOD.bridge.castShadow = GOD.bridge.receiveShadow = true; GOD.bridge.userData.zone = 'gbridge'; G.add(GOD.bridge);
+  GOD.G = G; G.scale.z = 0.001; G.visible = false; G.updateMatrixWorld(true);
+  // 桥两边看不见的护栏（桥伸出来以后才有）
+  GOD.rails = [-1, 1].map((sx) => { const m = new THREE.Mesh(boxGeo(new V3(0, 0, 0), 0.1, 2.2, L - 0.6), COLLIDER); m.position.set(sx * (hw + 0.08), (yA + yB) / 2 + 1.0, -L / 2); G.add(m); return m; });
 }
 // 月之龛：三相像的镜子从白天那一格往夜里那一格转的路上，有一格把月光送到别处的墙上——那里的墙透开，是一个小龛
 const MSHRINE = { found: false };
@@ -2340,24 +2282,9 @@ const RB = { active: 0, bridgeK: 0, on: false, niche: 0, nicheOpen: false, ext: 
   BRIDGE.rails = [];
   for (let i = 3; i < N - 3; i += 3) for (const sg of [-1, 1]) { const a = at(i / N, sg * (W / 2 + 0.1)), b = at((i + 3) / N, sg * (W / 2 + 0.1)), cc = a.clone().lerp(b, 0.5); const m = new THREE.Mesh(boxGeo(new V3(cc.x, cc.y + 1.1, cc.z), 0.1, 2.2, a.distanceTo(b) + 0.1, azOf(ax.x, ax.z)), COLLIDER); m.updateMatrixWorld(true); BRIDGE.rails.push(m); }
 }
-// 窗台：挑在 L2 南墙上，南窗下面；内沿有一道矮栏杆（虹桥落下来的地方留口）。
-// 虹桥过来以前，窗台、栏杆和虹之龛都缩在墙里（看不见，也上不去）；虹落下来的时候才从墙里伸出来（月光大道那一版的做法）
-SILL.g = new THREE.Group(); world.add(SILL.g); SILL.parts = []; SILL.k = 0;
-SILL.out = P(SILL.az, 1, 0).normalize();   // 伸出来的方向（缩回去时沿半径往墙里退）
-function sillPart(geo, mat, flags, data) {
-  const m = new THREE.Mesh(geo, mat || COLLIDER); geo.computeBoundingSphere(); geo.computeBoundingBox();
-  if (mat) { m.castShadow = true; m.receiveShadow = true; }
-  if (data) Object.assign(m.userData, data);
-  SILL.g.add(m); SILL.parts.push({ m, flags }); return m;
-}
-function placeSill(k) {
-  SILL.k = k; SILL.g.visible = k > 0.002;
-  SILL.g.position.copy(SILL.out).multiplyScalar(-(1 - k) * (R_IN - SILL.r0 + 0.3)); SILL.g.updateMatrixWorld(true);
-  const on = k > 0.98;
-  for (const { m, flags } of SILL.parts) for (const f of 'wslc') setIn(LISTS[f], m, on && flags.includes(f));
-}
+// 窗台：挑在 L2 南墙上，南窗下面；内沿有一道矮栏杆（虹桥落下来的地方、石板伸出去的地方留口）
 {
-  sillPart(sector(SILL.r0, R_IN, SILL.y - 0.35, SILL.y, SILL.a0, SILL.a1), M.stone, 'wslc', { zone: 'sill' });
+  addStatic(sector(SILL.r0, R_IN, SILL.y - 0.35, SILL.y, SILL.a0, SILL.a1), M.stone, 'wslc', { zone: 'sill' });
   // 虹桥落到窗台的地方
   let tS = 1; while (tS > 0 && rOf(BRIDGE.at(tS, 0)) < SILL.r0 + 0.05) tS -= 0.002;
   const q0 = BRIDGE.at(tS, -BRIDGE.W / 2), q1 = BRIDGE.at(tS, BRIDGE.W / 2), bz = [azOf(q0.x, q0.z), azOf(q1.x, q1.z)];
@@ -2391,20 +2318,18 @@ function placeSill(k) {
 // 窗台的矮栏杆（看得见的 0.9 m + 看不见的 2.2 m），两头也拦上
 {
   const cuts = SILL.railCuts.map(([a0, a1]) => ({ a0, a1, r0: 0, r1: 99 }));
-  for (const [a0, a1] of arcMinus(SILL.a0, SILL.a1, SILL.railCuts)) { sillPart(sector(SILL.r0, SILL.r0 + 0.18, SILL.y, SILL.y + 0.9, a0, a1), M.stone, 'sc'); sillPart(sector(SILL.r0 - 0.05, SILL.r0 + 0.2, SILL.y, SILL.y + 2.2, a0, a1), null, 's'); }
-  for (const a of [SILL.a0, SILL.a1]) { sillPart(sector(SILL.r0, R_IN, SILL.y, SILL.y + 0.9, a - 0.35, a + 0.35), M.stone, 'sc'); sillPart(sector(SILL.r0, R_IN, SILL.y, SILL.y + 2.2, a - 0.4, a + 0.4), null, 's'); }
+  for (const [a0, a1] of arcMinus(SILL.a0, SILL.a1, SILL.railCuts)) { addStatic(sector(SILL.r0, SILL.r0 + 0.18, SILL.y, SILL.y + 0.9, a0, a1), M.stone, 'sc'); proxy(sector(SILL.r0 - 0.05, SILL.r0 + 0.2, SILL.y, SILL.y + 2.2, a0, a1), 's'); }
+  for (const a of [SILL.a0, SILL.a1]) { addStatic(sector(SILL.r0, R_IN, SILL.y, SILL.y + 0.9, a - 0.35, a + 0.35), M.stone, 'sc'); proxy(sector(SILL.r0, R_IN, SILL.y, SILL.y + 2.2, a - 0.4, a + 0.4), 's'); }
   void cuts;
 }
 // 虹之龛：窗台右手墙上一座小龛，两扇铜门
 {
-  const az = SILL.a1 - 1.8, nz = new THREE.Group(); nz.position.copy(P(az, R_IN - 0.12, SILL.y + 1.2)); nz.rotation.y = -az * DEG; SILL.g.add(nz);
+  const az = SILL.a1 - 1.8, nz = new THREE.Group(); nz.position.copy(P(az, R_IN - 0.12, SILL.y + 1.2)); nz.rotation.y = -az * DEG; world.add(nz);
   const nback = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.05), M.shade); nback.position.z = -0.02; nz.add(nback);
   IRISREL.doors = [-1, 1].map((sgn) => { const hinge = new THREE.Group(); hinge.position.set(sgn * 0.3, 0, 0.05); const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.68, 0.03), M.bronze); leaf.position.x = -sgn * 0.15; hinge.add(leaf); nz.add(hinge); return hinge; });
   IRISREL.shard = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.05, emissive: 0xc8d8ff, emissiveIntensity: 0.9, transparent: true, opacity: 0.9 }));
   IRISREL.shard.position.set(0, 0, 0.1); nz.add(IRISREL.shard); IRISREL.nichePos = nz.position.clone(); IRISREL.nicheAz = az;
-  for (const o of [nback, ...IRISREL.doors.map((h) => h.children[0])]) o.castShadow = true;
 }
-placeSill(0);
 // 塞勒涅：刻在靛色光落下的那面墙上，青金石的眼睛正好在光斑上
 const SELENE = { eye: new V3(), lit: 0, on: false, ip: new V3() };
 {
@@ -2439,8 +2364,8 @@ function buildHourLines(night) {
   for (const [k, y, r0] of floors) {
     const z = Z[k], step = night ? 1 : 0.5, H0 = z.f(z.lo + 0.01), H1 = z.f(z.hi - 0.01);
     const lo = Math.min(H0, H1), hi = Math.max(H0, H1);
-    for (let H = Math.ceil(lo / step) * step; H <= hi; H += step) for (const az of z.azAll(H)) {
-      if (az < z.lo || az > z.hi) continue;
+    for (let H = Math.ceil(lo / step) * step; H <= hi; H += step) {
+      const az = z.a0 + (H - z.h0) / z.k; if (az < z.lo || az > z.hi) continue;
       const maj = Math.abs(H / 5 - Math.round(H / 5)) < 1e-6;
       const a = P(az, r0 + 0.1, y + 0.012), b = P(az, R_IN - 0.1, y + 0.012), mid = a.clone().lerp(b, 0.5);
       const m = new THREE.Mesh(new THREE.BoxGeometry(maj ? 0.07 : 0.035, 0.01, a.distanceTo(b)), maj ? HL_MAJ : HL_MAT);
@@ -2451,13 +2376,7 @@ function buildHourLines(night) {
 buildHourLines(false);
 
 // ────────────────────────────── 玩家 ──────────────────────────────
-// 开局站在岛的外沿：此刻太阳还差一点没转到南窗正对海窗的方位，岛上没有光。往殿的方向迈一步，时间走到 H_I，光才穿过殿堂落到岛上
-const ISLE_T = { r0: ISLAND.r + 1.3, r1: ISLAND.r - 0.3, dH: 4.5 };
-const SPAWN = { pos: P(ISLAND.az, ISLAND.r + 1.8, ISLAND.top), yaw: ISLAND.az + 180 };
-function isleTime(pos) {
-  const c = P(ISLAND.az, ISLAND.r); if (Math.hypot(pos.x - c.x, pos.z - c.z) > ISLAND.R + 1 || pos.y > ISLAND.top + 4) return H_I;
-  return H_I - ISLE_T.dH * (1 - smoothstep(0, 1, (ISLE_T.r0 - rOf(pos)) / (ISLE_T.r0 - ISLE_T.r1)));
-}
+const SPAWN = { pos: P(ISLAND.az, ISLAND.r - 1.0, ISLAND.top), yaw: ISLAND.az + 180 };
 const player = {
   pos: SPAWN.pos.clone(), vy: 0, grounded: true, ground: null, zone: 'out', fallFrom: SPAWN.pos.y,
   yaw: SPAWN.yaw, pitch: 0.22, dist: 4.6, mode: 'third', heading: SPAWN.yaw,
@@ -2479,7 +2398,6 @@ function refreshNear() {
   const f = (list, R) => list.filter((o) => { const s = worldSphere(o); return s.center.distanceTo(p) - s.radius < R; });
   nearSolid = f(SOLID, 6); nearWalk = f(WALK, 12);
   for (const b of BEAMS) if (b.walkable) nearWalk.push(b.walk);
-  if (SHADOWBR.on > 0.5) nearWalk.push(SHADOWBR.mesh);
   if (MOONBRIDGE.ms.k > 0.5) nearSolid.push(...MOONBRIDGE.rails.filter((m) => worldSphere(m).center.distanceTo(p) < 8));
   nearCam = f(CAMB, 9);
 }
@@ -2567,7 +2485,7 @@ function updatePlayer(dt) {
     const z = zoneOf(player.ground, p); if (z) player.zone = z;
     const ud = player.ground.userData;
     player.safeT += dt;
-    if (player.safeT > 0.4 && !ud.beam && !ud.moonstone && ud.zone !== 'shadowbr' && ud.zone !== 'gbridge' && ud.zone !== 'rbridge' && ud.zone !== 'ledge') { player.lastSafe = { pos: p.clone() }; player.safeT = 0; }
+    if (player.safeT > 0.4 && !ud.beam && !ud.moonstone && ud.zone !== 'gbridge' && ud.zone !== 'rbridge') { player.lastSafe = { pos: p.clone() }; player.safeT = 0; }
   }
   if (!state.respawning) {
     const r = rOf(p);
@@ -2616,7 +2534,7 @@ function tunnelTime(T, y) {
   const hTop = Z[fl(T.yTop)].f(T.topDoor), hBot = Z[fl(T.yBot)].f(T.botDoor);
   return lerp(hTop, hBot, clamp((T.yTop - y) / (T.yTop - T.yBot), 0, 1));
 }
-const H_END = H_BR + 1.5;
+const H_END = H_G + 1.5;
 function timeAt(zone, pos) {
   if (state.forceH != null) return state.forceH;
   const h = timeAt0(zone, pos); return state.caught ? clamp(h, H_TOP, H_END) : h;
@@ -2634,7 +2552,7 @@ function timeAt0(zone, pos) {
   }
   if (zone.startsWith('tun:')) { const T = TUNNELS.find((t) => t.id === zone.slice(4)); return tunnelTime(T, pos.y); }
   switch (zone) {
-    case 'out': return state.caught ? state.sticky : isleTime(pos);
+    case 'out': return state.caught ? state.sticky : H_I;
     case 'L0': case 'L1': case 'L2': case 'L3': return Z[zone].f(az);
     case 'crown': return state.caught ? crownNight(az) : crownDay(az);
     case 'rbridge': return state.caught ? H_J : H_OC;
@@ -2642,7 +2560,7 @@ function timeAt0(zone, pos) {
     case 'moonbr': return lerp(MOONBR.H0, MOONBR.H1, moonbrT(pos));
     case 'rainbow': case 'sill': return RELIEF.H;   // 虹桥和窗台上：就是浮雕醒过来的那一刻
     case 'wfback': return (state.caught ? ZN : ZD).L0.f(SEAM[0] - 0.5);   // 瀑布后面的石沿：和水闸石台同一刻
-    case 'gbridge': case 'shadowbr': case 'pav': return state.caught ? H_BR : state.sticky;   // 半桥、影桥、水亭：细桥的影子接上的那一刻
+    case 'gbridge': case 'pav': return state.caught ? H_G : state.sticky;
     case 'pool': return state.sticky;
   }
   return state.sticky;
@@ -2667,7 +2585,7 @@ function levelOf(zone) {
   if (zone === 'L3' || zone === 'tun:TS') return 7;
   if (zone === 'L2' || zone === 'tun:TR') return 8;
   if (zone === 'L1' || zone === 'moonbr') return 9;
-  if (zone === 'L0' || zone === 'pav' || zone === 'gbridge' || zone === 'shadowbr' || zone === 'wfback') return 10;
+  if (zone === 'L0' || zone === 'pav' || zone === 'gbridge' || zone === 'wfback') return 10;
   return null;
 }
 function updateLevel() {
@@ -2682,8 +2600,7 @@ function updateLevel() {
 // ────────────────────────────── 光圈 ──────────────────────────────
 function setIris(a) { if (Math.abs(a - IRIS.a) < 0.004) return; IRIS.a = a; const o = irisOpenOf(a); for (const p of IRIS_BLADES) bladeGeo(p, o); beamH = 1e9; }
 // 白天：快到圆眼的时刻张成一只小眼（OC_R），光柱从这里下来；人顺着光柱走上去、头快碰到叶片时再慢慢张开到 OC_PASS；
-// 上了环道往上走，张到全开。夜里：人在屋顶和降下来的楼梯上时光圈全开（叶片收起）；下到 L3 以后合成月眼，子夜前后再全开。
-// 降下来的楼梯整夜都留着（人随时能回屋顶看看）；楼梯那一段的叶片不跟着台阶下去，留在天花板的圈上。
+// 上了环道往上走，张到全开。夜里：人在屋顶和降下来的楼梯上时光圈全开（叶片收起）；下到 L3、楼梯收回以后合成月眼，子夜前后再全开。
 function irisTarget() {
   const z = player.zone;
   if (!state.caught) {
@@ -2691,7 +2608,7 @@ function irisTarget() {
     const pass = z === 'rbridge' || z === 'crown' ? 1 : z === 'beam:oculus' ? smoothstep(IRIS_Y1 - 3.7, IRIS_Y1 - 2.2, player.pos.y) : 0;
     return crown.up > 0.001 ? lerp(OC_PASS, IRIS_R, crown.up) : lerp(eye, OC_PASS, pass);
   }
-  if (z === 'crown' || z === 'rbridge') return IRIS_R;
+  if (z === 'crown' || z === 'rbridge' || crown.dn) return IRIS_R;
   return nightAperture(state.H);
 }
 function updateIris(dt) {
@@ -2706,9 +2623,11 @@ function updateCrown(dt) {
     const az = azOf(player.pos.x, player.pos.z), psi = wrap360(az - LAND[1]);
     crown.up = psi < 240 ? smoothstep(0, upSpan, psi) : 0;
   }
-  // 入夜：回到桥头以后，另外半圈降成楼梯，一直留到天亮（不收回：人还想回屋顶看看就能走上去）
-  if (state.caught && crown.up < 0.03) crown.dn = 1;
-  if (state.caught && crown.dn && !crown.eyeToast && player.grounded && player.zone === 'L3' && angDiff(DN.a0, azOf(player.pos.x, player.pos.z)) > 7) { crown.eyeToast = true; toast('头顶的光圈合拢成一只月眼。身后的楼梯还留着，想回屋顶随时能走上去。', 4200); }
+  // 入夜：回到桥头以后，另外半圈降成楼梯；人下到 L3、从楼梯口走开几步，楼梯收回天花板
+  if (state.caught) {
+    if (crown.up < 0.03 && !crown.folded) crown.dn = 1;
+    if (crown.dn && player.grounded && player.zone === 'L3' && angDiff(DN.a0, azOf(player.pos.x, player.pos.z)) > 7) { crown.dn = 0; crown.folded = true; toast('身后的楼梯一级一级收回了天花板。头顶的光圈合拢成一只月眼。', 4200); }
+  }
   let moved = false;
   for (const p of PIECES) {
     let y = p.y;
@@ -2774,9 +2693,9 @@ function updateSlider(dt) {
 }
 function pullLever(k) {
   const t = LEVERS[k].target;
-  if (SLIDER.target === t) { toast(k === 'A' ? '机关已经拉下了：西边高处的窗开着，南边高处的窗关着。' : '两块石板都在原处：南边高处的窗开着，光正照着浮雕；西边高处的窗关着。', 3400); return; }
+  if (SLIDER.target === t) { toast(k === 'A' ? '机关已经拉下了：西边高处的窗开着，南边高处的窗关着。' : '两块石板都在原处：西边高处的窗关着，南边高处的窗开着。', 3400); return; }
   SLIDER.target = t;
-  toast(k === 'A' ? '铜链一紧，远处传来两声石板滑动：西边高处的窗打开了，南边高处的窗关上了。' : '两块石板滑回原处：南边高处的窗又开了，光重新落到浮雕上；西边高处的窗关上了。', 4600);
+  toast(k === 'A' ? '铜链一紧，远处传来两声石板滑动：西边高处的窗打开了，南边高处的窗关上了。' : '两块石板滑回原处：西边高处的窗关上了，南边高处的窗又开了。', 4600);
 }
 
 // ────────────────────────────── 伊莉丝浮雕：影子贴合，虹出现 ──────────────────────────────
@@ -2789,9 +2708,7 @@ function updateRainbow(dt) {
     RB.bridgeK = smoothstep(0.6, 3.8, T);
     BRIDGE.vis.geometry.setDrawRange(0, 6 * 7 * Math.round(BRIDGE.N * RB.bridgeK));
     BRIDGE.vis.material.opacity = 0.62 + 0.12 * Math.sin(state.t * 1.7);
-    // 虹快到对岸的时候，南窗下的墙里伸出一块窗台来接住它，窗台右手的墙上露出虹之龛
-    const ks = smoothstep(2.4, 4.2, T); if (ks !== SILL.k) placeSill(ks);
-    if (a0 < 3.8 && T >= 3.8) { setBridge(true); toast('虹从浮雕上走下来，拱过中庭。对面南窗下的墙里伸出一块窗台，虹落在窗台上；窗台右手的墙上露出一座小龛。', 4600); }
+    if (a0 < 3.8 && T >= 3.8) { setBridge(true); toast('虹从浮雕上走下来，拱过中庭，落在对面南窗下的窗台上。', 4200); }
   }
   // 虹之龛：门打开，彩虹碎片飞出来；窗台边上伸出一块石板，托着棱镜
   if (RB.niche > 0) {
@@ -2835,7 +2752,6 @@ function updateRainbow(dt) {
 function updateIrisRelief(dt) {
   if (IRISREL.done) { IRISREL.bands.forEach((m) => { m.opacity = 0.6 + 0.3 * Math.sin(state.t * 2); }); updateRainbow(dt); return; }
   const b = beamById.iris; let ok = false; IRISREL.miss = 9;
-  if (!state.caught && !b.valid && SLIDER.target === 1 && !IRISREL.darkHint && player.zone === 'L1' && player.pos.distanceTo(IRISREL.face) < 4) { IRISREL.darkHint = true; toast('浮雕是暗的：南边高处的窗被石板挡上了。浮雕旁边有一个机关。', 4200); }
   if (!IRISREL.occ) IRISREL.occ = nearList(LIGHT, IRISREL.F, 45).concat([occluder]);
   const sunLit = (p) => { rcSun.set(p, sunV); rcSun.near = 0.05; rcSun.far = 400; return castLight(rcSun, IRISREL.occ, true) < 0; };
   if (!state.caught && b.valid && player.grounded && player.zone === 'L1') {
@@ -2857,69 +2773,29 @@ const FLOW = { k: 0 };
 function toggleSluice() {
   MIST.open = !MIST.open;
   if (MIST.open) toast(state.caught ? '水又流了起来。' : '闸门吊起来。东边的瀑布从天花板下沿泻下来，一直落进水庭。水雾慢慢升满中庭，光显出了形状。', 5600);
-  else toast(state.caught ? '水停了。瀑布从上往下断了流。瀑布后面的水槽里，站着一尊很高的女神像，胸口左侧抱着一轮月亮。' : '水闸关上了，瀑布停了。', 5600);
+  else toast(state.caught ? '水停了。瀑布从上往下断了流。瀑布后面的水槽里，站着一尊女神像，双手举过头顶，像在接什么。' : '水闸关上了，瀑布停了。', 5600);
 }
 function updateNymph(dt) {
   FLOW.k = toward(FLOW.k, MIST.open ? 1 : 0, MIST.open ? 0.9 : 0.45, dt);
   MIST.amt = toward(MIST.amt, MIST.open ? 1 : 0, MIST.open ? 0.1 : 0.2, dt);
   MIST.front = MIST.open ? Math.min(CEIL + 2, Math.max(MIST.front, WATER_Y) + dt * 3.0) : (MIST.amt < 0.01 ? -1 : MIST.front);
   fallMat.uniforms.uFlow.value = FLOW.k; fallMesh.visible = FLOW.k > 0.002;
-  setIn(CAMB, FALLCAM, FLOW.k > 0.5);   // 水流着的时候，镜头不穿到水帘里面去
-  // 镜子反射的月光打到瀑布上：那一块水帘透开（前后两层水帘的交点中间），光穿过去照到后面的女神
-  updateFallHole(dt);
-  // 月光落进女神怀里的月亮：她亮起来，水池东北边伸出半桥。瀑布流着也照得到（透开的那一块），关了水闸更看得清
+  // 夜里水停了以后：瀑布后面的女神露出来。三相像反射的月光照到她，她亮起来，脚下伸出一座桥通到水亭
+  GOD.revealed = state.caught && FLOW.k < 0.05;
+  // 镜子反射的月光照到她身上的哪一段（瀑布还流着的时候也看得见：隔着水帘，被扫到的地方微微亮）
   let lit = 0, sweep = 0;
   if (state.caught && beamById.mmoon.valid) {
     for (const p of GOD.samples) if (sampleLit({ source: 'mmoon' }, p)) lit++; lit /= GOD.samples.length;
     for (const p of GOD.sweep) if (sampleLit({ source: 'mmoon' }, p)) sweep++; sweep /= GOD.sweep.length;
   }
-  GOD.lit = lit; GOD.sweepK = sweep;
-  // 要让月光整个罩住她怀里的月亮，并且停在那里一会儿（走过去的时候只会亮一下）：人得在月桥上找到那一步、站住
-  GOD.dwell = lit > 0.99 ? (GOD.dwell || 0) + dt : Math.max(0, (GOD.dwell || 0) - 2 * dt);
-  if (!GOD.extended && lit > 0.3 && !GOD.glint) { GOD.glint = true; toast('瀑布后面，女神怀里的那轮月亮被月光扫到，亮了一下。', 3200); }
-  if (!GOD.extended && GOD.glint && !GOD.hinted && player.zone === 'L0' && state.caught) { GOD.hinted = true; toast('月光已经从她怀里的月亮上扫过去了。刚才在月桥上，是哪一步？', 4200); }
-  GOD.mat.emissive.setRGB(0.45, 0.55, 0.85); GOD.mat.emissiveIntensity = toward(GOD.mat.emissiveIntensity ?? 0, GOD.extended ? 0.35 : 0.3 * sweep, 1.2, dt);
-  GOD.moonMat.emissiveIntensity = toward(GOD.moonMat.emissiveIntensity, GOD.extended ? 1.6 : 0.8 * lit + 0.8 * Math.min(1, GOD.dwell), 2.5, dt);
-  if (GOD.dwell >= 1.0 && !GOD.extended) { GOD.extended = true; toast('月光穿过透开的水帘，整个落进女神怀里的那轮月亮。她亮了起来——水池东北边的池沿上，缓缓伸出一段半桥，朝着水亭。', 5600); }
-  GOD.ext = toward(GOD.ext, GOD.extended ? 1 : 0, 0.5, dt);
-  GOD.bridge.visible = GOD.ext > 0.01;
-  { const sc = Math.max(0.001, smoothstep(0, 1, GOD.ext)), a = P(GOD.halfAz, GOD.halfR[0]); GOD.bridge.position.set(a.x * (1 - sc), 0, a.z * (1 - sc)); GOD.bridge.scale.set(sc, 1, sc); GOD.bridge.updateMatrixWorld(true); }
+  GOD.lit = GOD.revealed ? lit : 0; GOD.sweepK = sweep;
+  GOD.mat.emissive.setRGB(0.45, 0.55, 0.85); GOD.mat.emissiveIntensity = toward(GOD.mat.emissiveIntensity ?? 0, GOD.extended ? 0.9 : Math.max(GOD.lit > 0.6 ? 0.9 : 0, 0.55 * sweep), 1.2, dt);
+  lit = GOD.lit;
+  if (GOD.revealed && lit > 0.6 && !GOD.extended) { GOD.extended = true; toast('三相像的镜子送来的月光照到女神身上，她亮起来，脚下的石台伸出一座桥，穿过瀑布原来的地方，一直伸到水亭。', 5200); }
+  GOD.ext = toward(GOD.ext, GOD.extended ? 1 : 0, 0.35, dt);
+  GOD.G.visible = GOD.ext > 0.01; GOD.G.scale.z = Math.max(0.001, smoothstep(0, 1, GOD.ext)); GOD.G.updateMatrixWorld(true);
   setIn(WALK, GOD.bridge, GOD.ext > 0.97);
   for (const m of GOD.rails) setIn(SOLID, m, GOD.ext > 0.97);
-  // 影桥：细桥在水面上的月影（跟着时间走），人站上半桥时（H_BR）正好从半桥的尽头接到水亭；接上以后发光，能踩
-  const q = state.caught && moonV.y > 0.05 && IRIS.a > 7 ? roofBridgeShadow(state.H) : null;
-  if (q) {
-    const a2 = SHADOWBR.mesh.geometry.attributes.position;
-    const c = q[0].clone().add(q[3]).multiplyScalar(0.5), e = q[1].clone().add(q[2]).multiplyScalar(0.5), dir = e.clone().sub(c).normalize();
-    const hw = q[0].distanceTo(q[3]) / 2, side = new V3(-dir.z, 0, dir.x);
-    const from = c.clone().addScaledVector(dir, -2).setY(PAV.top - 0.02), to = e.clone().setY(PAV.top - 0.02);
-    const pts = [from.clone().addScaledVector(side, -hw), to.clone().addScaledVector(side, -hw), to.clone().addScaledVector(side, hw), from.clone().addScaledVector(side, hw)];
-    pts.forEach((p, i) => a2.setXYZ(i, p.x, p.y, p.z)); a2.needsUpdate = true; SHADOWBR.mesh.geometry.computeBoundingSphere(); SHADOWBR.mesh.geometry.computeBoundingBox(); SHADOWBR.mesh.updateMatrixWorld(true);
-    // 接上了吗：影子的中线穿过半桥的尽头和水亭的中心
-    const endG = P(GOD.halfAz, GOD.halfR[1]), toLine = (p) => Math.abs(p.clone().sub(c).setY(0).dot(side));
-    const joined = GOD.ext > 0.97 && toLine(endG) < 0.45 && toLine(new V3(0, 0, 0)) < 0.6 && (player.zone === 'gbridge' || player.zone === 'shadowbr' || SHADOWBR.on > 0.5);
-    SHADOWBR.on = toward(SHADOWBR.on, joined ? 1 : 0, joined ? 0.7 : 1.5, dt);
-    SHADOWBR.mat.color.setRGB(lerp(0.03, 0.72, SHADOWBR.on), lerp(0.04, 0.8, SHADOWBR.on), lerp(0.07, 1.0, SHADOWBR.on));
-    SHADOWBR.mat.opacity = lerp(0.55, 0.85, SHADOWBR.on) * smoothstep(7, 9, IRIS.a);
-    SHADOWBR.mesh.visible = true;
-    if (SHADOWBR.on > 0.99 && !SHADOWBR.told) { SHADOWBR.told = true; toast('屋顶细桥的影子落在水面上，正好接上半桥的尽头，亮了起来：一座影桥，一直通到水亭。', 4600); }
-  } else { SHADOWBR.mesh.visible = false; SHADOWBR.on = toward(SHADOWBR.on, 0, 1.5, dt); }
-}
-// 瀑布上月光打到的那一块：镜子反射的月光和前后两层水帘的交点
-const FALLHOLE = { k: 0, c: new V3() };
-function updateFallHole(dt) {
-  const b = beamById.mmoon, S = MIRRORS.M; let want = 0;
-  if (state.caught && b.valid && S.center && FLOW.k > 0.02) {
-    const o = S.center, L = b.L, hits = [];
-    for (const rr of [WF.r, WF.r + 0.28]) {   // 射线和圆柱面 r = rr 的交点（从外往里进来的那一次之后的第一次穿出）
-      const A = L.x * L.x + L.z * L.z, B = 2 * (o.x * L.x + o.z * L.z), C = o.x * o.x + o.z * o.z - rr * rr, D = B * B - 4 * A * C; if (D < 0) continue;
-      const t = (-B + Math.sqrt(D)) / (2 * A); if (t <= 0) continue;
-      const p = o.clone().addScaledVector(L, t); if (inArc(azOf(p.x, p.z), [WF.a0 - 1, WF.a1 + 1]) && p.y > WF.bot && p.y < WF.top) hits.push(p);
-    }
-    if (hits.length) { FALLHOLE.c.copy(hits[0]).lerp(hits[hits.length - 1], 0.5); want = b.lit; }
-  }
-  FALLHOLE.k = toward(FALLHOLE.k, want, 3, dt);
-  fallMat.uniforms.uHole.value.set(FALLHOLE.c.x, FALLHOLE.c.y, FALLHOLE.c.z, 1.35); fallMat.uniforms.uHoleK.value = FALLHOLE.k;
 }
 
 // ────────────────────────────── 天鹅 ──────────────────────────────
@@ -3075,7 +2951,7 @@ function updateNiches(dt) {
   if (SUNN.t > 0) { const a0 = SUNN.t; SUNN.t += dt; const T = SUNN.t; SUNN.lid.rotation.x = -1.9 * smoothstep(0, 1, T); SUNN.shard.visible = T > 0.5 && T < 2.8; SUNN.shard.rotation.y += dt * 2; SUNN.shard.position.y = 0.45 + 0.4 * smoothstep(1, 2, T);
     if (a0 < 2.6 && T >= 2.6) { state.shards.sun = true; updateShardHud(); toast('你得到了一片太阳碎片（正四面体）。', 3200); } }
   MSHRINE.shard.visible = !state.shards.moon && MSHRINE.ms.k > 0.2; MSHRINE.shard.rotation.y += dt;
-  if (MSHRINE.ms.k > 0.6 && !MSHRINE.told) { MSHRINE.told = true; toast('镜子转过的一瞬，反射的月光落在远处三层北边的一面墙上，那里的墙透开了，是一个小龛。', 4800); }
+  if (MSHRINE.ms.k > 0.6 && !MSHRINE.told) { MSHRINE.told = true; toast('镜子转过的一瞬，反射的月光落在远处 L2 北边的一面墙上，那里的墙透开了，是一个小龛。', 4800); }
 }
 function updateShardHud() { const n = Object.values(state.shards).filter(Boolean).length; $('shardHud').textContent = n ? `灰盒 v0.6 · 神龛 ${n}/3` : '灰盒 v0.6'; }
 
@@ -3088,7 +2964,7 @@ const INTERACTS = [
   { p: () => SWAN.c, y: [F[3] - 0.2, F[3] + 2], r: 2.2, label: () => (state.caught ? '转动天鹅的底座' : '转动女神像的底座'), act: () => { SWAN.k = (SWAN.k + 1) % 8; } },
   { p: () => P(SWAN.az, R_IN - 0.35), y: [F[3] - 0.2, F[3] + 2], r: 0.9, label: () => '看看浮雕', act: () => toast('浮雕上刻着一群天鹅，中间空着一只的位置，描着金边。下面刻着一行字：湖上七只天鹅，第七只只在月光里回来。', 5200) },
   { p: () => P(RELIEF.az, R_IN - 0.35), y: [F[1] - 0.2, F[1] + 2], r: 0.9, when: () => !IRISREL.done, label: () => '看看浮雕', act: () => toast('伊莉丝的浮雕：刻着一整圈虹，圈中间空着一个人形，描着金边。背对太阳站进光里，让自己影子的头落进那个人形。', 5600) },
-  { p: () => IRISREL.nichePos, y: [SILL.y - 0.3, SILL.y + 1.9], r: 1.5, when: () => !RB.nicheOpen && SILL.k > 0.98, label: () => '打开虹之龛', act: () => { RB.nicheOpen = true; RB.niche = 0.001; } },
+  { p: () => IRISREL.nichePos, y: [SILL.y - 0.3, SILL.y + 1.9], r: 1.5, when: () => !RB.nicheOpen, label: () => '打开虹之龛', act: () => { RB.nicheOpen = true; RB.niche = 0.001; } },
   { p: () => PRISM.ip, y: [SILL.y - 0.3, SILL.y + 1.9], r: 1.3, when: () => RB.ext >= 1, label: () => '转动棱镜的转台', act: () => { RB.slot = (RB.slot + 1) % PRISM.slots.length; } },
   { p: () => SELENE.ip, y: [SELENE.floorY - 0.3, SELENE.floorY + 1.9], r: 1.6, label: () => '看看浮雕', act: () => { if (SELENE.on) openTalk(true); else toast('月神塞勒涅的浮雕。她的眼睛是青金石镶的——七色之中，她只认第六色。', 4800); } },
   { p: () => TWN.path.niche, y: [F[1] - 0.2, F[1] + 2], r: 2.2, when: () => TWN.state === 'niche' && TWN.ms.k > 0.6, label: () => '把龛里的像拉出来', act: () => { TWN.state = 'pulling'; TWN.t = 0; toast('你把他从龛里拉了出来。站到他逆时针那一侧，顺着回廊一路推回卡斯托耳身边去（西边那一尊）。往回走，月亮也跟着倒回去。', 5200); } },
@@ -3111,7 +2987,6 @@ function interact() { const it = nearestInteract(); if (it) it.act(); }
 
 // ────────────────────────────── 相机 ──────────────────────────────
 const camTarget = new V3(), camF = new V3();
-let camTun = 0; const CAM_PROBE = [[0, 0], [0.22, 0], [-0.22, 0], [0, 0.2], [0, -0.2]];
 const avatar = new THREE.Group();
 {
   const prof = [[0, 0], [0.33, 0], [0.31, 0.35], [0.24, 0.95], [0.18, 1.3], [0.12, 1.4], [0, 1.43]].map(([x, y]) => new THREE.Vector2(x, y));
@@ -3133,20 +3008,11 @@ function updateCamera(dt) {
   camF.set(Math.sin(player.yaw * DEG) * Math.cos(player.pitch), -Math.sin(player.pitch), -Math.cos(player.yaw * DEG) * Math.cos(player.pitch));
   if (player.mode === 'first') { camera.position.set(p.x, p.y + 1.62, p.z); camera.lookAt(camera.position.clone().add(camF)); showAvatar(false); }
   else {
-    // 墙里的楼梯只有 1 m 宽：进去以后镜头不再偏肩，瞄点收到楼梯中线上，拉近到 2.6 m 以内，
-    // 五条射线（中间一条、左右上下各一条）一起往后探，碰到墙、台阶、顶就往前收，镜头不会穿进墙里
-    const r0 = rOf(p), inWall = player.zone.startsWith('tun:') || (r0 > R_IN - 0.15 && r0 < R_OUT);
-    camTun = toward(camTun, inWall ? 1 : 0, 3, dt);
-    const sh = 0.55 * (1 - camTun), right = new V3(Math.cos(player.yaw * DEG), 0, Math.sin(player.yaw * DEG));
-    camTarget.set(p.x + right.x * sh, p.y + 1.5 - 0.08 * camTun, p.z + right.z * sh);
-    if (inWall && r0 > 1) { const rr = lerp(r0, clamp(r0, TUN_R0 + 0.32, TUN_R1 - 0.32), camTun); camTarget.x *= rr / r0; camTarget.z *= rr / r0; }
-    const back = camF.clone().negate(), far = lerp(player.dist, Math.min(player.dist, 2.6), camTun);
-    let d = far;
-    for (const [ox, oy] of camTun > 0.01 ? CAM_PROBE : [[0, 0]]) {
-      rc.set(camTarget.clone().addScaledVector(right, ox * camTun).add(new V3(0, oy * camTun, 0)), back); rc.near = 0; rc.far = far;
-      const h = firstHit(nearCam); if (h) d = Math.min(d, h.distance - 0.3 - 0.08 * camTun);
-    }
-    d = Math.max(lerp(0.45, 0.18, camTun), d);
+    camTarget.set(p.x + Math.cos(player.yaw * DEG) * 0.55, p.y + 1.5, p.z + Math.sin(player.yaw * DEG) * 0.55);
+    const back = camF.clone().negate();
+    rc.set(camTarget, back); rc.near = 0; rc.far = player.dist;
+    const h = firstHit(nearCam);
+    const d = h ? Math.max(0.45, h.distance - 0.3) : player.dist;
     camera.position.copy(camTarget).addScaledVector(back, d); camera.lookAt(camTarget);
     showAvatar(d > 0.9);
   }
@@ -3211,10 +3077,7 @@ const postMat = new THREE.ShaderMaterial({
       float inA = smoothstep(uFall.x - 1.5, uFall.x + 1.0, az) * (1.0 - smoothstep(uFall.y - 1.0, uFall.y + 1.5, az));
       float front = (1.0 - smoothstep(0.0, 1.4, uFall.z - r)) * step(r, uFall.z + 0.4);
       float foot = (1.0 - smoothstep(0.0, 3.2, uFall.z - r)) * (1.0 - smoothstep(0.5, 4.5, p.y)) * step(-0.8, p.y);
-      // 瀑布脚下的水沫顺着水面往北飘，一直飘到 b1 光路的光脚：从水闸往回走（背对太阳）时，光脚上立着一段虹
-      float dA = smoothstep(uFall.x - 30.0, uFall.x - 20.0, az) * (1.0 - smoothstep(uFall.x - 1.0, uFall.x + 2.0, az));
-      float drift = dA * smoothstep(8.0, 9.5, r) * (1.0 - smoothstep(12.0, 13.0, r)) * (1.0 - smoothstep(1.5, 4.0, p.y)) * step(-0.6, p.y);
-      return uFall.w * (inA * (0.55 * front + 1.2 * foot) + 0.7 * drift);
+      return inA * uFall.w * (0.55 * front + 1.2 * foot);
     }
     float mistAt(vec3 p){
       float r = length(p.xz), m = 0.0;
@@ -3338,16 +3201,13 @@ function sprayCloud(N, color, size) {
 const fallCloud = sprayCloud(260, 0xb8c0c2, 0.22), gateCloud = sprayCloud(140, 0xd8dcdc, 0.07), straitCloud = sprayCloud(220, 0xc8d0d4, 0.5), relCloud = sprayCloud(90, 0xd0d8dc, 0.06);
 // 瀑布的水帘：一张随时间流动的半透明面
 const fallMat = new THREE.ShaderMaterial({
-  transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 }, uLight: { value: 1 }, uFlow: { value: 0 }, uHole: { value: new THREE.Vector4(0, -99, 0, 1) }, uHoleK: { value: 0 } },
-  vertexShader: `varying vec2 vU; varying vec3 vW; void main(){ vU = uv; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-  fragmentShader: `uniform float uTime; uniform float uLight; uniform float uFlow; uniform vec4 uHole; uniform float uHoleK; varying vec2 vU; varying vec3 vW;
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 }, uLight: { value: 1 }, uFlow: { value: 0 } },
+  vertexShader: `varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform float uTime; uniform float uLight; uniform float uFlow; varying vec2 vU;
     float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main(){ float x = floor(vU.x * 60.0); float s = fract(vU.y * 3.0 + uTime * (1.4 + 0.6 * h(vec2(x, 1.0))) + h(vec2(x, 2.0)));
       float a = (0.28 + 0.4 * smoothstep(0.6, 1.0, s)) * (0.6 + 0.4 * h(vec2(x, 3.0)));
-      // 月光打到的那一块水帘透开：中间几乎全透，边上一圈被月光照亮的水
-      float hd = length(vW - uHole.xyz) / uHole.w, hole = uHoleK * (1.0 - smoothstep(0.55, 1.0, hd)), rimK = uHoleK * smoothstep(0.5, 0.85, hd) * (1.0 - smoothstep(0.85, 1.25, hd));
-      vec3 col = vec3(0.82, 0.88, 0.9) * uLight + vec3(0.5, 0.6, 0.9) * rimK * 0.8;
-      gl_FragColor = vec4(col, a * uFlow * (1.0 - 0.95 * hole) + 0.25 * rimK * uFlow); }`,
+      if (vU.y > 1.0 - 0.0 && false) discard; gl_FragColor = vec4(vec3(0.82, 0.88, 0.9) * uLight, a * uFlow); }`,
 });
 let fallMesh;
 {
@@ -3361,8 +3221,6 @@ let fallMesh;
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   fallMesh = new THREE.Mesh(g, fallMat); fallMesh.renderOrder = 2; fallMesh.visible = false; world.add(fallMesh);
 }
-// 整根水柱只挡镜头（水流着的时候才放进 CAMB）：从外面拉镜头不会穿进水里；人在水后面的石沿上时射线从里面出来，不挡
-const FALLCAM = proxy(sector(WF.r - 0.05, WF.r2, WF.bot, WF.top, WF.a0 - 0.3, WF.a1 + 0.3), '');
 
 
 // ────────────────────────────── HUD ──────────────────────────────
@@ -3606,7 +3464,7 @@ if (!window.__noLoop) requestAnimationFrame(frame);
 
 // ────────────────────────────── 调试接口（测试脚本用） ──────────────────────────────
 window.__dysis = {
-  THREE, state, player, P, azOf, rOf, WIN, ZD, ZN, SHADOWBR, FALLHOLE, H_END, roofBridgeShadow, PAV, ISLE_T, isleTime, TUNNELS, BEAMS, beamById, MOONSTONES, MIRRORS, SWAN, TWN, TWINS, MPLAN, MNIGHT, CROSS, HARP, RELIEF, IRISREL, SLIDER, LEVERS, MIST, FLOW, GOD, NYMPH, GODW, MSHRINE, RB, BRIDGE, SILL, PRISM, SELENE, SLUICE, RBRIDGE, MOONBR, MOONBRIDGE, MREL, MOONREL, PARA_GAPS, SLAB_CUTS, COLUMNS, COL_SKIPPED, OPENINGS, CROWN, PIECES, IRIS, IRIS_BLADES, crown, H_I, H_OC, H_TOP, H_X, H_H0, H_H1, H_3X, H_TW, H_SW, H_BR, H_G, H_J, H_L3A, AZ_OC, J_AZ, JR, LAND, UP_TOP, T_AZ, TOP_Y, SUNN, ARCH, ARM_TOP, CATCH, DN, SEAM, SEALS, TUNWIN, LEDGE, SLUICE_PLAT, SLUICE_Y, WF, WFBACK, G_AZ, RBR, PARA_OPEN, DN_LAND, nightAperture, TS, TR, TERR_EDGE_N, ISLAND, SEA, PERI, PORCH,
+  THREE, state, player, P, azOf, rOf, WIN, ZD, ZN, TUNNELS, BEAMS, beamById, MOONSTONES, MIRRORS, SWAN, TWN, TWINS, MPLAN, MNIGHT, CROSS, HARP, RELIEF, IRISREL, SLIDER, LEVERS, MIST, FLOW, GOD, NYMPH, GODW, MSHRINE, RB, BRIDGE, SILL, PRISM, SELENE, SLUICE, RBRIDGE, MOONBR, MOONBRIDGE, MREL, MOONREL, PARA_GAPS, SLAB_CUTS, COLUMNS, COL_SKIPPED, OPENINGS, CROWN, PIECES, IRIS, IRIS_BLADES, crown, H_I, H_OC, H_TOP, H_X, H_H0, H_H1, H_3X, H_TW, H_SW, H_BR, H_G, H_J, H_L3A, AZ_OC, J_AZ, JR, LAND, UP_TOP, T_AZ, TOP_Y, SUNN, ARCH, ARM_TOP, CATCH, DN, SEAM, SEALS, TUNWIN, LEDGE, SLUICE_PLAT, SLUICE_Y, WF, WFBACK, G_AZ, RBR, PARA_OPEN, DN_LAND, nightAperture, TS, TR, TERR_EDGE_N, ISLAND, SEA, PERI, PORCH,
   prismOut, spectrumHit, F1: F[1], F2: F[2], F3: F[3], LIGHT, WALK, SOLID, rc, _cwb: computeWindowBeam, _occFor: occFor, castLight, SBVH, _cmb: computeMirrorBeam, _cob: computeOculusBeam, rcSun, sunV, sunDir, get nearSolid() { return nearSolid; }, insidePrism, moonDir, shadowY, timeAt, zoneOf, tick, render, setTime, computeBeams, beamIsWalkable, moonstoneLitFrac, refreshNear, probe, jump, interact, catchLight, placeApple, respawn, keys, camera, scene, renderer, start, toggleSluice, pullLever, nearestInteract,
   go(az, r, y, yaw) { const p = P(az, r, y); player.pos.copy(p); player.vy = 0; player.grounded = true; player.carry = null; if (yaw != null) player.yaw = yaw; refreshNear(); const h = probe(p.x, p.y + 0.4, p.z, 3); if (h) { player.pos.y = h.point.y; player.ground = h.object; player.zone = zoneOf(h.object, player.pos) || player.zone; } return { ground: h ? (h.object.userData.zone || (h.object.userData.beam && 'beam:' + h.object.userData.beam.id)) : null, y: player.pos.y }; },
   step(n = 1, dt = 1 / 30) { for (let i = 0; i < n; i++) tick(dt); },
