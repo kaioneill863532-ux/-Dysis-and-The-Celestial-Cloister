@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>日落回廊</title>
-<meta name="description" content="狄西斯的日落回廊 v0.12 灰盒：从海上的小岛沿光登入神殿，白天顺时针一层层往上，在屋顶用金苹果接住最后一缕阳光；入夜后追着月光一层层往下，走过影桥，把金苹果放上水亭的浑天仪。">
+<meta name="description" content="狄西斯的日落回廊 v0.11 灰盒：从海上的小岛沿光登入神殿，白天顺时针一层层往上，在屋顶用金苹果接住最后一缕阳光；入夜后追着月光一层层往下，走过影桥，把金苹果放上水亭的浑天仪。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
@@ -104,7 +104,7 @@
 <canvas id="c" tabindex="0" aria-label="游戏画面"></canvas>
 
 <div class="hud" id="hud" hidden>
-  <div id="lvl"><span id="lvlName">序 · 登殿</span><small id="shardHud">灰盒 v0.12</small></div>
+  <div id="lvl"><span id="lvlName">序 · 登殿</span><small id="shardHud">灰盒 v0.11</small></div>
   <div id="dial" aria-live="off">
     <svg id="dialSvg" viewBox="0 0 212 92" aria-hidden="true"></svg>
     <div class="row"><span><span id="rBody">太阳</span>高度 <b id="rAlt">—</b></span><span>方位 <b id="rAz">—</b></span></div>
@@ -139,7 +139,7 @@
 
 <section class="card" id="intro">
   <div class="inner">
-    <div class="eyebrow">灰盒 v0.12 · 日月十关</div>
+    <div class="eyebrow">灰盒 v0.11 · 日月十关</div>
     <h1>狄西斯的日落回廊<span class="en">DYSIS AND THE CELESTIAL CLOISTER</span></h1>
     <p class="lede">从海上的小岛沿着光登入神殿。白天顺时针一层层往上，日落时在屋顶用金苹果接住最后一缕阳光；入夜后追着月光一层层往下，把金苹果放上水亭中心的浑天仪。</p>
     <h2>白天</h2>
@@ -773,7 +773,7 @@ const H_B1TOP = 24.6;
 // 日2：L1 → L2。两扇窗离得远：西墙 250° 的窗（上升）把光送到 L1 北边的回廊深处；南墙 171° 的窗（虹）把光送到 L1 东北的墙根，照着伊莉丝浮雕。
 // 两扇窗外各有一块石板，用两个机关远程联动：开局左窗关、右窗开；机关 A 打开上升的窗、关上虹的窗；机关 B 复原。
 WIN.b2 = { az: 250, y0: F[2] + 3.8, h: 2.2, w: 1.8, axisH: 29, name: '日2 上升的窗（L2 西）' };
-WIN.iris = { az: 166, y0: F[2] + 3.0, h: 2.2, w: 1.8, axisH: 31, name: '日2 虹的窗（L2 南）' };   // 和三层别的窗（上升的西窗）一样大的拱窗子的位置
+WIN.iris = { az: 166, y0: F[2] + 3.0, h: 4.0, w: 4.0, axisH: 31, name: '日2 虹的窗（L2 南）' };   // 窗开大：浮雕前能站的亮处够大，人好找影子的位置
 const H_B2TOP = 29.6;
 {
   WIN.b2.H = 29.0; const f = footOn(WIN.b2, WIN.b2.H, F[1]); WIN.b2.footAz = f.az; WIN.b2.footR = f.r;
@@ -852,11 +852,11 @@ const CROSS = { T: P(LEDGE.az, LEDGE.r0 + 0.35, LEDGE.y + 0.3) };
 const H_M = H_H0 + 1.0;
 const MPLAN = aimMirror(M_DEF, M_TOP, sunDir(H_M).negate(), CROSS.T, M_DEF.mirrorY, true);
 CROSS.Mc = MPLAN.low;
-// 照醒三相像的小窗 C：从镜心朝着镜光那一刻（H_M）的太阳看，穿过内墙的那一点。刚路过三相像时（H_X）西窗的石板挡着它，镜子是暗的
+// 照醒三相像的小窗 C：从镜心朝着 H_X 时刻的太阳看，穿过内墙的那一点；窗的大小正好让整面镜子被照着
 {
-  const s = sunDir(H_M), c = MPLAN.center.clone(); let p = c.clone();
+  const s = sunDir(H_X), c = MPLAN.center.clone(); let p = c.clone();
   for (let t = 0; t < 25; t += 0.01) { p = c.clone().addScaledVector(s, t); if (rOf(p) >= R_IN) break; }
-  WIN.c = { az: azOf(p.x, p.z), y0: p.y - 1.1, h: 2.2, w: 1.8, axisH: H_M, walk: false, name: '日3 照醒三相像的小窗 C（L2 层）' };   // 和三层别的窗一样大的拱窗
+  WIN.c = { az: azOf(p.x, p.z), y0: p.y - 1.2, h: 2.4, w: 2.8, axisH: H_X, walk: false, name: '日3 照醒三相像的小窗 C（L2 层）' };
 }
 
 // 光阶在 L3 的断口：第一、二束的光在窗下越过 L3 回廊的那一段地板拿掉；第三束越过的地方有地板
@@ -994,25 +994,12 @@ function prepTunnels() {   // 楼梯的方位在关卡布置里定下来以后�
   for (const T of TUNNELS) {
     T.dir = Math.sign(T.aBot - T.aTop);
     const span = Math.abs(T.aBot - T.aTop), l0 = TUN_LAND, l1 = TUN_LAND;
-    const steps = Math.max(4, Math.round((T.yTop - T.yBot) / 0.28)), rise = (T.yTop - T.yBot) / steps;
-    const sOf = (az) => (az - T.aTop) * T.dir;
-    // 踏面的走向：两头各一段平台，中间一路往下。从窗的上方经过时，那一段踏面要高过窗的整个半圆拱（再留一级台阶），过了窗再走陡一点
-    const pts = [[l0, T.yTop], [span - l1, T.yBot]];
-    const yLin = (x) => { for (let i = 0; i < pts.length - 1; i++) { const [s0, y0] = pts[i], [s1, y1] = pts[i + 1]; if (x <= s1) return x <= s0 ? y0 : lerp(y0, y1, (x - s0) / (s1 - s0)); } return pts[pts.length - 1][1]; };
-    for (const o of OPENINGS) {
-      if (o.kind !== 'main') continue;
-      const sa = sOf(Math.min(o.a0, o.b0)), sb = sOf(Math.max(o.a1, o.b1)), sDown = Math.max(sa, sb), sUp = Math.min(sa, sb);
-      if (sDown < l0 || sUp > span - l1) continue;
-      const top = o.archTop ?? o.y1, need = top + 0.15 + rise;
-      if (o.y0 > yLin(sDown) || need > T.yTop || need <= yLin(sDown)) continue;
-      pts.push([sDown, need]); pts.sort((p, q) => p[0] - q[0]);
-      for (let i = pts.length - 2; i >= 0; i--) pts[i][1] = Math.max(pts[i][1], pts[i + 1][1]);
-    }
-    T.floorAt = (az) => {   // 楼梯某方位的踏面高度（一级 rise 高）
-      const s = sOf(az);
+    T.floorAt = (az) => {   // 楼梯某方位的踏面高度
+      const s = (az - T.aTop) * T.dir;
       if (s <= l0) return T.yTop;
       if (s >= span - l1) return T.yBot;
-      return T.yTop - rise * Math.ceil((T.yTop - yLin(s)) / rise - 1e-6);
+      const k = (s - l0) / (span - l0 - l1), steps = Math.max(4, Math.round((T.yTop - T.yBot) / 0.28));
+      return T.yTop - (T.yTop - T.yBot) * Math.ceil(k * steps - 1e-6) / steps;
     };
     T.lo = Math.min(T.aTop, T.aBot); T.hi = Math.max(T.aTop, T.aBot);
     T.topDoor = T.aTop + T.dir * l0 / 2;
@@ -1045,12 +1032,7 @@ function prepTunnels() {   // 楼梯的方位在关卡布置里定下来以后�
       let minF = 1e9; for (let a = Math.max(lo, T.lo); a <= Math.min(hi, T.hi) + 1e-6; a += 0.25) minF = Math.min(minF, T.floorAt(a));
       if (minF > 1e8 || o.y0 > minF) continue;
       const cap = minF - 0.12;
-      // 放得下整个半圆拱：窗台不动，方洞部分变矮，整个拱落到踏面以下（光的取样也只取方洞部分）；放不下才把拱顶压平
-      if (o.head && o.head.y1 > cap) {
-        const R = o.head.y1 - o.head.y0, y1 = cap - R;
-        if (y1 >= o.y0 + 0.8) { o.y1 = y1; o.head.y0 = y1; o.head.y1 = cap; o.archTop = cap; if (WIN[o.id] && WIN[o.id].open === o) WIN[o.id].h = y1 - WIN[o.id].y0; }
-        else { o.head.y1 = cap; o.archTop = cap; if (o.head.y1 - o.head.y0 < 0.06) { OPENINGS.splice(OPENINGS.indexOf(o.head), 1); o.head = null; o.archTop = o.y1; } }
-      }
+      if (o.head) { o.head.y1 = Math.min(o.head.y1, cap); o.archTop = o.head.y1; if (o.head.y1 - o.head.y0 < 0.06) { OPENINGS.splice(OPENINGS.indexOf(o.head), 1); o.head = null; o.archTop = o.y1; } }
       o.underTunnel = (o.underTunnel || []).concat([{ T, top: o.head ? o.head.y1 : o.y1 }]);
       wins.push({ lo, hi, top: o.archTop ?? o.y1 });
     }
@@ -2107,7 +2089,7 @@ const SILL = { az: WIN.iris.az, a0: WIN.iris.open.a0 - 3.2, a1: WIN.iris.open.a1
 const BRIDGE = { W: 1.6, bump: 1.2, N: 90 };
 {
   BRIDGE.A = P(RELIEF.az + 5.5, R_IN - 1.1, F[1]);
-  BRIDGE.B = P(SILL.az, R_IN - 0.3, SILL.y);   // 落在窗前探出来的石沿上，再迈一步就进了窗洞
+  BRIDGE.B = P(SILL.az, R_IN + 0.45, SILL.y);   // 落在窗洞里
   BRIDGE.yAt = (t) => lerp(F[1], SILL.y, t) + BRIDGE.bump * Math.sin(Math.PI * t);
   const { A, B, W } = BRIDGE, ax = new V3(B.x - A.x, 0, B.z - A.z), len = ax.length(); ax.normalize();
   const side = new V3(-ax.z, 0, ax.x);
