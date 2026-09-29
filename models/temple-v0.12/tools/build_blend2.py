@@ -3,7 +3,7 @@
 # 其余构件用灰盒导出的几何：顶点焊接、三角面并成四边面，按构件拆成单独物体（每根柱子、每层楼板、每一级屋顶踏步……），轴心放在构件底部。
 # 然后量数值、存 .blend、导出给 UE 的 FBX、导回来复核、写 UE 脚本要用的期望值。
 # 运行：python3 build_blend2.py <temple.glb> <data.json> <输出目录>
-import bpy, bmesh, json, math, sys, os
+import bpy, bmesh, json, math, sys, os, re
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 
@@ -230,7 +230,7 @@ MECH_COL = [('Slider', '日2 推拉石板'), ('LeverA', '日2 拉杆'), ('LeverB
             ('SunNiche', '日3 日之龛'), ('Sill', '虹 窗台石沿和虹之龛'), ('Prism', '虹 棱镜'), ('Selene', '虹 塞勒涅浮雕'), ('RainbowBridge', '虹 虹桥（光）'),
             ('Swan', '月2 天鹅'), ('MoonRelief', '月3 月亮浮雕'), ('StairSeal', '墙里楼梯 下门石板'), ('StairWindows', '墙里楼梯 外窗石块'),
             ('Twins', '月4 双子'), ('MoonBridge', '月4 月桥'), ('Goddess', '月5 女神'), ('HalfBridge', '月5 半桥'), ('MoonShrine', '月之龛'),
-            ('Sluice', '水闸石台矮栏'), ('RoofBridgeDoor', '屋顶 桥门'), ('Armillary', '浑天仪'), ('IrisBlades', '屋顶 光圈叶片'), ('Water', '水面 瀑布 海')]
+            ('Sluice', '水闸石台矮栏'), ('RoofBridgeDoor', '屋顶 桥门'), ('RoofSteps', '屋顶 升降踏步'), ('RainbowArch', '屋顶 虹门（在最高一级上）'), ('Armillary', '浑天仪'), ('IrisBlades', '屋顶 光圈叶片'), ('Water', '水面 瀑布 海')]
 MECH_TITLE = dict(MECH_COL)
 PART_CN = {'Panel_b2': '石板（上升的窗 b2）', 'Panel_iris': '石板（虹的窗 iris）', 'Rail_b2': '滑轨（b2）', 'Rail_iris': '滑轨（iris）', 'Arm': '杆', 'Base': '底座',
            'Chain': '铜链', 'Relief': '浮雕', 'CarvedBow': '刻着的虹', 'Lip': '铜唇（水帘）', 'Ledge': '窗下石沿', 'Niche': '虹之龛', 'NicheDoorL': '龛门（左）',
@@ -239,6 +239,14 @@ PART_CN = {'Panel_b2': '石板（上升的窗 b2）', 'Panel_iris': '石板（�
            'Door': '石门', 'Disk': '银月亮', 'Block': '月石（会隐去的那块墙）', 'WallBlock': '厚墙正面的月石', 'ThickWall': '厚墙和龛', 'Castor': '卡斯托耳',
            'Pollux': '波吕丢刻斯', 'Deck': '桥面', 'Leaf': '门扇', 'Top': '屋顶接光台', 'Pavilion': '水亭', 'Pool': '水庭水面', 'Waterfall': '瀑布水帘',
            'Sea': '海面', 'Light': '虹桥', 'Rail': '矮栏'}
+def part_cn(mech, part):
+    m = re.match(r'(Up|Dn)(\d\d)(_Shaft|_Curb)?$', part)
+    if mech in ('RoofSteps', 'IrisBlades') and m:
+        n = f"{'上行' if m.group(1) == 'Up' else '下行'}第 {int(m.group(2))} 级"
+        return n + {None: ('踏面' if mech == 'RoofSteps' else '的光圈叶片'), '_Shaft': '的柱身', '_Curb': '的铜沿'}[m.group(3)]
+    if mech == 'RoofSteps' and part == 'TopBar': return '最高一级尽头的铜栏杆'
+    if mech == 'RainbowArch': return '虹门、水盆、接光台的台子'
+    return PART_CN.get(part, part.replace('_', ' '))
 mech_inst = []; mech_dev = 0.0; mech_parent = {}; mech_info = {}; made['Mech'] = []
 for cat in sorted(c for c in bycat if c.startswith('Mech~')):
     objs = bycat[cat]; o0 = objs[0]
@@ -249,9 +257,9 @@ for cat in sorted(c for c in bycat if c.startswith('Mech~')):
     kind = sub['kind'] or f"{sub['mech']}_{sub['part']}"
     mech_dev = max(mech_dev, localize_share(ob, base, th, kind, 'SM_Kit_Mech_'))
     ob.name = f"SM_Mech_{sub['mech']}_{sub['part']}"
-    ob['所属机关'] = MECH_TITLE.get(sub['mech'], sub['mech']); ob['部件'] = PART_CN.get(sub['part'], sub['part'].replace('_', ' '))
+    ob['所属机关'] = MECH_TITLE.get(sub['mech'], sub['mech']); ob['部件'] = part_cn(sub['mech'], sub['part'])
     ob['怎么动'] = sub['motion'] or ''
-    if sub['parent']: mech_parent[ob.name] = f"SM_Mech_{sub['mech']}_{sub['parent']}"
+    if sub['parent']: mech_parent[ob.name] = 'SM_Mech_' + (sub['parent'].replace('/', '_') if '/' in sub['parent'] else f"{sub['mech']}_{sub['parent']}")   # 'RoofSteps/Up16'：挂到别的机关的部件下
     mech_info[ob.name] = {'mech': sub['mech'], 'part': sub['part'], 'motion': sub['motion'] or '', 'nocol': bool(sub['nocol'])}
     mech_inst.append(ob); made['Mech'].append(ob)
 bpy.context.view_layer.update()
@@ -270,7 +278,6 @@ for cat in sorted(c for c in bycat if c == 'RoofRing' or c.startswith('RoofRing-
     roof += take(cat, single=lab)
 made['RoofRing'] = roof
 made['RoofBridge'] = take('RoofBridge', single='RoofBridge')
-made['RoofArch'] = take('RoofArch', single='RainbowArch')
 # 灰盒的墙、窗拱、墙中楼梯不要了，下面重新建
 for cat in ('Wall', 'WindowArches', 'WallStairs'):
     for o in bycat.get(cat, []): bpy.data.objects.remove(o)
@@ -402,8 +409,8 @@ for key, title in (('FacadeArch', '05a 盲拱（每间一个）'), ('FacadePil',
 colf('MechRoot', '11 机关与道具'); colf('Markers', '99 方位标记（核对用，可删）')
 for i, title in enumerate(dict.fromkeys(t for _, t in MECH_COL)):
     c = bpy.data.collections.new(f'11.{i + 1:02d} {title}'); cols['MechRoot'].children.link(c); cols['Mech:' + title] = c
-colf('Site', '06 场地·台基·柱廊·门廊·小岛'); colf('Pavilion', '07 水亭'); colf('RoofRing', '08 屋顶环道（每一块单独，升降用）')
-colf('RoofBridge', '09 屋顶细桥'); colf('RoofArch', '10 虹门')
+colf('Site', '06 场地·台基·柱廊·门廊·小岛'); colf('Pavilion', '07 水亭'); colf('RoofRing', '08 屋顶环道（不动的部分）')
+colf('RoofBridge', '09 屋顶细桥')
 wall = ring_wall(); cols['Wall'].objects.link(wall)
 cuts = []
 byid = {o['id']: o for o in D['wallCuts']}
@@ -543,11 +550,11 @@ for t in D['tunnels']:
 # 屋顶
 cr = D['crown']
 check('屋顶环道', '环道面 @60°（固定段）', dm['RING_Y'], down(P(60, 13.2, 40)))
-check('屋顶环道', '最高平台 @T_AZ', cr['TOP_Y'], down(P(cr['T_AZ'], 11.8, 45)))
+check('屋顶环道', '最高平台 @T_AZ（最高一级踏面）', cr['TOP_Y'], down(P(cr['T_AZ'], 11.8, 45), FULL))
 w_up = ((cr['UP_TOP'][0] - cr['LAND'][1]) % 360) / 15
 for k in (1, 5, 10, 15):
     a = cr['LAND'][1] + (k - 0.5) * w_up
-    check('屋顶环道', f'上行第 {k} 级 @{a % 360:.1f}°', dm['RING_Y'] + k * cr['dz'], down(P(a, 13.2, 45)))
+    check('屋顶环道', f'上行第 {k} 级 @{a % 360:.1f}°', dm['RING_Y'] + k * cr['dz'], down(P(a, 13.2, 45), FULL))
 rb = D['rbridge']; bm_ = (P(rb['S']['az'], rb['S']['r'], 33) + P(rb['E']['az'], rb['E']['r'], 33)) / 2
 check('屋顶细桥', '桥面 @桥中', rb['y1'], down(bm_), 0.02)
 for o in marks:
@@ -619,6 +626,35 @@ top_probe('SM_Mech_Swan_Plinth', '天鹅女神像的台面（四层地面 + 0.5�
 top_probe('SM_Mech_Goddess_Plinth', '女神的矮台面（和水闸石台一样高）', Dg['top'], P(Dg['az'], Dg['r']), (1.0, 0.9, 0.8, 1.1))
 top_probe('SM_Mech_Sill_Ledge', '南窗下的石沿（伸出来时）', D['sill']['y'], P(D['sill']['a0'] + 1.0, D['sill']['r0'] + 0.25), (0.0, 0.2))
 top_probe('SM_Mech_HalfBridge_Deck', '半桥根部桥面（伸出来时，离池沿 0.3 m，和池沿差不多高 0）', 0.0, P(D['halfBridge']['g'], D['dims']['R_POOL'] + 0.35 - 0.3), (0.0,), 0.03)
+# 屋顶升降踏步：上行 16 级踏面高度（升起以后）、柱身顶接着踏面底；下行 16 级白天都在环道面
+def own_top(ob, pt):
+    me = world_mesh(ob); t = BVHTree.FromPolygons([v.co.copy() for v in me.vertices], [q.vertices[:] for q in me.polygons]); bpy.data.meshes.remove(me)
+    h = t.ray_cast(Vector((pt.x, pt.y, 60)), Vector((0, 0, -1)), 80); return h[0].z if h[0] else None
+def zr(ob):
+    me = world_mesh(ob); zs = [v.co.z for v in me.vertices]; bpy.data.meshes.remove(me); return min(zs), max(zs)
+up_ok = gap_ok = dn_ok = 0; rm_ = (dm['IRIS_R'] + dm['CROWN_R1']) / 2
+for k in range(1, 17):
+    t = OB.get(f'SM_Mech_RoofSteps_Up{k:02d}'); sh = OB.get(f'SM_Mech_RoofSteps_Up{k:02d}_Shaft')
+    if t is None or sh is None: continue
+    L = t.matrix_world.translation; exp = dm['RING_Y'] + k * cr['dz']
+    z = own_top(t, L)
+    if z is not None and abs(z - exp) < 0.01: up_ok += 1
+    if abs(zr(sh)[1] - zr(t)[0]) < 0.005 and abs(zr(sh)[0] - dm['CEIL']) < 0.005: gap_ok += 1
+    hf = FULL.ray_cast(Vector((L.x, L.y, exp + 0.3)), Vector((0, 0, -1)), 1.0)
+    if hf[0] is not None and z is not None and abs(hf[0].z - z) < 1e-4:
+        probes.append({'g': '屋顶升降踏步', 'item': f'上行第 {k} 级踏面', 'E': round(L.x, 4), 'N': round(L.y, 4), 'U': round(exp + 0.3, 4), 'dir': -1, 'maxd': 1.0, 'expect': round(exp, 4), 'tol': 0.01})
+rows.append(('屋顶升降踏步', f'上行 16 级踏面高度 = {dm["RING_Y"]} + k × {cr["dz"]}（升起以后）', 16, up_ok, up_ok == 16))
+rows.append(('屋顶升降踏步', f'上行 16 级的柱身从天花 {dm["CEIL"]} 一直接到踏面底（没有缝）', 16, gap_ok, gap_ok == 16))
+for k in range(1, 17):
+    t = OB.get(f'SM_Mech_RoofSteps_Dn{k:02d}')
+    if t is None: continue
+    L = t.matrix_world.translation; a = math.atan2(L.x, L.y)
+    zs = [own_top(t, Vector((r * math.sin(a), r * math.cos(a), 0))) for r in (13.2, 11.6, 14.2)]   # 跨接缝的几级只有内侧半块
+    z = next((z for z in zs if z is not None), None)
+    if z is not None and abs(z - dm['RING_Y']) < 0.01: dn_ok += 1
+rows.append(('屋顶升降踏步', f'下行 16 级白天都在环道面 {dm["RING_Y"]}', 16, dn_ok, dn_ok == 16))
+kids = [o for o in OB if o.name.startswith('SM_Mech_') and o.parent and o.parent.name == 'SM_Mech_RoofSteps_Up16']
+rows.append(('屋顶升降踏步', '最高一级上挂着虹门、浑天仪、铜栏杆、铜沿、光圈叶片', 5, len(kids), len(kids) == 5))
 # 网格干不干净：每个物体的面数、四边面比例
 stats = []
 for ob in build + mech_inst:
