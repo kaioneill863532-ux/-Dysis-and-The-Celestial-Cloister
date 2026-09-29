@@ -6,7 +6,8 @@
 
 - 设计文档：[docs/game-design.md](docs/game-design.md)
 - 重构方案 v0.4（待确认）：[docs/proposal-v0.4.html](docs/proposal-v0.4.html)
-- 系统文档（给美术和程序：画风、场景、角色、道具、特效）：[docs/systems.md](docs/systems.md)
+- **系统文档 v0.12**（Word，黑字原文、红字补充；给美术和程序）：[docs/系统文档-狄西斯的日落回廊_v0.12.docx](docs/系统文档-狄西斯的日落回廊_v0.12.docx)（旧版：[docs/systems.md](docs/systems.md)）
+- **施工图 v0.12**（Blender 建模、UE 搭场景、程序用的尺寸、位置、光路和太阳月亮角度）：[docs/施工图-v0.12.html](docs/施工图-v0.12.html)，PDF：[docs/日落回廊_施工图_v0.12.pdf](docs/日落回廊_施工图_v0.12.pdf)
 - **v0.12 灰盒（神殿）**：[prototype/temple/index.html](prototype/temple/index.html)，说明见 [prototype/README.md](prototype/README.md)
 - v0.11 灰盒（对照）：[prototype/temple-v0.11/index.html](prototype/temple-v0.11/index.html)
 - v0.10 灰盒（对照）：[prototype/temple-v0.10/index.html](prototype/temple-v0.10/index.html)
@@ -16,5 +17,5 @@
 - v0.6 灰盒（对照）：[prototype/temple-v0.6/index.html](prototype/temple-v0.6/index.html)
 - v0.5 灰盒（对照）：[prototype/temple-v0.5/index.html](prototype/temple-v0.5/index.html)
 - v0.4 灰盒（对照）：[prototype/temple-v0.4/index.html](prototype/temple-v0.4/index.html)
-- **UE 数据册**（v0.4 灰盒导出的全部尺寸、角度、光路、等时线；v0.5 以后的还没出）：[docs/ue-spec.html](docs/ue-spec.html)，原始数据 [docs/ue-spec.json](docs/ue-spec.json)
+- UE 数据册（v0.4 的旧数据，已被上面的施工图 v0.12 取代）：[docs/ue-spec.html](docs/ue-spec.html)，原始数据 [docs/ue-spec.json](docs/ue-spec.json)
 - 旧版灰盒（v0.3，日月十关）：[prototype/cloister/index.html](prototype/cloister/index.html)
