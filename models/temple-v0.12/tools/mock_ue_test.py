@@ -10,60 +10,61 @@ SCRIPT, FBX = sys.argv[1], sys.argv[2]
 FLIP = len(sys.argv) > 3 and sys.argv[3] == 'mirror'   # 故意镜像，看脚本能不能发现
 
 # ── 读 FBX ──
-data = open(FBX, 'rb').read(); ver = struct.unpack('<I', data[23:27])[0]; big = ver >= 7500
-def rd_prop(b, i):
-    t = chr(b[i]); i += 1
-    if t in 'YCIFDL':
-        fmt = {'Y': '<h', 'C': '<?', 'I': '<i', 'F': '<f', 'D': '<d', 'L': '<q'}[t]; n = struct.calcsize(fmt); return struct.unpack(fmt, b[i:i + n])[0], i + n
-    if t in 'SR':
-        n = struct.unpack('<I', b[i:i + 4])[0]; i += 4; v = b[i:i + n]; return (v.decode('utf8', 'replace') if t == 'S' else v), i + n
-    ln, enc, cl = struct.unpack('<III', b[i:i + 12]); i += 12; raw = b[i:i + cl]; i += cl
-    if enc: raw = zlib.decompress(raw)
-    fmt = {'f': 'f', 'd': 'd', 'l': 'q', 'i': 'i', 'b': '?'}[t]; return list(struct.unpack('<%d%s' % (ln, fmt), raw)), i
-def rd_node(b, i):
-    if big: end, np_, pl = struct.unpack('<QQQ', b[i:i + 24]); i += 24
-    else: end, np_, pl = struct.unpack('<III', b[i:i + 12]); i += 12
-    nl = b[i]; i += 1
-    if end == 0: return None, i
-    name = b[i:i + nl].decode(); i += nl; props = []
-    for _ in range(np_): v, i = rd_prop(b, i); props.append(v)
-    kids = []
-    while i < end:
-        k, i = rd_node(b, i)
-        if k is None: break
-        kids.append(k)
-    return (name, props, kids), end
-i = 27; top = []
-while i < len(data) - 200:
-    n, i2 = rd_node(data, i)
-    if n is None: break
-    top.append(n); i = i2
-find = lambda nodes, name: [n for n in nodes if n[0] == name]
-gs = {p[1][0]: p[1][-1] for p in find(find(top, 'GlobalSettings')[0][2], 'Properties70')[0][2]}
-assert gs['UpAxis'] == 1 and gs['FrontAxis'] == 2 and gs['CoordAxis'] == 0 and gs['UnitScaleFactor'] == 1.0, gs
-objs = find(top, 'Objects')[0][2]; conns = find(top, 'Connections')[0][2]
-geos = {n[1][0]: n for n in objs if n[0] == 'Geometry'}
-MESHES = {}
-for n in objs:
-    if n[0] != 'Model': continue
-    name = n[1][1].split('\x00')[0]
-    pr = {p[1][0]: p[1][-3:] for p in find(n[2], 'Properties70')[0][2]}
-    T = Vector(pr.get('Lcl Translation', [0, 0, 0])); R = pr.get('Lcl Rotation', [0, 0, 0]); S = pr.get('Lcl Scaling', [1, 1, 1])
-    M = Matrix.Translation(T) @ Euler([math.radians(x) for x in R], 'XYZ').to_matrix().to_4x4() @ Matrix.Diagonal((*S, 1))
-    gid = [c[1][1] for c in conns if c[1][2] == n[1][0] and c[1][1] in geos][0]
-    g = geos[gid][2]; v = find(g, 'Vertices')[0][1][0]; pvi = find(g, 'PolygonVertexIndex')[0][1][0]
-    verts = []
-    for k in range(0, len(v), 3):
-        w = M @ Vector((v[k], v[k + 1], v[k + 2]))        # FBX 全局（厘米，Y 向上）
-        u = Vector((w.x, w.z, w.y))                          # UE：Z 向上、左手
-        if FLIP: u.y = -u.y
-        verts.append(u)
-    polys, cur = [], []
-    for idx in pvi:
-        if idx < 0: cur.append(-idx - 1); polys.append(cur); cur = []
-        else: cur.append(idx)
-    MESHES[name] = (verts, polys)
-print('FBX 里的网格', len(MESHES))
+def parse_fbx(path):
+    data = open(path, 'rb').read(); ver = struct.unpack('<I', data[23:27])[0]; big = ver >= 7500
+    def rd_prop(b, i):
+        t = chr(b[i]); i += 1
+        if t in 'YCIFDL':
+            fmt = {'Y': '<h', 'C': '<?', 'I': '<i', 'F': '<f', 'D': '<d', 'L': '<q'}[t]; n = struct.calcsize(fmt); return struct.unpack(fmt, b[i:i + n])[0], i + n
+        if t in 'SR':
+            n = struct.unpack('<I', b[i:i + 4])[0]; i += 4; v = b[i:i + n]; return (v.decode('utf8', 'replace') if t == 'S' else v), i + n
+        ln, enc, cl = struct.unpack('<III', b[i:i + 12]); i += 12; raw = b[i:i + cl]; i += cl
+        if enc: raw = zlib.decompress(raw)
+        fmt = {'f': 'f', 'd': 'd', 'l': 'q', 'i': 'i', 'b': '?'}[t]; return list(struct.unpack('<%d%s' % (ln, fmt), raw)), i
+    def rd_node(b, i):
+        if big: end, np_, pl = struct.unpack('<QQQ', b[i:i + 24]); i += 24
+        else: end, np_, pl = struct.unpack('<III', b[i:i + 12]); i += 12
+        nl = b[i]; i += 1
+        if end == 0: return None, i
+        name = b[i:i + nl].decode(); i += nl; props = []
+        for _ in range(np_): v, i = rd_prop(b, i); props.append(v)
+        kids = []
+        while i < end:
+            k, i = rd_node(b, i)
+            if k is None: break
+            kids.append(k)
+        return (name, props, kids), end
+    i = 27; top = []
+    while i < len(data) - 200:
+        n, i2 = rd_node(data, i)
+        if n is None: break
+        top.append(n); i = i2
+    find = lambda nodes, name: [n for n in nodes if n[0] == name]
+    gs = {p[1][0]: p[1][-1] for p in find(find(top, 'GlobalSettings')[0][2], 'Properties70')[0][2]}
+    assert gs['UpAxis'] == 1 and gs['FrontAxis'] == 2 and gs['CoordAxis'] == 0 and gs['UnitScaleFactor'] == 1.0, gs
+    objs = find(top, 'Objects')[0][2]; conns = find(top, 'Connections')[0][2]
+    geos = {n[1][0]: n for n in objs if n[0] == 'Geometry'}
+    out = {}
+    for n in objs:
+        if n[0] != 'Model': continue
+        name = n[1][1].split('\x00')[0]
+        pr = {p[1][0]: p[1][-3:] for p in find(n[2], 'Properties70')[0][2]}
+        T = Vector(pr.get('Lcl Translation', [0, 0, 0])); R = pr.get('Lcl Rotation', [0, 0, 0]); S = pr.get('Lcl Scaling', [1, 1, 1])
+        Mx = Matrix.Translation(T) @ Euler([math.radians(x) for x in R], 'XYZ').to_matrix().to_4x4() @ Matrix.Diagonal((*S, 1))
+        gid = [c[1][1] for c in conns if c[1][2] == n[1][0] and c[1][1] in geos][0]
+        g = geos[gid][2]; v = find(g, 'Vertices')[0][1][0]; pvi = find(g, 'PolygonVertexIndex')[0][1][0]
+        verts = []
+        for k in range(0, len(v), 3):
+            w = Mx @ Vector((v[k], v[k + 1], v[k + 2]))        # FBX 全局（厘米，Y 向上）；导入时烘进顶点
+            u = Vector((w.x, w.z, w.y))                           # UE：Z 向上、左手
+            if FLIP: u.y = -u.y
+            verts.append(u)
+        polys, cur = [], []
+        for idx in pvi:
+            if idx < 0: cur.append(-idx - 1); polys.append(cur); cur = []
+            else: cur.append(idx)
+        out[name] = (verts, polys)
+    return out
 
 # ── 假的 unreal ──
 U = types.ModuleType('unreal'); LOGS = []
@@ -102,7 +103,8 @@ class Tools:
     def import_asset_tasks(self, tasks):
         t = tasks[0]; smd = t._p['options']._p['static_mesh_import_data']._p
         IMPORTED.update(smd); assert smd['transform_vertex_to_absolute'] and not smd['combine_meshes'] and not smd['auto_generate_collision']
-        for n, (v, p) in MESHES.items(): ASSETS[t._p['destination_path'] + '/' + n] = StaticMesh(n, v, p)
+        ms = parse_fbx(t._p['filename']); print('导入', os.path.basename(t._p['filename']), len(ms), '个网格')
+        for n, (v, p) in ms.items(): ASSETS[t._p['destination_path'] + '/' + n] = StaticMesh(n, v, p)
 U.AssetToolsHelpers = types.SimpleNamespace(get_asset_tools=lambda: Tools())
 U.EditorAssetLibrary = types.SimpleNamespace(list_assets=lambda d, recursive=True, include_folder=False: [k for k in ASSETS if k.startswith(d)],
                                              load_asset=lambda p: ASSETS[p], save_loaded_asset=lambda m: True)
@@ -117,10 +119,13 @@ class Actor:
     def set_folder_path(self, f): self.folder = f
     def get_folder_path(self): return self.folder
     def destroy_actor(self): ACTORS.remove(self)
-    def get_actor_bounds(self, only):
-        lo = Vector((min(v.x for v in self.wv), min(v.y for v in self.wv), min(v.z for v in self.wv)))
-        hi = Vector((max(v.x for v in self.wv), max(v.y for v in self.wv), max(v.z for v in self.wv)))
-        return (lo + hi) / 2, (hi - lo) / 2
+    def get_actor_bounds(self, only):   # 和 UE 一样：把网格的包围盒 8 个角变换过去再取包围盒（转过的构件会偏大）
+        b = self.mesh.get_bounding_box(); lo, hi = b._p['min'], b._p['max']; a = math.radians(self.yaw); c, s = math.cos(a), math.sin(a)
+        cs = [Vector((x * c - y * s, x * s + y * c, z)) + self.loc for x in (lo.x, hi.x) for y in (lo.y, hi.y) for z in (lo.z, hi.z)]
+        l2 = Vector((min(v.x for v in cs), min(v.y for v in cs), min(v.z for v in cs))); h2 = Vector((max(v.x for v in cs), max(v.y for v in cs), max(v.z for v in cs)))
+        return (l2 + h2) / 2, (h2 - l2) / 2
+    def get_actor_location(self): return self.loc
+    def get_actor_rotation(self): return Rot(yaw=self.yaw)
 class ActorSub:
     def get_all_level_actors(self): return list(ACTORS)
     def spawn_actor_from_object(self, m, loc, rot): a = Actor(m, loc, rot); ACTORS.append(a); return a

@@ -144,12 +144,6 @@ def lab_floors(p):
     if abs(p['hi'].z - 0.9) < 0.05: return 'Waterfall_BackLedge'
     return f"Seam_Stone_{round(p['az']):03d}"
 def lab_parapets(p): return 'Parapet_' + FL[floor_ix(p['lo'].z)]
-def lab_facade(p):
-    if 'M_statue' in p['matnames']: return 'Facade_Statues'
-    z = p['c'].z
-    for k in range(3, -1, -1):
-        if z >= F[k]: return 'Facade_' + FL[k] if z < dm['WALL_TOP'] else 'Facade_Top'
-    return 'Facade_L0'
 peri_r = D.get('peri', {}).get('r', 20)
 portico_ix = {}
 def lab_site(p):
@@ -181,7 +175,53 @@ def take(cat, labeler=None, single=None, ring=()):
 made['Floors'] = take('Floors', lab_floors, ring=('Floor_', 'PoolBed'))
 made['Parapets'] = take('Parapets', lab_parapets, ring=('Parapet_',))
 made['Columns'] = take('Columns', lab_columns)
-made['Facade'] = take('Facade', lab_facade, ring=('Facade_',))
+# 外立面：灰盒导出时每件构件单独一组，带着摆放信息（方位角 az、半径 r、底高 y）。
+# 每件一个物体：轴心在构件底部贴外墙的那一点，正面朝外（物体的 −Y 朝外，和 Blender 前视图一样），只绕 Z 转。
+# 一模一样的构件共用一份网格（关联复制）：改网格同类的一起变；只想换某一件，先把它设成单独用户。
+TYPE_CN = {'BlindArch': '盲拱', 'BlindArchWin': '盲拱（带小窗）', 'BlindArchTunWin': '盲拱（墙里楼梯的窗）', 'Statue': '雕像',
+           'Pilaster': '壁柱', 'WinFrame': '主光窗窗框', 'DoorFrame': '北门门框'}
+FAC_GROUP = {'BlindArch': 'FacadeArch', 'BlindArchWin': 'FacadeArch', 'BlindArchTunWin': 'FacadeArch', 'Statue': 'FacadeStatue',
+             'Pilaster': 'FacadePil', 'WinFrame': 'FacadeFrame', 'DoorFrame': 'FacadeFrame'}
+kit = {}; kit_count = {}; fac_inst = []; fac_dev = 0.0
+for key in ('FacadeArch', 'FacadePil', 'FacadeFrame', 'FacadeStatue', 'FacadeRing'): made[key] = []
+def world_pts(ob): return [(ob.matrix_world @ v.co).copy() for v in ob.data.vertices]
+from mathutils.kdtree import KDTree
+def max_nn(a, b):   # a 里每个点到 b 里最近点的距离，取最大
+    kd = KDTree(len(b))
+    for i, q in enumerate(b): kd.insert(q, i)
+    kd.balance(); return max(kd.find(q)[2] for q in a)
+for cat in sorted(c for c in bycat if c.startswith('Facade~')):
+    objs = bycat[cat]; sub = {k: objs[0].get(k) for k in ('t', 'band', 'k', 'key', 'az', 'r', 'y')}
+    ob = join(objs, 'tmp'); clean(ob)
+    for pk in list(ob.keys()): del ob[pk]
+    if sub['t'] == 'Ring':   # 整圈的线脚、檐口、女儿墙：绕殿心一圈，轴心在殿心
+        me = ob.data; pv = pivot_of(me, True); me.transform(Matrix.Translation(-pv)); ob.location = pv
+        ob.name = me.name = 'SM_Facade_' + sub['key']; compact_materials(me); smooth(ob); made['FacadeRing'].append(ob); continue
+    t, band, k = sub['t'], sub['band'], sub['k']
+    before = world_pts(ob)
+    az = sub['az']; base = P(az, sub['r'], sub['y']); th = math.pi - math.radians(az)
+    ob.data.transform(Matrix.Rotation(-th, 4, 'Z') @ Matrix.Translation(-base))
+    ob.rotation_mode = 'XYZ'; ob.location = base; ob.rotation_euler = (0, 0, th); compact_materials(ob.data)
+    kind = t + (f'_L{band}' if band is not None else '') + (f"_{sub['key']}" if sub['key'] else '')
+    # 同一种：同类型、顶点数一样、每个顶点到对方最近顶点不超过 2 mm
+    mine = [v.co.copy() for v in ob.data.vertices]; same = None
+    for km in kit.get(kind, []):
+        if len(km.vertices) != len(mine) or [m.name for m in km.materials] != [m.name for m in ob.data.materials]: continue   # 面数可能差一两个（三角面合没合），形状一样就算
+        theirs = [v.co.copy() for v in km.vertices]
+        if max_nn(mine, theirs) < 0.002 and max_nn(theirs, mine) < 0.002: same = km; break
+    if same:
+        old = ob.data; ob.data = same; bpy.data.meshes.remove(old)
+    else:
+        n = len(kit.get(kind, [])); ob.data.name = 'SM_Kit_Facade_' + kind + (f'_v{n + 1}' if n else ''); smooth(ob)
+        kit.setdefault(kind, []).append(ob.data)
+    kit_count[ob.data.name] = kit_count.get(ob.data.name, 0) + 1
+    ob.name = 'SM_Facade_' + kind + (f'_{k:02d}' if k is not None else '')
+    ob['类型'] = TYPE_CN[t]; ob['方位角'] = round(az, 3); ob['底高'] = round(sub['y'], 3)
+    if band is not None: ob['所在层'] = ['一层', '二层', '三层', '四层'][band]
+    bpy.context.view_layer.update()
+    after = world_pts(ob)
+    _dv = max(max_nn(after, before), max_nn(before, after)); fac_dev = max(fac_dev, _dv)
+    made[FAC_GROUP[t]].append(ob); fac_inst.append(ob)
 made['Site'] = take('Site', lab_site, ring=('Terrain', 'Podium', 'Peristyle_Entablature'))
 # 门廊柱子按方位排号
 pcs = sorted([o for o in made['Site'] if o.name.startswith('SM_PorticoCol_')], key=lambda o: (az_of(o.location) + 180) % 360)
@@ -319,6 +359,9 @@ def colf(key, title):
     c = bpy.data.collections.new(title); root.children.link(c); cols[key] = c; return c
 colf('Wall', '01 墙体（含墙里楼梯）'); colf('Cut', '01b 切割体（改窗洞门洞楼梯）')
 colf('Floors', '02 楼板与台面'); colf('Parapets', '03 栏杆'); colf('Columns', '04 内圈柱子'); colf('Facade', '05 外立面')
+for key, title in (('FacadeArch', '05a 盲拱（每间一个）'), ('FacadePil', '05b 壁柱'), ('FacadeFrame', '05c 主光窗窗框和北门门框'),
+                   ('FacadeStatue', '05d 雕像'), ('FacadeRing', '05e 檐口和线脚（整圈）')):
+    c = bpy.data.collections.new(title); cols['Facade'].children.link(c); cols[key] = c
 colf('Site', '06 场地·台基·柱廊·门廊·小岛'); colf('Pavilion', '07 水亭'); colf('RoofRing', '08 屋顶环道（每一块单独，升降用）')
 colf('RoofBridge', '09 屋顶细桥'); colf('RoofArch', '10 虹门'); colf('Markers', '99 方位标记（核对用，可删）')
 wall = ring_wall(); cols['Wall'].objects.link(wall)
@@ -470,6 +513,26 @@ for o in marks:
     c = sum((o.matrix_world @ v.co for v in o.data.vertices), Vector()) / len(o.data.vertices)
     exp = {'SM_MARK_N_0deg_r30': P(0, 30, 0.5), 'SM_MARK_E_90deg_r30': P(90, 30, 0.5), 'SM_MARK_UP_y45': Vector((0, 0, 45))}[o.name]
     rows.append(('方位标记', o.name, tuple(round(x, 2) for x in exp), tuple(round(x, 2) for x in c), (c - exp).length < 0.01))
+# 外立面：一件件拆开以后的位置、共用网格；每件从外面水平打一条射线到它正面（给 UE 再打一遍）
+from collections import Counter
+cnt = Counter(o['类型'] for o in fac_inst)
+rows.append(('外立面', '单独的构件数（' + '、'.join(f'{k} {v}' for k, v in cnt.items()) + '）', len(fac_inst), len(fac_inst), len(fac_inst) > 0))
+KIT = [m for ms in kit.values() for m in ms]
+rows.append(('外立面', f'共用的网格（{len(KIT)} 种，同一种的构件共用一份）', len(KIT), len({o.data.name for o in fac_inst}), len(KIT) == len({o.data.name for o in fac_inst})))
+rows.append(('外立面', '换成各自轴心、共用网格以后，每件的顶点和灰盒原位的最大偏差（m）', 0.0, round(fac_dev, 4), fac_dev < 0.002))
+hp = {}
+for ob in fac_inst:
+    me = world_mesh(ob); own = BVHTree.FromPolygons([v.co.copy() for v in me.vertices], [q.vertices[:] for q in me.polygons])
+    z0, z1 = min(v.co.z for v in me.vertices), max(v.co.z for v in me.vertices); bpy.data.meshes.remove(me)
+    az = ob['方位角']; d = (P(az, -1, 0) - P(az, 0, 0)).normalized(); t = ob['类型']; hp.setdefault(t, [0, 0]); hp[t][1] += 1
+    for f in (0.5, 0.3, 0.7, 0.1, 0.9, 0.03):
+        st = P(az, 19.0, z0 + (z1 - z0) * f); ha = ALL.ray_cast(st, d, 5); ho = own.ray_cast(st, d, 5)
+        if ha[0] is not None and ho[0] is not None and abs(ha[3] - ho[3]) < 1e-4:
+            probes.append({'g': '外立面', 'item': f'{ob.name} 正面', 'kind': t, 'E': round(st.x, 4), 'N': round(st.y, 4), 'U': round(st.z, 4),
+                           'dE': round(d.x, 6), 'dN': round(d.y, 6), 'dU': 0.0, 'maxd': 5, 'dist': round(ha[3], 4), 'tol': 0.01})
+            hp[t][0] += 1; break
+for t, (a, b) in hp.items():
+    rows.append(('外立面', f'{t}：从外面水平打过去先打到它自己的件数（被柱廊、门廊挡住的不算）', f'≤ {b}', a, a > 0))
 # 网格干不干净：每个物体的面数、四边面比例
 stats = []
 for ob in build:
@@ -482,35 +545,61 @@ bpy.data.meshes.remove(wme)
 os.makedirs(OUT, exist_ok=True)
 blend = os.path.join(OUT, NAME + '.blend'); fbx = os.path.join(OUT, NAME + '.fbx')
 bpy.ops.wm.save_as_mainfile(filepath=blend, compress=True)
-exp_objs = build + marks
-bpy.ops.object.select_all(action='DESELECT')
-for o in exp_objs: o.select_set(True)
-bpy.ops.export_scene.fbx(filepath=fbx, use_selection=True, object_types={'MESH'}, apply_unit_scale=True, apply_scale_options='FBX_SCALE_NONE',
-                         axis_forward='-Z', axis_up='Y', mesh_smooth_type='FACE', use_mesh_modifiers=True, use_triangles=True,
-                         add_leaf_bones=False, bake_anim=False, path_mode='COPY')
-bounds = {}; tris = {}; folders = {o.name: o.users_collection[0].name for o in exp_objs}
-for ob in exp_objs:
-    me = world_mesh(ob); me.calc_loop_triangles(); tris[ob.name] = len(me.loop_triangles)
+exp_objs = [o for o in build if o not in fac_inst] + marks
+FBXOPT = dict(use_selection=True, object_types={'MESH'}, apply_unit_scale=True, apply_scale_options='FBX_SCALE_NONE', axis_forward='-Z', axis_up='Y',
+              mesh_smooth_type='FACE', use_mesh_modifiers=True, use_triangles=True, add_leaf_bones=False, bake_anim=False, path_mode='COPY')
+def export(objs, path):
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in objs: o.select_set(True)
+    bpy.ops.export_scene.fbx(filepath=path, **FBXOPT)
+export(exp_objs, fbx)
+fbx_placed = os.path.join(OUT, 'Dysis_Facade_Placed_v0_12.fbx'); export(fac_inst, fbx_placed)
+fbx_kit = os.path.join(OUT, 'Dysis_Facade_Kit_v0_12.fbx')
+tmp = []
+for me in KIT:   # 构件库：每种网格一个物体，放在原点不转（UE 里一种一个资源）
+    o = bpy.data.objects.new(me.name, me); sc.collection.objects.link(o); tmp.append(o)
+bpy.context.view_layer.update(); export(tmp, fbx_kit)
+def wbounds(ob, local=False):
+    me = world_mesh(ob) if not local else ob.data
     vs = [v.co for v in me.vertices]
-    bounds[ob.name] = [[round(min(v[i] for v in vs), 4) for i in range(3)], [round(max(v[i] for v in vs), 4) for i in range(3)]]
-    bpy.data.meshes.remove(me)
-bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.fbx(filepath=fbx)
-worst = 0; seen = 0
-for ob in bpy.context.scene.objects:
-    if ob.type != 'MESH' or ob.name not in bounds: continue
-    seen += 1; vs = [ob.matrix_world @ v.co for v in ob.data.vertices]
-    bb = [[min(v[i] for v in vs) for i in range(3)], [max(v[i] for v in vs) for i in range(3)]]
-    worst = max(worst, max(abs(bb[j][i] - bounds[ob.name][j][i]) for i in range(3) for j in range(2)))
-rows.append(('FBX 复核', f'导回 Blender 的物体数（应为 {len(bounds)}）', len(bounds), seen, seen == len(bounds)))
-rows.append(('FBX 复核', '导回后各物体包围盒的最大偏差（m）', 0.0, round(worst, 4), worst < 0.005))
+    b = [[round(min(v[i] for v in vs), 4) for i in range(3)], [round(max(v[i] for v in vs), 4) for i in range(3)]]
+    if not local: bpy.data.meshes.remove(me)
+    return b
+def ntris(ob):
+    me = world_mesh(ob); me.calc_loop_triangles(); n = len(me.loop_triangles); bpy.data.meshes.remove(me); return n
+folders = {o.name: o.users_collection[0].name for o in exp_objs + fac_inst}
+bounds = {o.name: wbounds(o) for o in exp_objs}; tris = {o.name: ntris(o) for o in exp_objs}
+pbounds = {o.name: wbounds(o) for o in fac_inst}
+kitinfo = {o.name: {'local': wbounds(o, True), 'tris': ntris(o), 'uses': kit_count[o.name]} for o in tmp}
+insts = []
+for o in fac_inst:
+    th = math.degrees(o.rotation_euler.z); L = o.location
+    yaw = (90.0 - th + 180.0) % 360.0 - 180.0
+    insts.append({'name': o.name, 'mesh': o.data.name, 'b_loc': [round(L.x, 5), round(L.y, 5), round(L.z, 5)], 'b_rot': round(th, 5),
+                  'ue_loc': [round(L.y * 100, 2), round(L.x * 100, 2), round(L.z * 100, 2)], 'ue_yaw': round(yaw, 4)})
+for o in tmp: bpy.data.objects.remove(o)
+def reimport(path, expect, local=False):
+    bpy.ops.wm.read_factory_settings(use_empty=True); bpy.ops.import_scene.fbx(filepath=path)
+    worst = 0; seen = 0
+    for ob in bpy.context.scene.objects:
+        if ob.type != 'MESH' or ob.name not in expect: continue
+        seen += 1; b = expect[ob.name]['local'] if local else expect[ob.name]
+        vs = [ob.matrix_world @ v.co for v in ob.data.vertices]
+        bb = [[min(v[i] for v in vs) for i in range(3)], [max(v[i] for v in vs) for i in range(3)]]
+        worst = max(worst, max(abs(bb[j][i] - b[j][i]) for i in range(3) for j in range(2)))
+    return seen, worst
+for label, path, exp, loc in (('建筑', fbx, bounds, False), ('外立面构件库', fbx_kit, kitinfo, True), ('外立面摆好的', fbx_placed, pbounds, False)):
+    seen, worst = reimport(path, exp, loc)
+    rows.append(('FBX 复核', f'{label} FBX 导回 Blender 的物体数（应为 {len(exp)}）', len(exp), seen, seen == len(exp)))
+    rows.append(('FBX 复核', f'{label} FBX 导回后包围盒的最大偏差（m）', 0.0, round(worst, 4), worst < 0.005))
 
 json.dump({'rows': rows, 'bounds': bounds, 'stats': stats}, open(os.path.join(OUT, 'check.json'), 'w'), ensure_ascii=False, indent=1)
-ue = {'name': NAME, 'bounds_cm': {}, 'tris': tris, 'folders': folders, 'markers_cm': {'SM_MARK_N_0deg_r30': [3000, 0, 50], 'SM_MARK_E_90deg_r30': [0, 3000, 50], 'SM_MARK_UP_y45': [0, 0, 4500]}, 'probes': probes}
+ue = {'name': NAME, 'bounds_cm': {}, 'tris': tris, 'folders': folders, 'instances': insts,
+      'kit': {n: {'local_cm': [[round(i['local'][0][0] * 100, 1), round(-i['local'][1][1] * 100, 1), round(i['local'][0][2] * 100, 1)], [round(i['local'][1][0] * 100, 1), round(-i['local'][0][1] * 100, 1), round(i['local'][1][2] * 100, 1)]], 'tris': i['tris'], 'uses': i['uses']} for n, i in kitinfo.items()}, 'markers_cm': {'SM_MARK_N_0deg_r30': [3000, 0, 50], 'SM_MARK_E_90deg_r30': [0, 3000, 50], 'SM_MARK_UP_y45': [0, 0, 4500]}, 'probes': probes}
 for n, (lo, hi) in bounds.items():   # Blender（X 东、Y 北、Z 上，米）→ UE（X 北、Y 东、Z 上，厘米）
     ue['bounds_cm'][n] = [[round(lo[1] * 100, 1), round(lo[0] * 100, 1), round(lo[2] * 100, 1)], [round(hi[1] * 100, 1), round(hi[0] * 100, 1), round(hi[2] * 100, 1)]]
 json.dump(ue, open(os.path.join(OUT, 'ue_expect.json'), 'w'), ensure_ascii=False)
-print('objects', len(bounds), 'probes', len(probes))
+print('objects', len(bounds), 'facade pieces', len(fac_inst), 'kit meshes', len(KIT), 'probes', len(probes))
 npass = sum(1 for r in rows if r[4]); print('checks', len(rows), 'pass', npass)
 for r in rows:
     if not r[4]: print('FAIL', r)

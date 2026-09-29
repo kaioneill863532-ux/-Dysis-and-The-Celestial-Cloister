@@ -43,3 +43,13 @@ if which == 'planL1':   # 从上往下看二层（把 7 m 以上的裁掉），�
     shot(f'{outdir}/preview_plan_L1.png', Vector((0, 0, 120)), Vector((0, 0.001, 0)), ortho=36, clip=(113, 400))
 if which == 'aerialwire':
     shot(f'{outdir}/preview_aerial_wire.png', P(212, 105, 48), Vector((0, 0, 15)), lens=38)
+if which == 'facadekit':   # 外立面按构件种类上色：同一种颜色相同（共用一份网格）
+    import colorsys
+    kinds = sorted({o.data.name for o in sc.objects if o.type == 'MESH' and o.name.startswith('SM_Facade_') and o.data.name.startswith('SM_Kit_')})
+    for i, k in enumerate(kinds):
+        m = bpy.data.materials.new('K' + k); m.use_nodes = True
+        m.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*colorsys.hsv_to_rgb((i * 0.618) % 1, 0.55, 0.95), 1)
+        for o in sc.objects:
+            if o.type == 'MESH' and o.data.name == k:
+                for s in o.material_slots: s.link = 'OBJECT'; s.material = m
+    shot(f'{outdir}/preview_facade_kit.png', P(118, 62, 20), P(118, 0, 16), lens=40)

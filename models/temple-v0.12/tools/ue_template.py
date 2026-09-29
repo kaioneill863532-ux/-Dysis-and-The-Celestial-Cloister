@@ -2,14 +2,17 @@
 #
 # 用法（UE 5.x 编辑器）：
 #   1. 编辑 → 插件，打开 “Python Editor Script Plugin”，重启编辑器。
-#   2. 新建一个空关卡（或打开要放神殿的关卡）。把下面 FBX 改成 Dysis_Temple_v0_12.fbx 实际放的位置。
+#   2. 新建一个空关卡（或打开要放神殿的关卡）。把下面 FBX 改成 Dysis_Temple_v0_12.fbx 实际放的位置
+#      （外立面构件库 Dysis_Facade_Kit_v0_12.fbx 放在同一个文件夹里）。
 #   3. 工具 → 执行 Python 脚本…，选这个文件。
 #      也可以在输出日志的 Python 命令行里：exec(open(r"D:/路径/ue_import_temple.py", encoding="utf-8").read())
 #   4. 看输出日志。最后一行是“全部通过”，或者列出没过的项。完整报告另存在 项目/Saved/Dysis_Temple_v0_12_UE核对.txt。
 #
 # 脚本做的事：
-#   · 导入 FBX：不合并网格，每个构件一个静态网格；不自动生成简单碰撞，碰撞按网格本身（复杂碰撞当简单碰撞用），人能在楼板、楼梯上走。
-#   · 在关卡里摆出全部构件（大纲视图 Dysis_Temple_v0_12 文件夹下，按类别分子文件夹）。
+#   · 导入两个 FBX：建筑（每个构件一个静态网格）和外立面构件库（每种构件一个静态网格：盲拱、壁柱、雕像、窗框……）。
+#     不自动生成简单碰撞，碰撞按网格本身（复杂碰撞当简单碰撞用），人能在楼板、楼梯上走。
+#   · 在关卡里摆出全部构件（大纲视图 Dysis_Temple_v0_12 文件夹下，按类别分子文件夹）。外立面 158 件各是一个 Actor，
+#     用构件库里的网格，轴心在构件底部贴外墙的地方、正面朝外；换一件就换它的网格，整批换就替换构件库资源的引用。
 #   · 用三块红色方位标记认出导入后的朝向，把整座建筑转到施工图的坐标：+X 朝北、+Y 朝东、Z 向上，1 m = 100 cm。
 #     施工图里方位角 az、半径 r、高 y 的点，在 UE 里就是 X = 100·r·cos(az)，Y = 100·r·sin(az)，Z = 100·y。
 #   · 核对：比例、朝向、方位标记位置、每个构件的包围盒，还有和 Blender 里同一批竖直射线（各层地面和楼板底、栏杆顶、池底、
@@ -19,6 +22,7 @@
 import unreal, math, json, os
 
 FBX = r"C:/Dysis/Dysis_Temple_v0_12.fbx"    # ← 改成 FBX 实际放的位置
+FBX_KIT = os.path.join(os.path.dirname(FBX), "Dysis_Facade_Kit_v0_12.fbx")   # 外立面构件库（默认和上面同一个文件夹）
 DEST = "/Game/Dysis/Temple_v0_12"            # 导入到内容浏览器的哪个文件夹
 DO_IMPORT = True                             # 已经导过、只想重新摆放和核对，改成 False
 KEEP_MARKERS = True                          # 核对完不想留三块红色方块，改成 False
@@ -35,8 +39,8 @@ def set_opt(obj, name, value):
     try: obj.set_editor_property(name, value)
     except Exception as e: log(f"  （这个版本没有导入选项 {name}，跳过）")
 
-if DO_IMPORT:
-    if not os.path.isfile(FBX): raise RuntimeError(f"找不到 FBX：{FBX}，请改脚本最上面的 FBX 路径")
+def import_fbx(path):
+    if not os.path.isfile(path): raise RuntimeError(f"找不到 FBX：{path}，请改脚本最上面的 FBX 路径")
     ui = unreal.FbxImportUI()
     set_opt(ui, "import_mesh", True); set_opt(ui, "import_as_skeletal", False); set_opt(ui, "import_animations", False)
     set_opt(ui, "import_materials", True); set_opt(ui, "import_textures", False)
@@ -53,24 +57,26 @@ if DO_IMPORT:
     try: smd.set_editor_property("build_nanite", False)
     except Exception: pass
     task = unreal.AssetImportTask()
-    for k, v in (("filename", FBX), ("destination_path", DEST), ("automated", True), ("replace_existing", True), ("save", True), ("options", ui)):
+    for k, v in (("filename", path), ("destination_path", DEST), ("automated", True), ("replace_existing", True), ("save", True), ("options", ui)):
         task.set_editor_property(k, v)
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
-    log(f"导入完成：{FBX} → {DEST}")
+    log(f"导入完成：{path} → {DEST}")
+if DO_IMPORT:
+    import_fbx(FBX); import_fbx(FBX_KIT)
 
 # ───────── 2. 找到导入的网格 ─────────
-names = list(EXPECT["bounds_cm"])
+names = list(EXPECT["bounds_cm"]) + list(EXPECT["kit"])
 meshes = {}
 for path in unreal.EditorAssetLibrary.list_assets(DEST, recursive=True, include_folder=False):
     a = unreal.EditorAssetLibrary.load_asset(path)
     if not isinstance(a, unreal.StaticMesh): continue
     nm = a.get_name()
-    if nm in EXPECT["bounds_cm"]: meshes[nm] = a; continue
+    if nm in names: meshes[nm] = a; continue
     for key in names:   # 有的版本会在前面加 FBX 文件名
         if nm.endswith("_" + key) and key not in meshes: meshes[key] = a
 missing = [k for k in names if k not in meshes]
 log(f"找到 {len(meshes)} / {len(names)} 个网格" + (f"；没找到：{missing}（看一下 {DEST} 里导进来的资源名）" if missing else ""))
-for key in ("SM_MARK_N_0deg_r30", "SM_MARK_E_90deg_r30"):
+for key in ("SM_MARK_N_0deg_r30", "SM_MARK_E_90deg_r30", "SM_MARK_UP_y45"):
     if key not in meshes: raise RuntimeError(f"没有方位标记 {key}，没法认朝向")
 
 # 碰撞按网格本身（整圈墙、楼梯如果自动生成简单碰撞，会是一个大凸包把人挡在外面）
@@ -90,6 +96,17 @@ def center_size(m):
 nx, ny, _, sN = center_size(meshes["SM_MARK_N_0deg_r30"]); ex0, ey0, _, _ = center_size(meshes["SM_MARK_E_90deg_r30"])
 yaw = -math.degrees(math.atan2(ny, nx))                   # 北标记转到 +X 要的 Yaw
 if abs(yaw - round(yaw / 90.0) * 90.0) < 0.5: yaw = round(yaw / 90.0) * 90.0
+# 完整的换算 M：Blender 里（东、北、上，米）的点 → 导入以后网格里的坐标（厘米）。标记方块在 Blender 里的中心：北 (0,30,0.5)、东 (30,0,0.5)、上 (0,0,45)
+def cvec(key): x, y, z, _ = center_size(meshes[key]); return [x, y, z]
+cU = cvec("SM_MARK_UP_y45"); cN_ = cvec("SM_MARK_N_0deg_r30"); cE_ = cvec("SM_MARK_E_90deg_r30")
+colZ = [c / 45.0 for c in cU]; colX = [(cE_[i] - 0.5 * colZ[i]) / 30.0 for i in range(3)]; colY = [(cN_[i] - 0.5 * colZ[i]) / 30.0 for i in range(3)]
+M = [[colX[i], colY[i], colZ[i]] for i in range(3)]
+def mul(A, B): return [[sum(A[i][k] * B[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+def mulv(A, v): return [sum(A[i][k] * v[k] for k in range(3)) for i in range(3)]
+def inv(A):
+    (a, b, c), (d, e, f), (g, h, i) = A; det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
+    return [[(e * i - f * h) / det, (c * h - b * i) / det, (b * f - c * e) / det], [(f * g - d * i) / det, (a * i - c * g) / det, (c * d - a * f) / det], [(d * h - e * g) / det, (b * g - a * h) / det, (a * e - b * d) / det]]
+def rz(deg): c, s_ = math.cos(math.radians(deg)), math.sin(math.radians(deg)); return [[c, -s_, 0], [s_, c, 0], [0, 0, 1]]
 a = math.radians(yaw); ex, ey = ex0 * math.cos(a) - ey0 * math.sin(a), ex0 * math.sin(a) + ey0 * math.cos(a)
 mirrored = ey < 0
 log(f"导入后（没转之前）北标记在 ({nx:.0f}, {ny:.0f})，东标记在 ({ex0:.0f}, {ey0:.0f})；整座建筑 Yaw 转 {yaw:.1f}°，北朝 +X、东朝 +Y")
@@ -109,19 +126,33 @@ rot = unreal.Rotator(roll=0.0, pitch=0.0, yaw=yaw)
 actors = {}
 with unreal.ScopedSlowTask(len(names), "摆放日落回廊构件") as slow:
     slow.make_dialog(True)
-    for key in names:
+    for key in EXPECT["bounds_cm"]:
         slow.enter_progress_frame(1)
         if key not in meshes: continue
         ac = spawn(meshes[key], rot); ac.set_actor_label(key)
         ac.set_folder_path(FOLDER + "/" + EXPECT["folders"].get(key, "其他")); actors[key] = ac
-log(f"已摆放 {len(actors)} 个构件：位置 (0,0,0)，旋转 Yaw {yaw:.1f}°（每个网格的轴心都在殿心）")
+log(f"已摆放建筑 {len(actors)} 个构件：位置 (0,0,0)，旋转 Yaw {yaw:.1f}°（这些网格的轴心都在殿心）")
+# 外立面：一件一个 Actor。位置 = 转过 yaw 的 M·(Blender 位置)；旋转 = R(yaw)·M·Rz(Blender 转角)·M⁻¹，只剩绕 Z 的转角
+RY, Mi = rz(yaw), inv(M)
+inst_actors = {}; inst_bad = []
+for it in EXPECT["instances"]:
+    if it["mesh"] not in meshes: continue
+    loc = mulv(RY, mulv(M, it["b_loc"]))
+    Q = mul(mul(RY, M), mul(rz(it["b_rot"]), Mi))
+    if abs(Q[2][2] - 1) > 1e-3 or abs(Q[0][2]) > 1e-3 or abs(Q[1][2]) > 1e-3: inst_bad.append(it["name"])
+    qy = math.degrees(math.atan2(Q[1][0], Q[0][0]))
+    ac = (actor_sub.spawn_actor_from_object(meshes[it["mesh"]], unreal.Vector(*loc), unreal.Rotator(roll=0.0, pitch=0.0, yaw=qy)) if actor_sub
+          else unreal.EditorLevelLibrary.spawn_actor_from_object(meshes[it["mesh"]], unreal.Vector(*loc), unreal.Rotator(roll=0.0, pitch=0.0, yaw=qy)))
+    ac.set_actor_label(it["name"]); ac.set_folder_path(FOLDER + "/" + EXPECT["folders"].get(it["name"], "05 外立面"))
+    inst_actors[it["name"]] = (ac, loc, qy)
+log(f"已摆放外立面 {len(inst_actors)} 件（用 {len(EXPECT['kit'])} 种构件网格）")
 
 # ───────── 5. 核对 ─────────
 rows = []   # (分组, 项目, 期望, 实测, 通过)
 def row(g, item, exp, got, ok): rows.append((g, item, exp, got, ok))
 row("比例", "标记方块边长（cm）", 100, round(max(sN), 2), all(abs(s - 100) < 0.5 for s in sN))
 row("朝向", "东标记转完在 +Y（没有镜像）", "是", "否" if mirrored else "是", not mirrored)
-row("导入", "网格个数", len(names), len(meshes), not missing)
+row("导入", "网格个数（建筑 + 外立面构件库）", len(names), len(meshes), not missing)
 def world_bounds(ac):
     o, e = ac.get_actor_bounds(False)
     return [o.x - e.x, o.y - e.y, o.z - e.z], [o.x + e.x, o.y + e.y, o.z + e.z]
@@ -134,9 +165,25 @@ for key, (x, y, z) in EXPECT["markers_cm"].items():
     lo, hi = world_bounds(actors[key]); c = [(lo[i] + hi[i]) / 2 for i in range(3)]
     d = math.sqrt(sum((c[i] - (x, y, z)[i]) ** 2 for i in range(3)))
     row("方位标记", f"{key} 中心", f"({x}, {y}, {z})", f"({c[0]:.0f}, {c[1]:.0f}, {c[2]:.0f})", d <= 1.0)
+for key, info in EXPECT["kit"].items():   # 构件库网格本身的大小（网格坐标，厘米）
+    if key not in meshes: continue
+    lo, hi = box_of(meshes[key]); elo, ehi = info["local_cm"]
+    d = max(max(abs((lo.x, lo.y, lo.z)[i] - elo[i]) for i in range(3)), max(abs((hi.x, hi.y, hi.z)[i] - ehi[i]) for i in range(3)))
+    row("外立面构件库", f"{key}（{info['uses']} 件在用）网格大小", "偏差 ≤ 1 cm", f"{d:.2f} cm", d <= 1.0)
+pos_ok = 0; worst_p = worst_y = 0.0
+for it in EXPECT["instances"]:
+    if it["name"] not in inst_actors: continue
+    ac, loc, qy = inst_actors[it["name"]]
+    l = ac.get_actor_location(); r_ = ac.get_actor_rotation()
+    dp = math.sqrt((l.x - it["ue_loc"][0]) ** 2 + (l.y - it["ue_loc"][1]) ** 2 + (l.z - it["ue_loc"][2]) ** 2)
+    dy = abs((r_.yaw - it["ue_yaw"] + 180) % 360 - 180)
+    worst_p, worst_y = max(worst_p, dp), max(worst_y, dy)
+    if dp <= 1.0 and dy <= 0.05: pos_ok += 1
+    else: row("外立面", f"{it['name']} 位置 {l.x:.0f},{l.y:.0f},{l.z:.0f} Yaw {r_.yaw:.2f}", f"{it['ue_loc']} Yaw {it['ue_yaw']}", f"差 {dp:.1f} cm / {dy:.2f}°", False)
+row("外立面", f"每件的位置和朝向对上施工图（共 {len(EXPECT['instances'])} 件，最大偏差 {worst_p:.2f} cm、{worst_y:.3f}°）", len(EXPECT["instances"]), pos_ok, pos_ok == len(EXPECT["instances"]) and not inst_bad)
 ntri_ue = ntri_bl = 0; tri_ok = True
 for key, m in meshes.items():   # 三角形数只作参考（UE 可能去掉退化三角形）
-    try: ntri_ue += m.get_num_triangles(0); ntri_bl += EXPECT["tris"].get(key, 0)
+    try: ntri_ue += m.get_num_triangles(0); ntri_bl += EXPECT["tris"][key] if key in EXPECT["tris"] else EXPECT["kit"][key]["tris"]
     except Exception: tri_ok = False
 if tri_ok: log(f"三角形总数：UE {ntri_ue}，Blender {ntri_bl}")
 
@@ -169,9 +216,29 @@ def trace_z(x, y, z, sgn, maxd):
         if line(s, unreal.Vector(x, y, z + sgn * mid)) is None: lo = mid
         else: hi = mid
     return z + sgn * hi
-tun_n, tun_ok = {}, {}
+tun_n, tun_ok = {}, {}; fac_n, fac_ok = {}, {}
+def trace_dist(x, y, z, dx, dy, dz, maxd):
+    s = unreal.Vector(x, y, z); h = line(s, unreal.Vector(x + dx * maxd, y + dy * maxd, z + dz * maxd))
+    if h is None: return None
+    for getter in (lambda h: h.to_tuple(), lambda h: unreal.GameplayStatics.break_hit_result(h)):
+        try:
+            vs = [v for v in getter(h) if hasattr(v, "x") and hasattr(v, "y") and hasattr(v, "z")]
+            if vs: return math.sqrt((vs[0].x - x) ** 2 + (vs[0].y - y) ** 2 + (vs[0].z - z) ** 2)
+        except Exception: pass
+    lo, hi = 0.0, maxd
+    for _ in range(24):
+        mid = (lo + hi) / 2
+        if line(s, unreal.Vector(x + dx * mid, y + dy * mid, z + dz * mid)) is None: lo = mid
+        else: hi = mid
+    return hi
 for p in EXPECT["probes"]:
     x, y, z = p["N"] * 100, p["E"] * 100, p["U"] * 100
+    if "dist" in p:   # 水平射线：从外面打到外立面构件的正面，比距离
+        got = trace_dist(x, y, z, p["dN"], p["dE"], p["dU"], p["maxd"] * 100); exp = p["dist"] * 100
+        ok = got is not None and abs(got - exp) <= p["tol"] * 100 + 0.5; k = p["kind"]
+        fac_n[k] = fac_n.get(k, 0) + 1; fac_ok[k] = fac_ok.get(k, 0) + (1 if ok else 0)
+        if not ok: row("外立面", p["item"], f"{exp:.1f}", None if got is None else f"{got:.1f}", False)
+        continue
     got = trace_z(x, y, z, p["dir"], p["maxd"] * 100)
     exp = p["expect"] * 100; tol = p["tol"] * 100 + 0.5
     ok = got is not None and abs(got - exp) <= tol
@@ -181,6 +248,7 @@ for p in EXPECT["probes"]:
         continue
     row(p["g"], f"{p['item']}（UE X {x:.0f} Y {y:.0f}）", f"{exp:.1f}", None if got is None else f"{got:.1f}", ok)
 for k in tun_n: row("墙中楼梯", f"{k} 每片踏面高度（共 {tun_n[k]} 片）", tun_n[k], tun_ok[k], tun_ok[k] == tun_n[k])
+for k in fac_n: row("外立面", f"{k}：从外面水平打到正面的距离（共 {fac_n[k]} 件）", fac_n[k], fac_ok[k], fac_ok[k] == fac_n[k])
 
 if not KEEP_MARKERS:
     for k, ac in actors.items():
