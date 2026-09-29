@@ -9,6 +9,7 @@
 - **系统文档 v0.12**（Word，黑字原文、红字补充；给美术和程序）：[docs/系统文档-狄西斯的日落回廊_v0.12.docx](docs/系统文档-狄西斯的日落回廊_v0.12.docx)（旧版：[docs/systems.md](docs/systems.md)）
 - **施工图 v0.12**（Blender 建模、UE 搭场景、程序用的尺寸、位置、光路和太阳月亮角度）：[docs/施工图-v0.12.html](docs/施工图-v0.12.html)，PDF：[docs/日落回廊_施工图_v0.12.pdf](docs/日落回廊_施工图_v0.12.pdf)
 - **建筑和机关模型 v0.12**（Blender .blend、给 UE 的 FBX、UE 导入并核对的脚本、机关清单、数值核对报告）：[models/temple-v0.12/](models/temple-v0.12/README.md)
+- **UE 交接：日月轨道 + 站在哪里决定几点**（给新开的 Claude Code 会话照做的说明、标准答案、参考实现、UE 里的核对脚本）：[docs/ue-handoff/](docs/ue-handoff/README.md)
 - **v0.12 灰盒（神殿）**：[prototype/temple/index.html](prototype/temple/index.html)，说明见 [prototype/README.md](prototype/README.md)
 - v0.11 灰盒（对照）：[prototype/temple-v0.11/index.html](prototype/temple-v0.11/index.html)
 - v0.10 灰盒（对照）：[prototype/temple-v0.10/index.html](prototype/temple-v0.10/index.html)
