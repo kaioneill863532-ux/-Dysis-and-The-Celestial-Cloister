@@ -53,3 +53,16 @@ if which == 'facadekit':   # 外立面按构件种类上色：同一种颜色相
             if o.type == 'MESH' and o.data.name == k:
                 for s in o.material_slots: s.link = 'OBJECT'; s.material = m
     shot(f'{outdir}/preview_facade_kit.png', P(118, 62, 20), P(118, 0, 16), lens=40)
+if which in ('mechW', 'mechE'):   # 剖面里把机关标成橙色；朝西看是西半边（三相像、天鹅、双子、拉杆 A），朝东看是东半边（女神、日之龛、拉杆 B、浮雕）
+    hm = bpy.data.materials.new('HL'); hm.use_nodes = True
+    bs = hm.node_tree.nodes['Principled BSDF']; bs.inputs['Base Color'].default_value = (1.0, 0.45, 0.08, 1)
+    for o in sc.objects:
+        if o.type == 'MESH' and o.name.startswith('SM_Mech_') and not o.name.startswith('SM_Mech_Water'):
+            for s in o.material_slots: s.link = 'OBJECT'; s.material = hm
+    for n in ('SM_Mech_Water_Sea',):
+        if n in bpy.data.objects: bpy.data.objects[n].hide_render = True
+    look = 280 if which == 'mechW' else 110
+    for z in (3, 10, 18, 26):   # 中庭里挂几盏灯（光圈合着，屋顶是暗的）
+        L = bpy.data.objects.new(f'PL{z}', bpy.data.lights.new(f'PL{z}', 'POINT')); L.data.energy = 700; L.data.shadow_soft_size = 2.0
+        L.location = (0, 0, z); sc.collection.objects.link(L)
+    shot(f'{outdir}/preview_{which}.png', P((look + 180) % 360, 7.5, 13), P(look, 13, 14), lens=14)

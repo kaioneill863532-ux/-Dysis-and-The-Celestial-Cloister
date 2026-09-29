@@ -190,6 +190,26 @@ def max_nn(a, b):   # a 里每个点到 b 里最近点的距离，取最大
     kd = KDTree(len(b))
     for i, q in enumerate(b): kd.insert(q, i)
     kd.balance(); return max(kd.find(q)[2] for q in a)
+def localize_share(ob, base, th, kind, prefix):
+    """把物体换成自己的轴心（base，绕 Z 转 th），和同一种的共用网格；返回和原位的最大偏差（m）。"""
+    before = world_pts(ob)
+    ob.data.transform(Matrix.Rotation(-th, 4, 'Z') @ Matrix.Translation(-base))
+    ob.rotation_mode = 'XYZ'; ob.location = base; ob.rotation_euler = (0, 0, th); compact_materials(ob.data)
+    # 同一种：同类型、顶点数一样、每个顶点到对方最近顶点不超过 2 mm（面数可能差一两个：三角面合没合）
+    mine = [v.co.copy() for v in ob.data.vertices]; same = None
+    for km in kit.get(kind, []):
+        if len(km.vertices) != len(mine) or [m.name for m in km.materials] != [m.name for m in ob.data.materials]: continue
+        theirs = [v.co.copy() for v in km.vertices]
+        if max_nn(mine, theirs) < 0.002 and max_nn(theirs, mine) < 0.002: same = km; break
+    if same:
+        old = ob.data; ob.data = same; bpy.data.meshes.remove(old)
+    else:
+        n = len(kit.get(kind, [])); ob.data.name = prefix + kind + (f'_v{n + 1}' if n else ''); smooth(ob)
+        kit.setdefault(kind, []).append(ob.data)
+    kit_count[ob.data.name] = kit_count.get(ob.data.name, 0) + 1
+    bpy.context.view_layer.update()
+    after = world_pts(ob)
+    return max(max_nn(after, before), max_nn(before, after))
 for cat in sorted(c for c in bycat if c.startswith('Facade~')):
     objs = bycat[cat]; sub = {k: objs[0].get(k) for k in ('t', 'band', 'k', 'key', 'az', 'r', 'y')}
     ob = join(objs, 'tmp'); clean(ob)
@@ -198,30 +218,47 @@ for cat in sorted(c for c in bycat if c.startswith('Facade~')):
         me = ob.data; pv = pivot_of(me, True); me.transform(Matrix.Translation(-pv)); ob.location = pv
         ob.name = me.name = 'SM_Facade_' + sub['key']; compact_materials(me); smooth(ob); made['FacadeRing'].append(ob); continue
     t, band, k = sub['t'], sub['band'], sub['k']
-    before = world_pts(ob)
     az = sub['az']; base = P(az, sub['r'], sub['y']); th = math.pi - math.radians(az)
-    ob.data.transform(Matrix.Rotation(-th, 4, 'Z') @ Matrix.Translation(-base))
-    ob.rotation_mode = 'XYZ'; ob.location = base; ob.rotation_euler = (0, 0, th); compact_materials(ob.data)
     kind = t + (f'_L{band}' if band is not None else '') + (f"_{sub['key']}" if sub['key'] else '')
-    # 同一种：同类型、顶点数一样、每个顶点到对方最近顶点不超过 2 mm
-    mine = [v.co.copy() for v in ob.data.vertices]; same = None
-    for km in kit.get(kind, []):
-        if len(km.vertices) != len(mine) or [m.name for m in km.materials] != [m.name for m in ob.data.materials]: continue   # 面数可能差一两个（三角面合没合），形状一样就算
-        theirs = [v.co.copy() for v in km.vertices]
-        if max_nn(mine, theirs) < 0.002 and max_nn(theirs, mine) < 0.002: same = km; break
-    if same:
-        old = ob.data; ob.data = same; bpy.data.meshes.remove(old)
-    else:
-        n = len(kit.get(kind, [])); ob.data.name = 'SM_Kit_Facade_' + kind + (f'_v{n + 1}' if n else ''); smooth(ob)
-        kit.setdefault(kind, []).append(ob.data)
-    kit_count[ob.data.name] = kit_count.get(ob.data.name, 0) + 1
+    fac_dev = max(fac_dev, localize_share(ob, base, th, kind, 'SM_Kit_Facade_'))
     ob.name = 'SM_Facade_' + kind + (f'_{k:02d}' if k is not None else '')
     ob['类型'] = TYPE_CN[t]; ob['方位角'] = round(az, 3); ob['底高'] = round(sub['y'], 3)
     if band is not None: ob['所在层'] = ['一层', '二层', '三层', '四层'][band]
-    bpy.context.view_layer.update()
-    after = world_pts(ob)
-    _dv = max(max_nn(after, before), max_nn(before, after)); fac_dev = max(fac_dev, _dv)
     made[FAC_GROUP[t]].append(ob); fac_inst.append(ob)
+# 机关、道具、雕像、水面：灰盒导出时一个部件一组，带着轴心（转轴、铰链、滑动的基准点）、朝向（绕竖轴）、怎么动、挂在哪个部件下面
+MECH_COL = [('Slider', '日2 推拉石板'), ('LeverA', '日2 拉杆'), ('LeverB', '日2 拉杆'), ('IrisRelief', '日2 伊莉丝浮雕'), ('Mirror', '日3 三相像'),
+            ('SunNiche', '日3 日之龛'), ('Sill', '虹 窗台石沿和虹之龛'), ('Prism', '虹 棱镜'), ('Selene', '虹 塞勒涅浮雕'), ('RainbowBridge', '虹 虹桥（光）'),
+            ('Swan', '月2 天鹅'), ('MoonRelief', '月3 月亮浮雕'), ('StairSeal', '墙里楼梯 下门石板'), ('StairWindows', '墙里楼梯 外窗石块'),
+            ('Twins', '月4 双子'), ('MoonBridge', '月4 月桥'), ('Goddess', '月5 女神'), ('HalfBridge', '月5 半桥'), ('MoonShrine', '月之龛'),
+            ('Sluice', '水闸石台矮栏'), ('RoofBridgeDoor', '屋顶 桥门'), ('Armillary', '浑天仪'), ('IrisBlades', '屋顶 光圈叶片'), ('Water', '水面 瀑布 海')]
+MECH_TITLE = dict(MECH_COL)
+PART_CN = {'Panel_b2': '石板（上升的窗 b2）', 'Panel_iris': '石板（虹的窗 iris）', 'Rail_b2': '滑轨（b2）', 'Rail_iris': '滑轨（iris）', 'Arm': '杆', 'Base': '底座',
+           'Chain': '铜链', 'Relief': '浮雕', 'CarvedBow': '刻着的虹', 'Lip': '铜唇（水帘）', 'Ledge': '窗下石沿', 'Niche': '虹之龛', 'NicheDoorL': '龛门（左）',
+           'NicheDoorR': '龛门（右）', 'NicheShard': '虹之碎片', 'Glass': '棱镜', 'Wheel': '铜轮', 'Slit': '铜缝', 'Column': '铜柱', 'Mirror': '铜镜',
+           'Statue': '像', 'Crank': '绞盘', 'Plinth': '台座', 'Lid': '盖子', 'Shard': '碎片', 'Box': '铜匣', 'Swan': '天鹅', 'Goddess': '女神像',
+           'Door': '石门', 'Disk': '银月亮', 'Block': '月石（会隐去的那块墙）', 'WallBlock': '厚墙正面的月石', 'ThickWall': '厚墙和龛', 'Castor': '卡斯托耳',
+           'Pollux': '波吕丢刻斯', 'Deck': '桥面', 'Leaf': '门扇', 'Top': '屋顶接光台', 'Pavilion': '水亭', 'Pool': '水庭水面', 'Waterfall': '瀑布水帘',
+           'Sea': '海面', 'Light': '虹桥', 'Rail': '矮栏'}
+mech_inst = []; mech_dev = 0.0; mech_parent = {}; mech_info = {}; made['Mech'] = []
+for cat in sorted(c for c in bycat if c.startswith('Mech~')):
+    objs = bycat[cat]; o0 = objs[0]
+    sub = {k: o0.get(k) for k in ('mech', 'part', 'px', 'py', 'pz', 'yaw', 'kind', 'parent', 'motion', 'nocol')}
+    ob = join(objs, 'tmp'); clean(ob)
+    for pk in list(ob.keys()): del ob[pk]
+    base = Vector((sub['px'], -sub['pz'], sub['py'])); th = float(sub['yaw'] or 0.0)   # 灰盒（Y 向上）→ Blender（Z 向上）；绕 Y 的角 = 绕 Z 的角
+    kind = sub['kind'] or f"{sub['mech']}_{sub['part']}"
+    mech_dev = max(mech_dev, localize_share(ob, base, th, kind, 'SM_Kit_Mech_'))
+    ob.name = f"SM_Mech_{sub['mech']}_{sub['part']}"
+    ob['所属机关'] = MECH_TITLE.get(sub['mech'], sub['mech']); ob['部件'] = PART_CN.get(sub['part'], sub['part'].replace('_', ' '))
+    ob['怎么动'] = sub['motion'] or ''
+    if sub['parent']: mech_parent[ob.name] = f"SM_Mech_{sub['mech']}_{sub['parent']}"
+    mech_info[ob.name] = {'mech': sub['mech'], 'part': sub['part'], 'motion': sub['motion'] or '', 'nocol': bool(sub['nocol'])}
+    mech_inst.append(ob); made['Mech'].append(ob)
+bpy.context.view_layer.update()
+for ob in mech_inst:   # 挂到父部件下面（世界位置不变）：拉杆的杆挂在底座上，龛门挂在龛上，龛挂在石沿上……
+    pn = mech_parent.get(ob.name)
+    if pn: mw = ob.matrix_world.copy(); ob.parent = bpy.data.objects[pn]; ob.matrix_world = mw
+bpy.context.view_layer.update()
 made['Site'] = take('Site', lab_site, ring=('Terrain', 'Podium', 'Peristyle_Entablature'))
 # 门廊柱子按方位排号
 pcs = sorted([o for o in made['Site'] if o.name.startswith('SM_PorticoCol_')], key=lambda o: (az_of(o.location) + 180) % 360)
@@ -362,8 +399,11 @@ colf('Floors', '02 楼板与台面'); colf('Parapets', '03 栏杆'); colf('Colum
 for key, title in (('FacadeArch', '05a 盲拱（每间一个）'), ('FacadePil', '05b 壁柱'), ('FacadeFrame', '05c 主光窗窗框和北门门框'),
                    ('FacadeStatue', '05d 雕像'), ('FacadeRing', '05e 檐口和线脚（整圈）')):
     c = bpy.data.collections.new(title); cols['Facade'].children.link(c); cols[key] = c
+colf('MechRoot', '11 机关与道具'); colf('Markers', '99 方位标记（核对用，可删）')
+for i, title in enumerate(dict.fromkeys(t for _, t in MECH_COL)):
+    c = bpy.data.collections.new(f'11.{i + 1:02d} {title}'); cols['MechRoot'].children.link(c); cols['Mech:' + title] = c
 colf('Site', '06 场地·台基·柱廊·门廊·小岛'); colf('Pavilion', '07 水亭'); colf('RoofRing', '08 屋顶环道（每一块单独，升降用）')
-colf('RoofBridge', '09 屋顶细桥'); colf('RoofArch', '10 虹门'); colf('Markers', '99 方位标记（核对用，可删）')
+colf('RoofBridge', '09 屋顶细桥'); colf('RoofArch', '10 虹门')
 wall = ring_wall(); cols['Wall'].objects.link(wall)
 cuts = []
 byid = {o['id']: o for o in D['wallCuts']}
@@ -389,12 +429,12 @@ for cat, obs in made.items():
     if cat == 'Wall': continue
     for o in obs:
         for c in list(o.users_collection): c.objects.unlink(o)
-        cols[cat].objects.link(o)
+        (cols['Mech:' + MECH_TITLE[mech_info[o.name]['mech']]] if cat == 'Mech' else cols[cat]).objects.link(o)
 for o in marks:
     for c in list(o.users_collection): c.objects.unlink(o)
     cols['Markers'].objects.link(o)
 bpy.context.view_layer.layer_collection.children[NAME].children[cols['Cut'].name].hide_viewport = True   # 切割体默认隐藏（眼睛图标），布尔照样算
-build = [o for cat, obs in made.items() for o in obs]
+build = [o for cat, obs in made.items() if cat != 'Mech' for o in obs]   # 建筑（量建筑的数值只用这些）
 
 # ───────── 4. 量数值（用算完布尔的结果） ─────────
 dg = bpy.context.evaluated_depsgraph_get()
@@ -406,6 +446,7 @@ def bvh_of(obs):
         me = world_mesh(ob); bm.from_mesh(me); bpy.data.meshes.remove(me)
     t = BVHTree.FromBMesh(bm); bm.free(); return t
 ALL = bvh_of(build); WALL = bvh_of([wall])
+FULL = bvh_of(build + [o for o in mech_inst if not mech_info[o.name]['nocol']])   # UE 里全部都在：交给 UE 的射线要在这个上面也打到同一处（水面、瀑布、虹桥不挡）
 wme = world_mesh(wall)
 rows = []; probes = []; LAST = None
 def check(group, item, expect, got, tol=0.02):
@@ -416,7 +457,7 @@ def check(group, item, expect, got, tol=0.02):
     LAST = None
 def add_probe(group, item, last, expect, tol):
     p, sgn, maxd, got = last
-    h = ALL.ray_cast(p, Vector((0, 0, sgn)), maxd)
+    h = FULL.ray_cast(p, Vector((0, 0, sgn)), maxd)
     if h[0] is None or got is None or abs(h[0].z - got) > 1e-4: return
     probes.append({'g': group, 'item': item, 'E': round(p.x, 4), 'N': round(p.y, 4), 'U': round(p.z, 4), 'dir': sgn, 'maxd': maxd, 'expect': round(expect, 4), 'tol': tol})
 def _ray(p, sgn, bvh, maxd):
@@ -518,7 +559,8 @@ from collections import Counter
 cnt = Counter(o['类型'] for o in fac_inst)
 rows.append(('外立面', '单独的构件数（' + '、'.join(f'{k} {v}' for k, v in cnt.items()) + '）', len(fac_inst), len(fac_inst), len(fac_inst) > 0))
 KIT = [m for ms in kit.values() for m in ms]
-rows.append(('外立面', f'共用的网格（{len(KIT)} 种，同一种的构件共用一份）', len(KIT), len({o.data.name for o in fac_inst}), len(KIT) == len({o.data.name for o in fac_inst})))
+FKIT = [m for m in KIT if m.name.startswith('SM_Kit_Facade_')]
+rows.append(('外立面', f'共用的网格（{len(FKIT)} 种，同一种的构件共用一份）', len(FKIT), len({o.data.name for o in fac_inst}), len(FKIT) == len({o.data.name for o in fac_inst})))
 rows.append(('外立面', '换成各自轴心、共用网格以后，每件的顶点和灰盒原位的最大偏差（m）', 0.0, round(fac_dev, 4), fac_dev < 0.002))
 hp = {}
 for ob in fac_inst:
@@ -526,16 +568,60 @@ for ob in fac_inst:
     z0, z1 = min(v.co.z for v in me.vertices), max(v.co.z for v in me.vertices); bpy.data.meshes.remove(me)
     az = ob['方位角']; d = (P(az, -1, 0) - P(az, 0, 0)).normalized(); t = ob['类型']; hp.setdefault(t, [0, 0]); hp[t][1] += 1
     for f in (0.5, 0.3, 0.7, 0.1, 0.9, 0.03):
-        st = P(az, 19.0, z0 + (z1 - z0) * f); ha = ALL.ray_cast(st, d, 5); ho = own.ray_cast(st, d, 5)
+        st = P(az, 19.0, z0 + (z1 - z0) * f); ha = FULL.ray_cast(st, d, 5); ho = own.ray_cast(st, d, 5)
         if ha[0] is not None and ho[0] is not None and abs(ha[3] - ho[3]) < 1e-4:
             probes.append({'g': '外立面', 'item': f'{ob.name} 正面', 'kind': t, 'E': round(st.x, 4), 'N': round(st.y, 4), 'U': round(st.z, 4),
                            'dE': round(d.x, 6), 'dN': round(d.y, 6), 'dU': 0.0, 'maxd': 5, 'dist': round(ha[3], 4), 'tol': 0.01})
             hp[t][0] += 1; break
 for t, (a, b) in hp.items():
     rows.append(('外立面', f'{t}：从外面水平打过去先打到它自己的件数（被柱廊、门廊挡住的不算）', f'≤ {b}', a, a > 0))
+# 机关：换成各自轴心以后和灰盒原位的偏差；轴心和设计值对得上；能踩的台面高度（也交给 UE）
+rows.append(('机关', f'单独的部件数（{len({mech_info[o.name]["mech"] for o in mech_inst})} 个机关、道具）', len(mech_inst), len(mech_inst), len(mech_inst) > 0))
+rows.append(('机关', '换成各自轴心、共用网格以后，每件的顶点和灰盒原位的最大偏差（m）', 0.0, round(mech_dev, 4), mech_dev < 0.002))
+OB = bpy.data.objects
+def pivot_row(name, label, exp, tol=0.02, horiz=False):
+    if name not in OB: rows.append(('机关位置', label, '有这个部件', '没有', False)); return
+    L = OB[name].matrix_world.translation
+    d = math.hypot(L.x - exp.x, L.y - exp.y) if horiz else (L - exp).length
+    rows.append(('机关位置', label, f'({exp.x:.2f}, {exp.y:.2f}, {exp.z:.2f})', f'({L.x:.2f}, {L.y:.2f}, {L.z:.2f})', d <= tol))
+def dP(d, y=None): return P(d['az'], d['r'], d['y'] if y is None else y)
+Dm = D['mirror']; Dt = D['twins']; Dg = D['goddess']
+for k in ('A', 'B'): pivot_row(f'SM_Mech_Lever{k}_Base', f'拉杆 {k} 底座（方位 {D["levers"][k]["az"]}°、半径 {D["levers"][k]["r"]}、二层地面）', dP(D['levers'][k]))
+for sp, pid in zip(D['sliders'], ('b2', 'iris')):
+    a = sp['az'] + (0 if sp['openAt'] else sp['shift'])
+    pivot_row(f'SM_Mech_Slider_Panel_{pid}', f'推拉石板 {pid} 开局的位置（方位 {a:.2f}°、半径 {ROUT + 0.1:.2f}、中心高 {(sp["y0"] + sp["y1"]) / 2:.2f}）', P(a, ROUT + 0.1, (sp['y0'] + sp['y1']) / 2))
+pivot_row('SM_Mech_Mirror_Statue', f'三相像（方位 {Dm["def"]["az"]}°、半径 {Dm["def"]["r"]}、台面 {Dm["top"]}）', P(Dm['def']['az'], Dm['def']['r'], Dm['top']))
+pivot_row('SM_Mech_Mirror_Mirror', f'三相像铜镜中心（白天那一格：方位 {Dm["center"]["az"]}°、半径 {Dm["center"]["r"]}、高 {Dm["center"]["y"]}）', dP(Dm['center']), 0.03)
+pivot_row('SM_Mech_Swan_Goddess', f'天鹅女神像（方位 {D["swan"]["az"]}°、半径 {D["swan"]["r"]}、台面 {F[3] + D["swan"]["plinth"]}）', P(D['swan']['az'], D['swan']['r'], F[3] + D['swan']['plinth']))
+pivot_row('SM_Mech_Twins_Castor', f'卡斯托耳（方位 {Dt["castorAz"]}°、半径 {Dt["rCastor"]}）', P(Dt['castorAz'], Dt['rCastor'], F[1]))
+pivot_row('SM_Mech_Twins_Pollux', f'波吕丢刻斯开局在龛里（方位 {Dt["wallAz"]}°、半径 {RIN + 0.15}）', P(Dt['wallAz'], RIN + 0.15, F[1]))
+pivot_row('SM_Mech_Goddess_Statue', f'瀑布后的女神（方位 {Dg["az"]}°、半径 {Dg["r"]}、矮台面 {Dg["top"]}）', P(Dg['az'], Dg['r'], Dg['top']))
+pivot_row('SM_Mech_Prism_Glass', f'棱镜（方位 {D["prism"]["pos"]["az"]}°、半径 {D["prism"]["pos"]["r"]}、高 {D["prism"]["pos"]["y"]}）', dP(D['prism']['pos']))
+pivot_row('SM_Mech_SunNiche_Box', f'日之龛铜匣（方位 {D["ledge"]["az"]}°、半径 {RIN - 0.6}、石台 {D["ledge"]["y"]}）', P(D['ledge']['az'], RIN - 0.6, D['ledge']['y']))
+se = D['selene']['eye']; pivot_row('SM_Mech_Selene_Relief', f'塞勒涅浮雕（眼睛在方位 {se["az"]}°、高 {se["y"]}；浮雕板中心比眼睛低 0.25）', P(se['az'], RIN - 0.04, se['y'] - 0.25), 0.03)
+cc = D['crown']['catch']; pivot_row('SM_Mech_Armillary_Top', f'屋顶浑天仪（接光台：方位 {cc["az"]:.2f}°、半径 {cc["r"]}、平台 {D["crown"]["TOP_Y"]} + 1.55）', P(cc['az'], cc['r'], D['crown']['TOP_Y'] + 1.55))
+pivot_row('SM_Mech_Armillary_Pavilion', f'水亭浑天仪（殿心，亭面 {D["pav"]["top"]} + 1.6）', Vector((0, 0, D['pav']['top'] + 1.6)))
+pivot_row('SM_Mech_HalfBridge_Deck', f'半桥根部（方位 {D["halfBridge"]["g"]}°、半径 {D["dims"]["R_POOL"] + 0.35}）', P(D['halfBridge']['g'], D['dims']['R_POOL'] + 0.35, 0), 0.05)
+# 能踩的台面：在部件自己身上从上往下打，打到的高度和设计值比；UE 里再打一遍
+def top_probe(name, label, expect, center, radii, tol=0.02):
+    if name not in OB: rows.append(('机关台面', label, expect, None, False)); return
+    me = world_mesh(OB[name]); own = BVHTree.FromPolygons([v.co.copy() for v in me.vertices], [q.vertices[:] for q in me.polygons]); bpy.data.meshes.remove(me)
+    for r in radii:
+        for a in range(0, 360, 30):
+            st = Vector((center.x + r * math.sin(math.radians(a)), center.y + r * math.cos(math.radians(a)), expect + 0.25))
+            ho = own.ray_cast(st, Vector((0, 0, -1)), 1.0); hf = FULL.ray_cast(st, Vector((0, 0, -1)), 1.0)
+            if ho[0] is not None and hf[0] is not None and abs(ho[0].z - hf[0].z) < 1e-4:
+                global LAST
+                LAST = (st.copy(), -1, 1.0, hf[0].z); check('机关台面', label, expect, hf[0].z, tol); return
+    rows.append(('机关台面', label, expect, None, False))
+top_probe('SM_Mech_Mirror_Plinth', '三相像的台面（三层地面 + 0.9）', F[2] + Dm['def']['plinth'], P(Dm['def']['az'], Dm['def']['r']), (1.0, 1.1))
+top_probe('SM_Mech_Swan_Plinth', '天鹅女神像的台面（四层地面 + 0.5）', F[3] + D['swan']['plinth'], P(D['swan']['az'], D['swan']['r']), (0.45, 0.5))
+top_probe('SM_Mech_Goddess_Plinth', '女神的矮台面（和水闸石台一样高）', Dg['top'], P(Dg['az'], Dg['r']), (1.0, 0.9, 0.8, 1.1))
+top_probe('SM_Mech_Sill_Ledge', '南窗下的石沿（伸出来时）', D['sill']['y'], P(D['sill']['a0'] + 1.0, D['sill']['r0'] + 0.25), (0.0, 0.2))
+top_probe('SM_Mech_HalfBridge_Deck', '半桥根部桥面（伸出来时，离池沿 0.3 m，和池沿差不多高 0）', 0.0, P(D['halfBridge']['g'], D['dims']['R_POOL'] + 0.35 - 0.3), (0.0,), 0.03)
 # 网格干不干净：每个物体的面数、四边面比例
 stats = []
-for ob in build:
+for ob in build + mech_inst:
     me = world_mesh(ob); me.calc_loop_triangles(); nq = sum(1 for p in me.polygons if len(p.vertices) == 4)
     bmx = bmesh.new(); bmx.from_mesh(me); nme = sum(1 for e in bmx.edges if not e.is_manifold); bmx.free()
     stats.append((ob.name, len(me.polygons), nq, len(me.loop_triangles), nme)); bpy.data.meshes.remove(me)
@@ -553,8 +639,8 @@ def export(objs, path):
     for o in objs: o.select_set(True)
     bpy.ops.export_scene.fbx(filepath=path, **FBXOPT)
 export(exp_objs, fbx)
-fbx_placed = os.path.join(OUT, 'Dysis_Facade_Placed_v0_12.fbx'); export(fac_inst, fbx_placed)
-fbx_kit = os.path.join(OUT, 'Dysis_Facade_Kit_v0_12.fbx')
+fbx_placed = os.path.join(OUT, 'Dysis_Placed_v0_12.fbx'); export(fac_inst + mech_inst, fbx_placed)
+fbx_kit = os.path.join(OUT, 'Dysis_Kit_v0_12.fbx')
 tmp = []
 for me in KIT:   # 构件库：每种网格一个物体，放在原点不转（UE 里一种一个资源）
     o = bpy.data.objects.new(me.name, me); sc.collection.objects.link(o); tmp.append(o)
@@ -567,16 +653,19 @@ def wbounds(ob, local=False):
     return b
 def ntris(ob):
     me = world_mesh(ob); me.calc_loop_triangles(); n = len(me.loop_triangles); bpy.data.meshes.remove(me); return n
-folders = {o.name: o.users_collection[0].name for o in exp_objs + fac_inst}
+folders = {o.name: o.users_collection[0].name for o in exp_objs + fac_inst + mech_inst}
 bounds = {o.name: wbounds(o) for o in exp_objs}; tris = {o.name: ntris(o) for o in exp_objs}
-pbounds = {o.name: wbounds(o) for o in fac_inst}
+pbounds = {o.name: wbounds(o) for o in fac_inst + mech_inst}
 kitinfo = {o.name: {'local': wbounds(o, True), 'tris': ntris(o), 'uses': kit_count[o.name]} for o in tmp}
 insts = []
-for o in fac_inst:
-    th = math.degrees(o.rotation_euler.z); L = o.location
+for o in fac_inst + mech_inst:   # 世界里的位置和绕 Z 的转角（有父部件的也按世界算）
+    mw = o.matrix_world; L = mw.translation; th = math.degrees(math.atan2(mw[1][0], mw[0][0]))
     yaw = (90.0 - th + 180.0) % 360.0 - 180.0
-    insts.append({'name': o.name, 'mesh': o.data.name, 'b_loc': [round(L.x, 5), round(L.y, 5), round(L.z, 5)], 'b_rot': round(th, 5),
-                  'ue_loc': [round(L.y * 100, 2), round(L.x * 100, 2), round(L.z * 100, 2)], 'ue_yaw': round(yaw, 4)})
+    it = {'name': o.name, 'mesh': o.data.name, 'b_loc': [round(L.x, 5), round(L.y, 5), round(L.z, 5)], 'b_rot': round(th, 5),
+          'ue_loc': [round(L.y * 100, 2), round(L.x * 100, 2), round(L.z * 100, 2)], 'ue_yaw': round(yaw, 4), 'grp': 'mech' if o in mech_inst else 'facade'}
+    if o in mech_inst:
+        it['parent'] = mech_parent.get(o.name); it['nocol'] = mech_info[o.name]['nocol']; it['motion'] = mech_info[o.name]['motion']; it['part'] = o['部件']; it['mech'] = o['所属机关']
+    insts.append(it)
 for o in tmp: bpy.data.objects.remove(o)
 def reimport(path, expect, local=False):
     bpy.ops.wm.read_factory_settings(use_empty=True); bpy.ops.import_scene.fbx(filepath=path)
@@ -588,7 +677,7 @@ def reimport(path, expect, local=False):
         bb = [[min(v[i] for v in vs) for i in range(3)], [max(v[i] for v in vs) for i in range(3)]]
         worst = max(worst, max(abs(bb[j][i] - b[j][i]) for i in range(3) for j in range(2)))
     return seen, worst
-for label, path, exp, loc in (('建筑', fbx, bounds, False), ('外立面构件库', fbx_kit, kitinfo, True), ('外立面摆好的', fbx_placed, pbounds, False)):
+for label, path, exp, loc in (('建筑', fbx, bounds, False), ('构件库（外立面 + 机关）', fbx_kit, kitinfo, True), ('外立面和机关摆好的', fbx_placed, pbounds, False)):
     seen, worst = reimport(path, exp, loc)
     rows.append(('FBX 复核', f'{label} FBX 导回 Blender 的物体数（应为 {len(exp)}）', len(exp), seen, seen == len(exp)))
     rows.append(('FBX 复核', f'{label} FBX 导回后包围盒的最大偏差（m）', 0.0, round(worst, 4), worst < 0.005))
@@ -599,7 +688,7 @@ ue = {'name': NAME, 'bounds_cm': {}, 'tris': tris, 'folders': folders, 'instance
 for n, (lo, hi) in bounds.items():   # Blender（X 东、Y 北、Z 上，米）→ UE（X 北、Y 东、Z 上，厘米）
     ue['bounds_cm'][n] = [[round(lo[1] * 100, 1), round(lo[0] * 100, 1), round(lo[2] * 100, 1)], [round(hi[1] * 100, 1), round(hi[0] * 100, 1), round(hi[2] * 100, 1)]]
 json.dump(ue, open(os.path.join(OUT, 'ue_expect.json'), 'w'), ensure_ascii=False)
-print('objects', len(bounds), 'facade pieces', len(fac_inst), 'kit meshes', len(KIT), 'probes', len(probes))
+print('objects', len(bounds), 'facade pieces', len(fac_inst), 'mech parts', len(mech_inst), 'kit meshes', len(KIT), 'probes', len(probes))
 npass = sum(1 for r in rows if r[4]); print('checks', len(rows), 'pass', npass)
 for r in rows:
     if not r[4]: print('FAIL', r)

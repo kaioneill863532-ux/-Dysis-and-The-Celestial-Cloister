@@ -3,13 +3,13 @@
 # 用法（UE 5.x 编辑器）：
 #   1. 编辑 → 插件，打开 “Python Editor Script Plugin”，重启编辑器。
 #   2. 新建一个空关卡（或打开要放神殿的关卡）。把下面 FBX 改成 Dysis_Temple_v0_12.fbx 实际放的位置
-#      （外立面构件库 Dysis_Facade_Kit_v0_12.fbx 放在同一个文件夹里）。
+#      （构件库 Dysis_Kit_v0_12.fbx 放在同一个文件夹里）。
 #   3. 工具 → 执行 Python 脚本…，选这个文件。
 #      也可以在输出日志的 Python 命令行里：exec(open(r"D:/路径/ue_import_temple.py", encoding="utf-8").read())
 #   4. 看输出日志。最后一行是“全部通过”，或者列出没过的项。完整报告另存在 项目/Saved/Dysis_Temple_v0_12_UE核对.txt。
 #
 # 脚本做的事：
-#   · 导入两个 FBX：建筑（每个构件一个静态网格）和外立面构件库（每种构件一个静态网格：盲拱、壁柱、雕像、窗框……）。
+#   · 导入两个 FBX：建筑（每个构件一个静态网格）和构件库（外立面的盲拱、壁柱、雕像、窗框，机关的每个部件，每种一个静态网格）。
 #     不自动生成简单碰撞，碰撞按网格本身（复杂碰撞当简单碰撞用），人能在楼板、楼梯上走。
 #   · 在关卡里摆出全部构件（大纲视图 Dysis_Temple_v0_12 文件夹下，按类别分子文件夹）。外立面 158 件各是一个 Actor，
 #     用构件库里的网格，轴心在构件底部贴外墙的地方、正面朝外；换一件就换它的网格，整批换就替换构件库资源的引用。
@@ -18,11 +18,15 @@
 #   · 核对：比例、朝向、方位标记位置、每个构件的包围盒，还有和 Blender 里同一批竖直射线（各层地面和楼板底、栏杆顶、池底、
 #     窗台和拱顶、墙里楼梯的每一片踏步、屋顶环道每一级、细桥……），射线落点要和施工图的高度对上。
 #
-# 只摆建筑（含墙里的楼梯），机关、道具、水面、海面都不在里面。
+#   · 机关（石板、拉杆、三相像、天鹅、双子、女神、棱镜、浑天仪、光圈叶片……）每个部件一个 Actor，轴心在转轴、铰链或滑动的基准点上，
+#     设成可移动（Movable），按父子关系挂好（拉杆的杆挂在底座上、龛门挂在龛上……）；水面、瀑布、海、虹桥不挡东西（NoCollision）。
+#     每个部件怎么动见“机关清单.md”。
+#
+# 光柱、光阶、七色光带、影桥这些是按时间算出来的光，不是模型，不在里面。
 import unreal, math, json, os
 
 FBX = r"C:/Dysis/Dysis_Temple_v0_12.fbx"    # ← 改成 FBX 实际放的位置
-FBX_KIT = os.path.join(os.path.dirname(FBX), "Dysis_Facade_Kit_v0_12.fbx")   # 外立面构件库（默认和上面同一个文件夹）
+FBX_KIT = os.path.join(os.path.dirname(FBX), "Dysis_Kit_v0_12.fbx")   # 构件库：外立面 + 机关（默认和上面同一个文件夹）
 DEST = "/Game/Dysis/Temple_v0_12"            # 导入到内容浏览器的哪个文件夹
 DO_IMPORT = True                             # 已经导过、只想重新摆放和核对，改成 False
 KEEP_MARKERS = True                          # 核对完不想留三块红色方块，改成 False
@@ -145,14 +149,33 @@ for it in EXPECT["instances"]:
           else unreal.EditorLevelLibrary.spawn_actor_from_object(meshes[it["mesh"]], unreal.Vector(*loc), unreal.Rotator(roll=0.0, pitch=0.0, yaw=qy)))
     ac.set_actor_label(it["name"]); ac.set_folder_path(FOLDER + "/" + EXPECT["folders"].get(it["name"], "05 外立面"))
     inst_actors[it["name"]] = (ac, loc, qy)
-log(f"已摆放外立面 {len(inst_actors)} 件（用 {len(EXPECT['kit'])} 种构件网格）")
+n_fac = sum(1 for it in EXPECT["instances"] if it.get("grp") != "mech" and it["name"] in inst_actors)
+log(f"已摆放外立面 {n_fac} 件、机关部件 {len(inst_actors) - n_fac} 件（用 {len(EXPECT['kit'])} 种构件网格）")
+# 机关：可移动；水面、瀑布、海、虹桥不挡东西；按父子关系挂好（世界位置不变）
+attach_ok = 0; attach_n = 0
+for it in EXPECT["instances"]:
+    if it.get("grp") != "mech" or it["name"] not in inst_actors: continue
+    ac = inst_actors[it["name"]][0]
+    try: ac.static_mesh_component.set_mobility(unreal.ComponentMobility.MOVABLE)
+    except Exception as e: log(f"  {it['name']} 设可移动没成功：{e}")
+    if it.get("nocol"):
+        try: ac.static_mesh_component.set_collision_profile_name("NoCollision")
+        except Exception as e: log(f"  {it['name']} 关碰撞没成功：{e}")
+for it in EXPECT["instances"]:
+    if it.get("grp") != "mech" or not it.get("parent") or it["name"] not in inst_actors or it["parent"] not in inst_actors: continue
+    attach_n += 1
+    try:
+        R = unreal.AttachmentRule.KEEP_WORLD
+        inst_actors[it["name"]][0].attach_to_actor(inst_actors[it["parent"]][0], "", R, R, R, False); attach_ok += 1
+    except Exception as e: log(f"  {it['name']} 挂到 {it['parent']} 没成功：{e}")
+log(f"机关部件挂好父子关系 {attach_ok}/{attach_n}")
 
 # ───────── 5. 核对 ─────────
 rows = []   # (分组, 项目, 期望, 实测, 通过)
 def row(g, item, exp, got, ok): rows.append((g, item, exp, got, ok))
 row("比例", "标记方块边长（cm）", 100, round(max(sN), 2), all(abs(s - 100) < 0.5 for s in sN))
 row("朝向", "东标记转完在 +Y（没有镜像）", "是", "否" if mirrored else "是", not mirrored)
-row("导入", "网格个数（建筑 + 外立面构件库）", len(names), len(meshes), not missing)
+row("导入", "网格个数（建筑 + 构件库）", len(names), len(meshes), not missing)
 def world_bounds(ac):
     o, e = ac.get_actor_bounds(False)
     return [o.x - e.x, o.y - e.y, o.z - e.z], [o.x + e.x, o.y + e.y, o.z + e.z]
@@ -169,18 +192,21 @@ for key, info in EXPECT["kit"].items():   # 构件库网格本身的大小（网
     if key not in meshes: continue
     lo, hi = box_of(meshes[key]); elo, ehi = info["local_cm"]
     d = max(max(abs((lo.x, lo.y, lo.z)[i] - elo[i]) for i in range(3)), max(abs((hi.x, hi.y, hi.z)[i] - ehi[i]) for i in range(3)))
-    row("外立面构件库", f"{key}（{info['uses']} 件在用）网格大小", "偏差 ≤ 1 cm", f"{d:.2f} cm", d <= 1.0)
-pos_ok = 0; worst_p = worst_y = 0.0
-for it in EXPECT["instances"]:
-    if it["name"] not in inst_actors: continue
-    ac, loc, qy = inst_actors[it["name"]]
-    l = ac.get_actor_location(); r_ = ac.get_actor_rotation()
-    dp = math.sqrt((l.x - it["ue_loc"][0]) ** 2 + (l.y - it["ue_loc"][1]) ** 2 + (l.z - it["ue_loc"][2]) ** 2)
-    dy = abs((r_.yaw - it["ue_yaw"] + 180) % 360 - 180)
-    worst_p, worst_y = max(worst_p, dp), max(worst_y, dy)
-    if dp <= 1.0 and dy <= 0.05: pos_ok += 1
-    else: row("外立面", f"{it['name']} 位置 {l.x:.0f},{l.y:.0f},{l.z:.0f} Yaw {r_.yaw:.2f}", f"{it['ue_loc']} Yaw {it['ue_yaw']}", f"差 {dp:.1f} cm / {dy:.2f}°", False)
-row("外立面", f"每件的位置和朝向对上施工图（共 {len(EXPECT['instances'])} 件，最大偏差 {worst_p:.2f} cm、{worst_y:.3f}°）", len(EXPECT["instances"]), pos_ok, pos_ok == len(EXPECT["instances"]) and not inst_bad)
+    row("构件库", f"{key}（{info['uses']} 件在用）网格大小", "偏差 ≤ 1 cm", f"{d:.2f} cm", d <= 1.0)
+for grp, label in (("facade", "外立面"), ("mech", "机关")):
+    its = [it for it in EXPECT["instances"] if it.get("grp", "facade") == grp]
+    pos_ok = 0; worst_p = worst_y = 0.0
+    for it in its:
+        if it["name"] not in inst_actors: continue
+        ac, loc, qy = inst_actors[it["name"]]
+        l = ac.get_actor_location(); r_ = ac.get_actor_rotation()
+        dp = math.sqrt((l.x - it["ue_loc"][0]) ** 2 + (l.y - it["ue_loc"][1]) ** 2 + (l.z - it["ue_loc"][2]) ** 2)
+        dy = abs((r_.yaw - it["ue_yaw"] + 180) % 360 - 180)
+        worst_p, worst_y = max(worst_p, dp), max(worst_y, dy)
+        if dp <= 1.0 and dy <= 0.05: pos_ok += 1
+        else: row(label, f"{it['name']} 位置 {l.x:.0f},{l.y:.0f},{l.z:.0f} Yaw {r_.yaw:.2f}", f"{it['ue_loc']} Yaw {it['ue_yaw']}", f"差 {dp:.1f} cm / {dy:.2f}°", False)
+    row(label, f"每件的位置和朝向对上施工图（共 {len(its)} 件，最大偏差 {worst_p:.2f} cm、{worst_y:.3f}°）", len(its), pos_ok, pos_ok == len(its) and not inst_bad)
+if attach_n: row("机关", "部件挂好父子关系", attach_n, attach_ok, attach_ok == attach_n)
 ntri_ue = ntri_bl = 0; tri_ok = True
 for key, m in meshes.items():   # 三角形数只作参考（UE 可能去掉退化三角形）
     try: ntri_ue += m.get_num_triangles(0); ntri_bl += EXPECT["tris"][key] if key in EXPECT["tris"] else EXPECT["kit"][key]["tris"]

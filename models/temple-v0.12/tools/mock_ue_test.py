@@ -125,6 +125,11 @@ class Actor:
         l2 = Vector((min(v.x for v in cs), min(v.y for v in cs), min(v.z for v in cs))); h2 = Vector((max(v.x for v in cs), max(v.y for v in cs), max(v.z for v in cs)))
         return (l2 + h2) / 2, (h2 - l2) / 2
     def get_actor_location(self): return self.loc
+    @property
+    def static_mesh_component(self): return self
+    def set_mobility(self, m): self.mobility = m
+    def set_collision_profile_name(self, n): self.nocol = (n == 'NoCollision')
+    def attach_to_actor(self, parent, socket, a, b, c, weld): assert parent in ACTORS; self.parent = parent
     def get_actor_rotation(self): return Rot(yaw=self.yaw)
 class ActorSub:
     def get_all_level_actors(self): return list(ACTORS)
@@ -138,11 +143,12 @@ NTRACE = [0]
 def line_trace_single(world, s, e, ch, cplx, ignore, dbg, ignore_self):
     NTRACE[0] += 1; d = e - s; L = d.length; best = None
     for a in ACTORS:
-        if a in ignore: continue
+        if a in ignore or getattr(a, 'nocol', False): continue   # NoCollision 的射线打不到
         h = a.bvh.ray_cast(s, d.normalized(), L)
         if h[0] is not None and (best is None or h[3] < best[1]): best = (h[0], h[3])
     return None if best is None else Hit(best[0], best[1])
 U.SystemLibrary = types.SimpleNamespace(line_trace_single=line_trace_single)
+U.ComponentMobility = types.SimpleNamespace(MOVABLE='M'); U.AttachmentRule = types.SimpleNamespace(KEEP_WORLD='KW')
 U.TraceTypeQuery = types.SimpleNamespace(TRACE_TYPE_QUERY1=1); U.DrawDebugTrace = types.SimpleNamespace(NONE=0)
 U.Paths = types.SimpleNamespace(project_saved_dir=lambda: os.path.dirname(os.path.abspath(SCRIPT)))
 class Slow:
@@ -157,4 +163,4 @@ sys.modules['unreal'] = U
 src = open(SCRIPT, encoding='utf-8').read().replace('FBX = r"C:/Dysis/Dysis_Temple_v0_12.fbx"', f'FBX = r"{os.path.abspath(FBX)}"')
 exec(compile(src, SCRIPT, 'exec'), {'__name__': '__main__'})
 print('\n'.join(l for l in LOGS if not l.startswith('  （')))
-print('traces', NTRACE[0], 'actors', len(ACTORS), 'folders', sorted({a.folder for a in ACTORS})[:4], '…')
+print('traces', NTRACE[0], 'actors', len(ACTORS), 'movable', sum(1 for a in ACTORS if getattr(a, 'mobility', None)), 'attached', sum(1 for a in ACTORS if getattr(a, 'parent', None)), 'nocol', sum(1 for a in ACTORS if getattr(a, 'nocol', False)))
