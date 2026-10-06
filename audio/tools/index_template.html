@@ -1,0 +1,300 @@
+<title>日落回廊音效</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Noto+Serif+SC:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 布局：一条窄的工作栏（混响、音量、全部停止）+ 按编号排下来的条目；每条左边是排期编号，右边是说明和播放按钮。白天的声音用落日的金，夜里的用青金石的蓝。 */
+:root {
+  --bg: #eceef1;          /* 东半边的青白石 */
+  --surface: #f7f8fa;
+  --ink: #1b2130;
+  --muted: #586073;
+  --line: #d3d8e0;
+  --sun: #9a5f00;         /* 落日的金 */
+  --sun-soft: #f4e6c8;
+  --moon: #2f5592;        /* 青金石 */
+  --moon-soft: #dbe4f3;
+  --both: #3d4558;
+  --both-soft: #e1e4ea;
+  --focus: #2f5592;
+  --font-display: "Marcellus", "Noto Serif SC", "Songti SC", serif;
+  --font-head: "Noto Serif SC", "Songti SC", "STSong", serif;
+  --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1120; --surface: #151a2b; --ink: #e5e8f0; --muted: #9aa2b7; --line: #283049;
+    --sun: #e2b252; --sun-soft: #3a2f17; --moon: #a8bfec; --moon-soft: #1f2b47; --both: #c9cedb; --both-soft: #252c40;
+    --focus: #a8bfec; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1120; --surface: #151a2b; --ink: #e5e8f0; --muted: #9aa2b7; --line: #283049;
+  --sun: #e2b252; --sun-soft: #3a2f17; --moon: #a8bfec; --moon-soft: #1f2b47; --both: #c9cedb; --both-soft: #252c40;
+  --focus: #a8bfec; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.7 var(--font-body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; }
+header.top { display: grid; gap: 10px; padding-block: 8px 20px; }
+.eyebrow { font: 500 12px/1.4 var(--font-mono); letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+h1 { margin: 0; font: 600 34px/1.25 var(--font-head); letter-spacing: 0.04em; text-wrap: balance; }
+h1 .lat { font-family: var(--font-display); font-weight: 400; font-size: 0.62em; letter-spacing: 0.06em; color: var(--muted); margin-left: 0.4em; }
+.lede { margin: 0; max-width: 66ch; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dot.day { background: var(--sun); } .dot.night { background: var(--moon); } .dot.both { background: var(--both); }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding-block: 10px; margin-bottom: 8px; }
+.bar label { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.bar input[type="range"] { width: 120px; accent-color: var(--moon); }
+.switch { appearance: none; width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; cursor: pointer; margin: 0; transition: background .15s; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); transition: transform .15s; }
+.switch:checked { background: var(--moon); }
+.switch:checked::after { transform: translateX(16px); }
+.bar .note { font-size: 12.5px; color: var(--muted); flex: 1 1 260px; min-width: 0; }
+button { font: inherit; color: inherit; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 13.5px; }
+.btn:hover { border-color: var(--muted); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+h2.tier { font: 600 20px/1.4 var(--font-head); margin: 34px 0 4px; letter-spacing: 0.06em; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+h2.tier small { font: 400 13px var(--font-body); color: var(--muted); letter-spacing: 0; }
+
+.item { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 4px 18px; padding-block: 22px; border-top: 1px solid var(--line); }
+.num { font: 400 40px/1 var(--font-display); color: var(--accent); padding-top: 4px; font-variant-numeric: tabular-nums; }
+.item.day { --accent: var(--sun); --soft: var(--sun-soft); }
+.item.night { --accent: var(--moon); --soft: var(--moon-soft); }
+.item.both, .item.ui { --accent: var(--both); --soft: var(--both-soft); }
+.body { min-width: 0; display: grid; gap: 8px; }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.head h3 { margin: 0; font: 600 19px/1.4 var(--font-head); letter-spacing: 0.03em; }
+.tag { font-size: 12px; border-radius: 999px; padding: 1px 9px; background: var(--soft); color: var(--accent); white-space: nowrap; }
+.reason { font-size: 13.5px; color: var(--muted); }
+.what { margin: 0; max-width: 72ch; }
+details.ue { max-width: 72ch; font-size: 14px; color: var(--muted); }
+details.ue summary { cursor: pointer; color: var(--ink); font-size: 13.5px; width: fit-content; }
+details.ue p { margin: 6px 0 0; }
+
+.groups { display: grid; gap: 8px; margin-top: 4px; }
+.group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.glabel { font-size: 12.5px; color: var(--muted); min-width: 64px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--surface); border-radius: 6px;
+  padding: 3px 10px 3px 8px; cursor: pointer; font: 400 12.5px/1.5 var(--font-mono); color: var(--ink); }
+.chip:hover { border-color: var(--accent); }
+.chip .tri { width: 0; height: 0; border-left: 7px solid var(--accent); border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+.chip .dur { color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip.loop .dur::after { content: " ∞"; }
+.chip.playing { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.chip.playing .tri { border: 0; width: 8px; height: 8px; background: var(--surface); }
+.chip.playing .dur { color: var(--surface); }
+.chip.seq { font-family: var(--font-body); border-style: dashed; }
+.chip.compact { padding-inline: 7px 9px; font-variant-numeric: tabular-nums; }
+.prefix { font: 400 11.5px/1.4 var(--font-mono); color: var(--muted); width: 100%; order: 99; padding-left: 70px; overflow-wrap: anywhere; }
+
+footer { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 18px; font-size: 13px; color: var(--muted); display: grid; gap: 10px; }
+footer h2 { font: 600 16px/1.4 var(--font-head); color: var(--ink); margin: 0; }
+.credits { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px 18px; }
+.credits a { color: var(--muted); text-decoration: none; overflow-wrap: anywhere; }
+.credits a:hover { color: var(--ink); text-decoration: underline; }
+.credits b { font-weight: 500; color: var(--ink); }
+
+@media (max-width: 560px) {
+  h1 { font-size: 27px; }
+  .item { grid-template-columns: minmax(0, 1fr); }
+  .num { font-size: 30px; }
+  .glabel { min-width: 0; width: 100%; }
+  .prefix { padding-left: 0; }
+  .bar .note { display: none; }
+  .bar input[type="range"] { width: 90px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Dysis and the Celestial Cloister · SFX</div>
+    <h1>日落回廊音效<span class="lat">Tier I–IV</span></h1>
+    <p class="lede" id="lede"></p>
+    <div class="legend" aria-label="颜色说明">
+      <span><i class="dot day"></i>白天（日光）</span>
+      <span><i class="dot night"></i>夜里（月光）</span>
+      <span><i class="dot both"></i>全程 / 界面</span>
+    </div>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="播放设置">
+    <label for="rev"><input type="checkbox" class="switch" id="rev"> 殿内混响</label>
+    <label for="vol">音量 <input type="range" id="vol" min="0" max="1.5" step="0.01" value="1"></label>
+    <button class="btn" id="stopAll" type="button">全部停止</button>
+    <span class="note" id="note">点一个按钮就播；再点一次停。带 ∞ 的是循环，可以几条叠着播（比如海浪 + 瀑布）。</span>
+  </div>
+
+  <main id="list"></main>
+
+  <footer>
+    <h2>素材出处</h2>
+    <p style="margin:0">全部是 Freesound 上的 CC0（公有领域）录音：可以商用、可以改，不需要署名。</p>
+    <div class="credits" id="credits"></div>
+  </footer>
+</div>
+
+<script>
+const DATA = /*MANIFEST*/null;
+const WHEN_LABEL = { day: "白天", night: "夜里", both: "全程", ui: "界面" };
+const TIER_LABEL = { 1: ["第一梯队", "没有它游戏就不成立（1、2、7、12、13 是音乐和时间和声，另外做）"], 2: ["第二梯队", "主线必经的机关和剧情节点"],
+  3: ["第三梯队", "明显加分（34 岛影逼近这次没做）"], 4: ["第四梯队", "可选支线和有余力再做"] };
+
+// ───────── 播放：能读文件就用 Web Audio（循环无缝、能加混响），读不了（本地直接双击打开）就退回 <audio> ─────────
+let ctx = null, master, wet, conv, irLoaded = false, useMedia = location.protocol === "file:";
+const bufs = new Map();
+const active = new Set();
+let volume = 1;
+
+function setupCtx() {
+  if (ctx || useMedia) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) { useMedia = true; return; }
+  ctx = new AC();
+  master = ctx.createGain(); master.gain.value = volume; master.connect(ctx.destination);
+  conv = ctx.createConvolver(); wet = ctx.createGain(); wet.gain.value = 0;
+  conv.connect(wet); wet.connect(master);
+  fetch("ir/IR_Temple_Rotunda.wav").then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(b => ctx.decodeAudioData(b)).then(buf => { conv.buffer = buf; irLoaded = true; applyReverb(); })
+    .catch(() => { document.getElementById("rev").disabled = true; });
+}
+function applyReverb() {
+  if (!ctx) return;
+  const on = document.getElementById("rev").checked && irLoaded;
+  wet.gain.setTargetAtTime(on ? 0.42 : 0, ctx.currentTime, 0.05);
+}
+function getBuf(path) {
+  if (!bufs.has(path)) bufs.set(path, fetch(path).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(b => ctx.decodeAudioData(b)));
+  return bufs.get(path);
+}
+function playOne(path, { loop = false, at = 0, t0 = null } = {}) {
+  // 返回一个能 stop() 的句柄；onend 在自然结束时调用
+  const h = { stopped: false, onend: null, stop() {} };
+  if (useMedia || !ctx) {
+    const a = new Audio(path); a.loop = loop; a.volume = Math.min(1, volume);
+    const t = setTimeout(() => a.play().catch(() => {}), at * 1000);
+    a.onended = () => { active.delete(h); h.onend && h.onend(); };
+    h.stop = () => { h.stopped = true; clearTimeout(t); a.pause(); active.delete(h); };
+    active.add(h); return h;
+  }
+  let src = null;
+  getBuf(path).then(buf => {
+    if (h.stopped) return;
+    src = ctx.createBufferSource(); src.buffer = buf; src.loop = loop;
+    const g = ctx.createGain(); g.gain.value = 1;
+    src.connect(g); g.connect(master); g.connect(conv);
+    src.onended = () => { active.delete(h); if (!h.stopped && h.onend) h.onend(); };
+    src.start(Math.max(ctx.currentTime + 0.01, (t0 ?? ctx.currentTime + 0.02) + at));
+    h.stop = () => { h.stopped = true; try { g.gain.setTargetAtTime(0, ctx.currentTime, 0.03); src.stop(ctx.currentTime + 0.15); } catch (e) {} active.delete(h); };
+  }).catch(() => { fail(path); active.delete(h); h.onend && h.onend(); });
+  h.stop = () => { h.stopped = true; active.delete(h); };
+  active.add(h); return h;
+}
+function fail(path) {
+  const n = document.getElementById("note");
+  n.textContent = "有个文件没读到：" + path + "。如果是在本地打开，先在 audio 文件夹里运行 python -m http.server，再用浏览器打开 http://localhost:8000。";
+}
+function stopAll() { [...active].forEach(h => h.stop()); document.querySelectorAll(".chip.playing").forEach(c => c.classList.remove("playing")); }
+
+// ───────── 页面 ─────────
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) { if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else e.setAttribute(k, v); }
+  for (const k of kids) if (k != null) e.append(k);
+  return e;
+}
+function shortName(name, key) { return name.replace(/^SFX_/, ""); }
+function chipFor(f, compact) {
+  // 一组里文件多的时候只显示编号（完整文件名在鼠标悬停提示里），免得一排排重复前缀
+  const label = compact ? f.name.split("_").pop() : shortName(f.name);
+  const c = el("button", { class: "chip" + (f.loop ? " loop" : "") + (compact ? " compact" : ""), type: "button", title: f.name + ".wav", "aria-label": "播放 " + f.name, "aria-pressed": "false" },
+    el("i", { class: "tri", "aria-hidden": "true" }), el("span", { text: label }), compact ? null : el("span", { class: "dur", text: f.dur.toFixed(2) + " s" }));
+  let h = null;
+  c.addEventListener("click", () => {
+    setupCtx(); if (ctx && ctx.state === "suspended") ctx.resume();
+    if (h) { h.stop(); h = null; c.classList.remove("playing"); c.setAttribute("aria-pressed", "false"); return; }
+    h = playOne(f.path, { loop: f.loop });
+    c.classList.add("playing"); c.setAttribute("aria-pressed", "true");
+    h.onend = () => { h = null; c.classList.remove("playing"); c.setAttribute("aria-pressed", "false"); };
+  });
+  return c;
+}
+function seqChip(files, spec) {
+  const [label, gap, shuffle] = spec;
+  const c = el("button", { class: "chip seq", type: "button", "aria-pressed": "false" }, el("i", { class: "tri", "aria-hidden": "true" }), el("span", { text: label }));
+  let hs = null;
+  c.addEventListener("click", () => {
+    setupCtx(); if (ctx && ctx.state === "suspended") ctx.resume();
+    if (hs) { hs.forEach(h => h.stop()); hs = null; c.classList.remove("playing"); return; }
+    let order = files.map((_, i) => i);
+    if (shuffle) {   // 像 UE 的 Random（不重复）：随机，但相邻两次不重复
+      const out = []; let last = -1;
+      const n = Math.max(10, files.length);
+      for (let k = 0; k < n; k++) { let i; do { i = Math.floor(Math.random() * files.length); } while (i === last && files.length > 1); out.push(i); last = i; }
+      order = out;
+    }
+    c.classList.add("playing");
+    const go = () => {
+      if (!c.classList.contains("playing")) return;
+      const t0 = ctx ? ctx.currentTime + 0.05 : null;   // 一个时钟，节奏不会因为下载快慢走样
+      hs = order.map((i, k) => playOne(files[i].path, { at: k * gap * (shuffle ? (0.94 + Math.random() * 0.12) : 1), t0 }));
+      hs[hs.length - 1].onend = () => { hs = null; c.classList.remove("playing"); };
+    };
+    hs = [];
+    if (ctx && !useMedia) Promise.all(files.map(f => getBuf(f.path))).then(go, () => { c.classList.remove("playing"); fail(files[0].path); });
+    else go();
+  });
+  return c;
+}
+function render() {
+  const items = DATA.items;
+  const nFiles = items.reduce((a, it) => a + it.files.length, 0);
+  document.getElementById("lede").textContent =
+    `${items.length} 条、${nFiles} 个文件，48 kHz 16 位 WAV，干声。能用真实录音的地方都用真实录音（${Object.keys(DATA.credits).length} 段 CC0 录音）；有音高的声音都在 d 小调五声里（D F G A C），和灰盒的时间和弦不打架。`;
+  const list = document.getElementById("list");
+  for (const tier of [1, 2, 3, 4]) {
+    const [t, sub] = TIER_LABEL[tier];
+    list.append(el("h2", { class: "tier" }, t, el("small", { text: sub })));
+    for (const it of items.filter(i => i.tier === tier)) {
+      const groups = new Map();
+      for (const f of it.files) { if (!groups.has(f.group)) groups.set(f.group, []); groups.get(f.group).push(f); }
+      const gWrap = el("div", { class: "groups" });
+      for (const [g, fs] of groups) {
+        const compact = fs.length > 3;
+        const prefix = compact ? shortName(fs[0].name).replace(/_\d+$/, "_") : "";
+        const row = el("div", { class: "group" }, el("span", { class: "glabel", text: g }));
+        const spec = DATA.sequences[g];
+        if (spec && fs.length > 2) row.append(seqChip(fs, spec));
+        if (compact) row.append(el("span", { class: "prefix", text: prefix + "01–" + fs[fs.length - 1].name.split("_").pop() }));
+        fs.forEach(f => row.append(chipFor(f, compact)));
+        gWrap.append(row);
+      }
+      const ue = el("details", { class: "ue" }, el("summary", { text: "UE 里怎么用" }), el("p", { text: it.ue }));
+      const art = el("article", { class: "item " + it.when, id: "s" + it.num },
+        el("div", { class: "num", text: String(it.num) }),
+        el("div", { class: "body" },
+          el("div", { class: "head" }, el("h3", { text: it.zh }), el("span", { class: "tag", text: WHEN_LABEL[it.when] }), el("span", { class: "reason", text: it.reason })),
+          el("p", { class: "what", text: it.what }),
+          ue, gWrap));
+      list.append(art);
+    }
+  }
+  const cr = document.getElementById("credits");
+  for (const [id, c] of Object.entries(DATA.credits)) {
+    cr.append(el("a", { href: c.url, target: "_blank", rel: "noopener" }, el("b", { text: c.user }), " · " + c.title));
+  }
+  if (useMedia) document.getElementById("note").textContent = "现在是直接打开的本地文件：能播，但没有殿内混响，循环接缝处可能有一点点空隙。在 audio 文件夹里运行 python -m http.server 再打开 http://localhost:8000 就都有了。";
+}
+document.getElementById("rev").addEventListener("change", () => { setupCtx(); applyReverb(); });
+document.getElementById("vol").addEventListener("input", e => { volume = +e.target.value; if (master) master.gain.setTargetAtTime(volume, ctx.currentTime, 0.03); });
+document.getElementById("stopAll").addEventListener("click", stopAll);
+render();
+</script>
