@@ -76,8 +76,8 @@ def crest_db(x, win=0.1):
     return 20 * np.log10((np.max(np.abs(c)) + 1e-12) / (dsp.rms(c) + 1e-12))
 
 
-def step_pool(specs, hp_f=90, keep_db=12, post=0.38, max_pre=0.03, min_crest=0.0, max_crest=26.0):
-    """从整段脚步录音里切出一步一步。specs: [(素材, 起, 止, 两步最小间隔)]"""
+def step_pool(specs, hp_f=90, keep_db=12, post=0.38, max_pre=0.03, min_crest=0.0, max_crest=26.0, keep=None):
+    """从整段脚步录音里切出一步一步。specs: [(素材, 起, 止, 两步最小间隔)]；keep(step_feel) 为假的不要。"""
     out = []
     for sid, a, b, md in specs:
         x = hp(load(sid, start=a, dur=b - a), hp_f, order=3)
@@ -89,7 +89,7 @@ def step_pool(specs, hp_f=90, keep_db=12, post=0.38, max_pre=0.03, min_crest=0.0
             if p < top - keep_db:
                 continue
             seg = trim_tail(x[secs(s):secs(e)])
-            if len(seg) > secs(0.08) and min_crest <= crest_db(seg) <= max_crest:
+            if len(seg) > secs(0.08) and min_crest <= crest_db(seg) <= max_crest and (keep is None or keep(step_feel(seg))):
                 out.append(seg)
     return out
 
@@ -99,13 +99,13 @@ def peak_at(x, within=0.2):
     return int(np.argmax(m))
 
 
-def align_add(base, layer, gain):
-    """把 layer 的峰对齐到 base 的峰再叠上去。"""
-    d = peak_at(base) - peak_at(layer)
+def align_add(base, layer, gain, off=0.0, at=None):
+    """把 layer 的峰（或 at 那个采样点）对齐到 base 的峰，再往后挪 off 秒，叠上去。"""
+    d = peak_at(base) - (peak_at(layer) if at is None else at) + secs(off)
     if d >= 0:
         layer = np.concatenate([np.zeros(d), layer])
     else:
-        layer = layer[-d:]
+        layer = fade(layer[-d:], 0.002, 0.0)          # 切掉的头补个淡入，免得咔
     n = max(len(base), len(layer))
     y = np.zeros(n)
     y[: len(base)] += base
@@ -200,12 +200,12 @@ def stone_grit(dur, start=2.0, lo=300, hi=5000):
 
 
 def sandal_pool():
-    # 只要脚跟落地那一下清楚的（峰值因数高），拖着走的沙沙声不要
-    return step_pool([("734632", 10, 21, 0.3), ("119912", 0, 6, 0.3), ("119911", 0, 4.8, 0.3)], min_crest=18)
+    # 凉鞋拍地：按 soft_slap 挑软一点的（第一版专挑最尖的，听着硬）
+    return step_pool([("734632", 10, 21, 0.3), ("119912", 0, 6, 0.3), ("119911", 0, 4.8, 0.3)], keep=lambda f: soft_slap(f))
 
 
 def sandal_run_pool():
-    return step_pool([("734632", 0, 10, 0.22), ("734632", 25, 35, 0.3)], post=0.3, min_crest=18)
+    return step_pool([("734632", 0, 10, 0.22), ("734632", 25, 35, 0.3)], post=0.3, keep=lambda f: soft_slap(f))
 
 
 def stone_body_pool():
@@ -222,14 +222,83 @@ def cap(x, after_peak=0.17, fout=0.06):
     return fade(x[:n], 0.0, fout)
 
 
-def footstep(sandal, body, body_gain, bright=0.0, low=0.0):
-    sandal = cap(unit(sandal))
-    b = lp(unit(body), 2600)
-    b = b * expdecay(len(b), 0.22)
-    y = align_add(sandal, b, body_gain)
-    y = eq(y, "peak", 400, -2.0, 0.9)
+def match_level(x, ref, rel_db=0.0):
+    """按整段的能量把 x 调到比 ref 高 rel_db（比按峰值对齐更接近耳朵听到的响）。"""
+    return x * np.sqrt(np.sum(ref ** 2) / (np.sum(x ** 2) + 1e-20)) * db(rel_db)
+
+
+def decay_after(x, i, t60):
+    """第 i 个采样以后按指数收（t60 秒），以前不动。"""
+    e = np.ones(len(x))
+    e[i:] = expdecay(len(x) - i, t60)
+    return x * e
+
+
+def onset_at(x, frac=0.1):
+    m = to_mono(x)
+    env = np.sqrt(np.convolve(m ** 2, np.ones(48) / 48, mode="same"))
+    return int(np.argmax(env > env.max() * frac))
+
+
+def step_feel(x):
+    """量一步听着多硬、多刺、多重（dB）：crest 前 100 ms 的峰值因数，attack 起音后 4 ms 对再后 40 ms 的能量，
+    harsh 2.5–6 kHz 占的比例，low 250 Hz 以下占的比例；lead 是峰离开头几秒。"""
+    m = to_mono(x)
+    on = onset_at(m)
+    a, b = m[on:on + secs(0.004)], m[on + secs(0.004):on + secs(0.044)]
+    seg = m[on:on + secs(0.25)]
+    X = np.abs(np.fft.rfft(seg * np.hanning(len(seg)), 8192)) ** 2
+    f = np.fft.rfftfreq(8192, 1 / SR)
+    tot = np.sum(X[f >= 20]) + 1e-20
+
+    def share(lo, hi):
+        return 10 * np.log10(np.sum(X[(f >= lo) & (f < hi)]) / tot + 1e-12)
+    return dict(crest=crest_db(m), attack=10 * np.log10((np.mean(a ** 2) + 1e-12) / (np.mean(b ** 2) + 1e-12)),
+                harsh=share(2500, 6000), low=share(20, 250), lead=peak_at(m) / SR)
+
+
+# 试听反馈第二轮：脚步“稍微有一点重、硬和刺耳”。比过两种改法（指标见 PR）：换更软的素材（B）和模拟更软的鞋底（C）。
+# C 只把起音抹软了，刺耳的频段和低频几乎没动；B 三样都达标，留下 B：
+# 大理石上赤脚落地的那一下领头，凉鞋拍地只挑不尖、不刺的，垫在后面；石头的“实”更轻、更短。
+
+
+def soft_slap(f):
+    # 凉鞋拍地的那一下：不要太尖、太刺，不要脚跟的闷“咚”，峰要在开头 40 ms 内（和脚落地对齐）
+    return f["crest"] <= 22 and f["attack"] <= 6 and f["harsh"] <= -4.5 and f["low"] <= -6 and f["lead"] <= 0.04
+
+
+def heel_pool():
+    # 脚掌落在大理石上的那一下（ragamuffin 的大理石地面脚步）：软、圆；最尖的那几下不要
+    return step_pool([("118985", 0, 7.3, 0.3)], post=0.3, max_crest=17)
+
+
+_HEELS = None
+
+
+def contact(sandal, k=0, run=False):
+    """一只脚落地的“接触”那一下（单位峰值）。石头、光路、青铜、落地、回到落脚点都从这里出来：
+    脚掌落在大理石上的“嗒”领头（软、圆），4 毫秒后凉鞋轻轻拍一下；凉鞋最刺耳的 3.8 kHz 一带压掉 7 dB。"""
+    global _HEELS
+    if _HEELS is None:
+        _HEELS = heel_pool()
+    h = resample_pitch(_HEELS[(k * 3 + run) % len(_HEELS)], 1.0 if run else 2.0)   # 往上挪一两个半音：步子轻一些
+    h = cap(unit(lp(hp(h, 250 if run else 300), 5000)))
+    i = peak_at(sandal)
+    sl = eq(lp(hp(sandal, 200), 10000), "peak", 3800, -7.0, 0.8)
+    sl = fade(decay_after(sl, i, 0.3 if run else 0.5)[: i + secs(0.17)], 0.0, 0.06)
+    y = align_add(h, match_level(sl, h, -6.0 if run else -3.5), 1.0, off=0.004, at=i)
+    return unit(y)
+
+
+def footstep(sandal, body, body_gain, bright=0.0, low=0.0, k=0, run=False):
+    c = contact(sandal, k, run)
+    # 石头的“实”：轻一点、短一点，最低的那一截拿掉（女神走路，不是壮汉跺脚）
+    b = lp(hp(unit(body), 140), 2200)
+    b = b * expdecay(len(b), 0.12)
+    y = align_add(c, b, body_gain)
+    y = eq(y, "peak", 400, -2.5, 0.9)
     y = eq(y, "lowshelf", 160, low)
-    y = eq(y, "highshelf", 7000, bright - 1.5)
+    y = eq(y, "highshelf", 7000, bright - 3.0)
     # 脚跟那一毫秒的尖峰削掉几 dB（录音里常见的处理），这样一组脚步的响度才对得齐
     y = dsp.limit(unit(y), -5.0)
     return fade(trim_tail(y), 0.0015, 0.03)
@@ -238,8 +307,9 @@ def footstep(sandal, body, body_gain, bright=0.0, low=0.0):
 # ═════════════════════════ 第一梯队 ═════════════════════════
 
 @sound(3, "Footstep_Stone", "脚步：石头/大理石",
-       "皮凉鞋踩在大理石上。真实的凉鞋脚步（Vrymaa、ftpalad 的录音）一步一步切出来，下面垫一层真实的石地面脚步的“实”（SecureSubset），"
-       "峰对齐后叠在一起；去掉 400 Hz 的闷、收一点刺耳的高频。走 10 个、快走 8 个、蹭地 4 个，响度都对齐。",
+       "皮凉鞋踩在大理石上。领头的是真实的大理石地面上脚掌落地的那一下（ragamuffin 的录音，软、圆），4 毫秒后是凉鞋轻轻一拍"
+       "（Vrymaa、ftpalad 的录音里只挑不尖、不刺的），最下面垫一点真实的石地面脚步的“实”（SecureSubset，去掉最低的一截、很短）。"
+       "第二版按试听反馈改轻、改软：比第一版刺耳的 2.5–6 kHz 少 3.6 dB、起音软了约 10 dB、250 Hz 以下少 4 dB。走 10 个、快走 8 个、蹭地 4 个，响度都对齐。",
        "Sound Cue：Random（不重复）→ Modulator（音高 0.96–1.04，音量 0.9–1.0）。每次脚落地（动画通知或按步长）触发；"
        "Shift 快走用 Run 那一组。干声交付，殿内的混响交给 Audio Volume / 卷积混响（见 ir/）。", 1)
 def b_foot_stone():
@@ -250,13 +320,13 @@ def b_foot_stone():
     for k in range(10):
         s = walk_s[order[k % len(walk_s)]]
         b = resample_pitch(body[k % len(body)], dsp.RNG.uniform(-1.5, 1.0))
-        y = footstep(s, b, db(dsp.RNG.uniform(-7, -4.5)), low=1.0)
+        y = footstep(s, b, db(dsp.RNG.uniform(-10, -8)), low=-1.0, k=k)
         files.append((f"SFX_Footstep_Stone_Walk_{k + 1:02d}", norm_lufs(y, -28), "走"))
     order = dsp.RNG.permutation(len(run_s))
     for k in range(8):
         s = run_s[order[k % len(run_s)]]
         b = resample_pitch(body[(k + 2) % len(body)], dsp.RNG.uniform(-1.0, 1.5))
-        y = footstep(s, b, db(dsp.RNG.uniform(-7, -4)), bright=0.5, low=1.5)
+        y = footstep(s, b, db(dsp.RNG.uniform(-9, -7)), low=-0.5, k=k, run=True)
         files.append((f"SFX_Footstep_Stone_Run_{k + 1:02d}", norm_lufs(y, -26), "快走"))
     # 蹭地：赤脚/凉鞋在石面上转身、停步时的擦声（SpliceSound 的瓷砖擦地录音）
     sc = step_pool([("197404", 0, 29, 0.3)], hp_f=120, keep_db=8, post=0.45)
@@ -268,7 +338,7 @@ def b_foot_stone():
 
 def light_step(s, f, level_glass, t60, seed_):
     dsp.seed(seed_)
-    s = hp(cap(unit(s), 0.15), 240, order=2)
+    s = hp(cap(contact(s, seed_), 0.15), 320, order=2)     # 光没有分量：低频比石头脚步拿得更干净
     s = eq(s, "highshelf", 5000, -2.0)
     # 冲击激起“光”的振动：模态（起音干净）+ 真实水晶杯（有颤动的身体）
     ex = hp(s[: secs(0.008)], 1200)
@@ -285,7 +355,7 @@ def light_step(s, f, level_glass, t60, seed_):
 
 
 @sound(4, "Footstep_LightPath", "脚步：光路",
-       "脚下是光：同一双凉鞋的脚步，去掉石头的“实”（低频全拿掉，光没有分量），每一步激起一点水晶的余振——"
+       "脚下是光：和石头脚步同一个“接触”（脚掌落地 + 轻轻的凉鞋，第二版一起改软了），去掉石头的“实”（低频全拿掉，光没有分量），每一步激起一点水晶的余振——"
        "模态合成负责干净的起音，真实的摩擦水晶杯录音（PappaBert）负责有颤动的身体，音高在 d 小调五声里随机取（D5–D6），"
        "很轻、半秒就收住，走很久也不吵。",
        "和石头脚步同一套触发；脚下是光路（Zone 以 beam: 开头、月石、虹桥、影桥另有材质）时换这一组。Random 不重复，音高不要再随机（已经按音阶取好）。", 1)
@@ -392,7 +462,8 @@ def cloth_pool():
 
 @sound(8, "Jump_Land", "跳跃、落地",
        "起跳：凉鞋在石面上一蹬（真实的蹭地脚步）+ 长袍带起的一下衣料风声（saturdaysoundguy、Nox_Sound 的衣服挥动录音）。"
-       "落地：两只脚前后差 15–30 毫秒落下，石地面的“实”比走路重，最后衣料落定一下。另有落在光上的版本：没有石头的重量，脚下一声水晶。",
+       "落地：两只脚前后差 15–30 毫秒落下，石地面的“实”比走路重一点，最后衣料落定一下。另有落在光上的版本：没有石头的重量，脚下一声水晶。"
+       "第二版跟着脚步一起改轻、改软，起跳里刺耳的那一段也收了一点。",
        "Jump：起跳那一帧；Land_Stone：落到石头/青铜上（青铜落地见 28）；Land_Light：落到光路、月石上。"
        "下落时间长于 0.6 秒的落地可以把音量提高 2–3 dB。", 1)
 def b_jump_land():
@@ -407,13 +478,14 @@ def b_jump_land():
         c = cl[(k * 3) % len(cl)]
         c = lp(c, 7000)
         y = mix((fade(push, 0.002, 0.06), 0, 0.9), (c, 0.03, 0.8))
+        y = eq(eq(y, "peak", 3500, -4.0, 0.8), "highshelf", 6500, -3.0)   # 和脚步一起：刺耳的那一段收一点
         files.append((f"SFX_Jump_{k + 1:02d}", norm_lufs(fade(y, 0.002, 0.08), -26), "起跳"))
     for k in range(4):
         a = walk_s[(k * 4 + 1) % len(walk_s)]
         b = walk_s[(k * 4 + 6) % len(walk_s)]
         bod = resample_pitch(body[(k + 1) % len(body)], -2.0)
-        fa = footstep(a, bod, db(-3), low=2.5)
-        fb = footstep(b, body[(k + 3) % len(body)], db(-6), low=1.5)
+        fa = footstep(a, bod, db(-6), low=0.5, k=k)
+        fb = footstep(b, body[(k + 3) % len(body)], db(-9), low=0.0, k=k + 5)
         c = lp(cl[(k * 3 + 1) % len(cl)], 6000)
         y = mix((fa, 0), (fb, dsp.RNG.uniform(0.015, 0.03), 0.8), (c * 0.5, 0.05))
         files.append((f"SFX_Land_Stone_{k + 1:02d}", norm_lufs(trim_tail(y), -20), "落地·石头"))
@@ -477,7 +549,7 @@ def b_fall():
         inhale = (a + 0.6 * b)[::-1]                 # 倒放：从无长到满，像光聚回来
         inhale = lp(inhale, 6000)
         bloom = (glass_tone(hz(lo_), 1.4, attack=0.02, t60=0.9) if kind == "glass" else bowl_strike(hz(lo_), 1.6, soft=0.02))
-        step = hp(walk_s[7], 200) * 0.45
+        step = hp(contact(walk_s[7], 7), 200) * 0.45 * np.max(np.abs(walk_s[7]))
         y = mix((widen(inhale, 0.5), 0), (to_stereo(bloom * 0.7), 0.95), (to_stereo(step), 0.98), length=secs(2.1))
         y = fade(y, 0.02, 0.6)
         files.append((f"SFX_Respawn_{name}", norm_lufs(y, -24), "回到落脚点"))
@@ -723,98 +795,88 @@ def b_steps():
     return files
 
 
+def lever(order, lock_t=0.95, D=1.7, pivot_dur=0.9, lock_at_peak=False):
+    """拉杆的一下：手握把手、轴上一声短的呻吟、铜链“一紧”、扳到底“咔”地卡住。order 0 = 拉下，1 = 推回。
+    lock_at_peak：让“咔”的峰（而不是那一小段的开头）正好落在 lock_t。"""
+    cs, ch_t, bolt_i = [(0.4, 1.4, 1), (1.1, 4.5, 4)][order]
+    grip = clack(3 + order, 6, 0.15) * 0.25
+    pivot = lp(creak(-4 + order, pivot_dur, cs, src="682776"), 3000) * dsp.env_ar(secs(pivot_dur), 0.15, 0.5)
+    chain = chain_tense(0.7, -2 - order, ch_t)
+    lock = bolt(bolt_i, -3, 0.45)
+    if lock_at_peak:
+        lock_t -= peak_at(lock, 0.45) / SR
+    lv = lp(seg("696746", 0.0, 0.7, -4), 5000)
+    y = mix((unit(grip), 0, 0.3), (unit(lv), 0.02, 0.35), (unit(pivot), 0.05, 0.16), (unit(chain), 0.35, 0.6), (unit(lock), lock_t, 0.9), length=secs(D))
+    return fade(y, 0.003, 0.3)
+
+
+def slab_slide(k, D=1.6, st=None, start=None, start_gain=0.5, end_gain=1.0, end_st=None, rum_gain=0.25, tail=0.8):
+    """一块大石板在滑轨上滑过去（真实的墓门石头摩擦，降调），起步一顿、到位一声闷响。k 换素材段和音高。"""
+    dsp.seed(160 + k)
+    scrape = seg("352829", 1.0 + 2.3 * k if start is None else start, D, (-3 - k) if st is None else st)
+    scrape = lp(hp(scrape, 50), 3500)
+    scrape = shape(unit(scrape), [(0, 0), (0.06, 1), (0.25, 0.7), (D - 0.3, 0.85), (D, 0.15)])
+    st0 = stone_thud(-1, 5, 0.3)
+    end = stone_thud((-3 - k) if end_st is None else end_st, 6 - k, 0.8)
+    rum = sub_rumble(D + 0.6, 80, 0.3, 161 + k)
+    y = mix((scrape, 0, 0.8), (unit(st0), 0, start_gain), (unit(end), D - 0.03, end_gain), (unit(rum), 0, rum_gain), length=secs(D + tail))
+    return fade(y, 0.003, 0.3)
+
+
 @sound(16, "Lever_StoneSlab", "拉机关 A/B、石板滑动",
-       "拉杆：手握铜把手、轴上一声短的呻吟、铜链“一紧”（LePainMaudit 的重铁链）、扳到底“咔”地卡住（Alexbuk 的门闩）。A 是拉下，B 是推回，用不同的素材段和顺序。"
+       "拉杆：手握铜把手、轴上一声短的呻吟、铜链“一紧”（LePainMaudit 的重铁链）、扳到底“咔”地卡住（Alexbuk 的门闩）。拉下和推回用不同的素材段和顺序。"
        "石板滑动：一块大石板贴着外墙在滑轨上滑开 1.6 秒（真实的墓门石头摩擦，降调），起步一顿、到位一声闷响；两个版本给两块石板。",
-       "Lever_Pull：拉 A；Lever_Push：推 B，放在拉杆上。Slab_Slide_01/02：两块石板各自开始滑的时候在石板上播（离得远，靠 UE 的衰减和混响就有“远处传来”的感觉）。", 2)
+       "A、B 两个机关现在合成了同一个拉杆：拉下播 Lever_Pull，推回播 Lever_Push，放在拉杆上。"
+       "Slab_Slide_01/02：两块石板各自开始滑的时候在石板上播（离得远，靠 UE 的衰减和混响就有“远处传来”的感觉）。", 2)
 def b_lever():
     dsp.seed(16)
-    files = []
-    for name, cs, ch_t, bolt_i, order in [("Pull", 0.4, 1.4, 1, 0), ("Push", 1.1, 4.5, 4, 1)]:
-        grip = clack(3 + order, 6, 0.15) * 0.25
-        pivot = lp(creak(-4 + order, 0.9, cs, src="682776"), 3000) * dsp.env_ar(secs(0.9), 0.15, 0.5)
-        chain = chain_tense(0.7, -2 - order, ch_t)
-        lock = bolt(bolt_i, -3, 0.45)
-        lv = lp(seg("696746", 0.0, 0.7, -4), 5000)
-        y = mix((unit(grip), 0, 0.3), (unit(lv), 0.02, 0.35), (unit(pivot), 0.05, 0.16), (unit(chain), 0.35, 0.6), (unit(lock), 0.95, 0.9), length=secs(1.7))
-        files.append((f"SFX_Lever_{name}", norm_lufs(fade(y, 0.003, 0.3), -21), "拉杆"))
+    files = [("SFX_Lever_Pull", norm_lufs(lever(0), -21), "拉杆"), ("SFX_Lever_Push", norm_lufs(lever(1), -21), "拉杆")]
     for k in range(2):
-        dsp.seed(160 + k)
-        D = 1.6
-        scrape = seg("352829", 1.0 + 2.3 * k, D, -3 - k)
-        scrape = lp(hp(scrape, 50), 3500)
-        scrape = shape(unit(scrape), [(0, 0), (0.06, 1), (0.25, 0.7), (1.3, 0.85), (D, 0.15)])
-        start = stone_thud(-1, 5, 0.3)
-        end = stone_thud(-3 - k, 6 - k, 0.8)
-        rum = sub_rumble(D + 0.6, 80, 0.3, 161 + k)
-        y = mix((scrape, 0, 0.8), (unit(start), 0, 0.5), (unit(end), D - 0.03, 1.0), (unit(rum), 0, 0.25), length=secs(D + 0.8))
-        files.append((f"SFX_Slab_Slide_{k + 1:02d}", norm_lufs(fade(y, 0.003, 0.3), -19), "石板滑动"))
+        files.append((f"SFX_Slab_Slide_{k + 1:02d}", norm_lufs(slab_slide(k), -19), "石板滑动"))
     return files
 
 
-def iris_blades(D, opening=True, seed_=0):
-    """14 片铜叶片一片接一片滑过，声像绕着头顶转一圈。"""
-    dsp.seed(seed_)
+def iris_slides(D, opening=True, n=5, seed_=0, thuds=True):
+    """光圈：几块石板一样的叶片先后滑开（和 16 的石板滑动同一套做法），声像绕着头顶走半圈。"""
     out = np.zeros((secs(D), 2))
-    for k in range(14):
-        t = 0.25 + (D - 1.1) * (k / 13) ** (1.0 if opening else 0.8)
-        b = metal_slide(k, dsp.RNG.uniform(-9, -6), dsp.RNG.uniform(0.5, 0.8))
-        pan = np.sin(2 * np.pi * k / 14 + (0 if opening else np.pi))
-        out = mix((out, 0), (to_stereo(unit(b) * dsp.RNG.uniform(0.5, 0.9), pan * 0.8), t), length=secs(D))
+    for j in range(n):
+        t = (D - 2.2) * j / max(1, n - 1)
+        L = 1.5 + 0.1 * (j % 3)
+        last = j == n - 1
+        y = slab_slide(j % 2, D=L, st=-4 - 0.5 * (j % 3) - (0 if opening else 0.5), start=0.6 + 1.1 * j,
+                       start_gain=0.25 if thuds and j == 0 else 0.0,
+                       end_gain=(0.9 if last else 0.3) if thuds else 0.0, end_st=(-3 if opening else -5) if last else -2,
+                       rum_gain=0.18, tail=0.8 if last else 0.4)
+        pan = 0.7 * np.cos(np.pi * j / max(1, n - 1) + (0 if opening else np.pi))
+        out = mix((out, 0), (to_stereo(y * (0.75 + 0.25 * last), pan), t), length=secs(D))
     return out
 
 
 @sound(17, "Iris_Blades", "光圈叶片旋开",
-       "天花板上的 14 片青铜叶片一片接一片旋开：每一片是真实的金属滑过金属（LordForklift、Qat 的录音）降调成大块铜片，声像绕着头顶转一圈；"
-       "底下是转动的机构（真实的木轮转动，降得很低）；全开时铜叶片轻轻共振成一个和弦（D、A，铜盘的真实振动比例）。合拢是倒过来的顺序、最后一声更实。"
-       "还有一条叶片滑动的循环，给开合时间不固定的时候用。",
-       "Iris_Open / Iris_Close：开、合的完整版（3.5 s）。光圈半径跟着玩家的位置慢慢变时（日4 走圆眼光柱），改用 Iris_Move_Loop，"
-       "音量跟半径的变化速度走，停下时补一个 Open 的最后 1 秒（或者只停循环）。立体声，放在圆眼中心（头顶）。", 2)
+       "天花板上的光圈一片片旋开。第二版按试听反馈（第一版的金属叶片太像磨刀）整个换成 16 的石板滑动：几块石板一样的叶片先后滑开，"
+       "每块都是真实的墓门石头摩擦（降调）、起步轻轻一顿，前面几片落定得轻，最后一片“咚”地到位；声像在头顶走半圈。合拢是反方向走、最后一声更沉。"
+       "还有一条只有摩擦、没有落定的循环，给开合时间不固定的时候用。不再有任何金属摩擦和铜的和弦。",
+       "Iris_Open / Iris_Close：开、合的完整版（约 4 s，最后一片在 3.4 s 左右落定）。光圈半径跟着玩家的位置慢慢变时（日4 走圆眼光柱），改用 Iris_Move_Loop，"
+       "音量跟半径的变化速度走，停下时停循环（要的话补一个 16 的 Slab_Slide 的最后 0.8 秒当落定）。立体声，放在圆眼中心（头顶）。", 2)
 def b_iris():
     files = []
     for name, opening in [("Open", True), ("Close", False)]:
-        D = 3.6
-        bl = iris_blades(D, opening, 1700 + opening)
-        mech = seg("715478", 30 + 5 * opening, D, -10)
-        mech = lp(hp(mech, 40), 900) * dsp.env_ar(secs(D), 0.3, 1.0)
-        ring = bronze_ring(hz("D3"), 2.5, 2.0, 0.6) + 0.6 * bronze_ring(hz("A3"), 2.5, 1.6, 0.5)
-        ring = lp(ring, 5000)
-        end = stone_thud(-6, 2, 0.5, lpf=1500) if not opening else clack(2, -10, 0.3)
-        y = mix((bl, 0, 1.0), (to_stereo(unit(mech) * 0.35), 0), (widen(unit(ring) * 0.35), D - 1.3), (to_stereo(unit(end) * 0.5), D - 1.15), length=secs(D + 1.2))
-        files.append((f"SFX_Iris_{name}", norm_lufs(fade(y, 0.01, 0.6), -21), "开合"))
-    L = iris_blades(6.0, True, 1790)
-    m = seg("715478", 40, 6.0, -10)
-    L = mix((L, 0), (to_stereo(lp(hp(unit(m), 40), 900) * 0.35), 0))
-    files.append(("SFX_Iris_Move_Loop", norm_lufs(loopify(L, 1.2), -24, "integrated"), "滑动·循环", True))
+        y = iris_slides(4.2, opening, 5, 1700 + opening)
+        files.append((f"SFX_Iris_{name}", norm_lufs(fade(y, 0.01, 0.5), -21), "开合"))
+    L = iris_slides(7.0, True, 6, 1790, thuds=False)
+    L = shape(L, [(0, 1), (7.0, 1)])
+    files.append(("SFX_Iris_Move_Loop", norm_lufs(loopify(L[secs(0.6):secs(6.8)], 1.5), -24, "integrated"), "滑动·循环", True))
     return files
 
 
 @sound(18, "Bridge_Gate", "桥门开、关",
-       "屋顶细桥尽头的青铜桥门绕门柱转 1.4 秒。开：老铜门轴的低沉呻吟（真实的大铁门吱呀声降了 6 个半音，去掉尖的部分），铜门本身微微共振，转到位轻轻一顿。"
-       "关：同样的呻吟更快，最后是厚重的合拢（铁门撞击 + 石门砰地合上的低频）和一声落闩——接住最后一缕光以后它再也不开，所以关门要像“定了”。",
-       "Gate_Open：人走近桥尾、门开始转时播；Gate_Close：接住最后一缕光、门开始转回去时播（合拢那一下在 1.35 s）。单声道，放在门轴上。", 2)
+       "屋顶细桥尽头的桥门绕门柱转 1.4 秒。第二版按试听反馈（桥门以后不一定是青铜）改用 16 的拉杆声音：开门是“拉下”那一套、关门是“推回”那一套，"
+       "轴上的呻吟拉长到门转的时间，扳到底“咔”地卡住那一下挪到门转完的时刻（1.37 s）。去掉了第一版里青铜门的共振和铁门的撞击。",
+       "Gate_Open：人走近桥尾、门开始转时播；Gate_Close：接住最后一缕光、门开始转回去时播。卡住那一下都在 1.37 s。单声道，放在门轴上。", 2)
 def b_gate():
     dsp.seed(18)
-    files = []
-    D = 1.4
-    g = creak(-6, D + 0.3, 0.7)
-    g = shape(unit(g), [(0, 0), (0.08, 1), (D - 0.2, 0.8), (D + 0.3, 0)])
-    body = bronze_ring(hz("A2"), 2.0, 1.2, 0.5)
-    stop = stone_thud(-5, 4, 0.6, lpf=1500)
-    y = mix((g, 0, 0.8), (unit(body), 0.02, 0.12), (unit(stop), D, 0.5), length=secs(D + 1.0))
-    files.append(("SFX_Gate_Open", norm_lufs(fade(y, 0.005, 0.4), -20), "开"))
-    g2 = creak(-5, D, 2.0)
-    g2 = shape(unit(g2), [(0, 0), (0.06, 1), (D - 0.1, 0.9), (D, 0)])
-    hit = seg("274767", 3.45, 1.4, -5)
-    hit = lp(hit, 5000)
-    i = int(np.argmax(np.abs(hit[: secs(0.6)])))
-    hit = fade(hit[max(0, i - secs(0.003)):][: secs(0.45)], 0.001, 0.25)   # 只要第一下撞击，不要后面铁门的哐啷
-    sl = slam(-3, 1.0)
-    latch = bolt(0, -2, 0.45)
-    ring = bronze_ring(hz("D2"), 3.0, 2.0, 0.5)
-    y = mix((g2, 0, 0.7), (unit(hit), D - 0.05, 0.7), (unit(sl), D - 0.05, 0.9), (unit(ring), D - 0.05, 0.15), (unit(latch), D + 0.35, 0.6), length=secs(D + 2.2))
-    files.append(("SFX_Gate_Close", norm_lufs(fade(y, 0.005, 0.6), -18), "关"))
-    return files
+    return [("SFX_Gate_Open", norm_lufs(lever(0, lock_t=1.37, D=2.1, pivot_dur=1.35, lock_at_peak=True), -21), "开"),
+            ("SFX_Gate_Close", norm_lufs(lever(1, lock_t=1.37, D=2.1, pivot_dur=1.35, lock_at_peak=True), -20), "关")]
 
 
 @sound(19, "Statue_Turn", "转动雕像底座",
@@ -949,31 +1011,49 @@ def b_swan():
     return [("SFX_SwanRelief_Sink", norm_lufs(fade(y, 0.01, 0.5), -17), "下沉")]
 
 
+def stone_block(k, st0=-5.0, dk=0.15, thud_t=0.38, lpf=1600, seed0=2400):
+    """一块石头往下一沉（或被推出去）：短的摩擦，最后“咚”地落定。"""
+    g = shape(heavy_grind(0.45, st=st0 - dk * k, seed_=seed0 + k, hi=2500), [(0, 0), (0.05, 1), (0.4, 0.6), (0.45, 0)])
+    th = stone_thud(-3 - 0.2 * k if dk else -3, k, 0.6, lpf=lpf)
+    return mix((g, 0, 0.45), (unit(th), thud_t, 0.9))
+
+
+def stairs_cascade(D, times, pans, gains, seed0=2400, rumble=(70, 0.4, 2420, 3.8), st0=-5.0, dk=0.15):
+    """一串石头先后落定（屋顶的楼梯、墙里的楼梯共用）。"""
+    out = np.zeros((secs(D), 2))
+    for k, (t, p, g) in enumerate(zip(times, pans, gains)):
+        out = mix((out, 0), (to_stereo(stone_block(k, st0, dk, seed0=seed0) * g, p), t), length=secs(D))
+    f, depth, seed_, hold = rumble
+    rum = shape(sub_rumble(D, f, depth, seed_), [(0, 0), (0.4, 1), (hold, 1), (D, 0)])
+    return mix((out, 0), (to_stereo(unit(rum) * 0.3), 0))
+
+
 @sound(24, "Stairs_Lower", "楼梯降下",
        "接住最后一缕光、回到桥头以后，另外半圈踏步一级接一级降成楼梯：12 块石头先后往下一沉、各自“咚”地落定（vestibule-door 的石面重击和石头落地，降调），"
-       "从桥头沿着弧线一路过去（声像从右到左），间隔先快后慢，底下是整段的隆隆声。另附 4 个单级的版本，给程序逐级触发用。",
-       "Stairs_Lower：楼梯开始降的那一刻播一次，立体声，放在楼梯中段。要逐级同步的话改用 Stairs_Lower_Step_01–04（单声道，放在那一级上，Random）。", 2)
+       "从桥头沿着弧线一路过去（声像从右到左），间隔先快后慢，底下是整段的隆隆声。"
+       "按试听反馈，单级的版本去掉了，只用整段；另外用同一套做法给墙里的两段楼梯显现各做了一段：窗里堵着的石块从上往下一块块被推出去，"
+       "接着下门的封石沉下去、最后落定，比屋顶那段短、闷一点（在墙里面）。",
+       "Stairs_Lower：楼梯开始降的那一刻播一次，立体声，放在楼梯中段。WallStairs_Reveal_TS：月2 天鹅解开、TS 楼梯上门打开时播（3 扇窗）；"
+       "WallStairs_Reveal_TR：月3 月亮浮雕隐去、TR 楼梯上门打开时播（2 扇窗）。都放在那段楼梯的中段。", 2)
 def b_stairs():
-    files = []
     dsp.seed(24)
-    D = 5.0
-    out = np.zeros((secs(D), 2))
     N = 12
-    for k in range(N):
-        t = 0.15 + 3.6 * (k / (N - 1)) ** 1.25
-        g = shape(heavy_grind(0.45, st=-5 - 0.15 * k, seed_=2400 + k, hi=2500), [(0, 0), (0.05, 1), (0.4, 0.6), (0.45, 0)])
-        th = stone_thud(-3 - 0.2 * k, k, 0.6, lpf=1600)
-        one = mix((g, 0, 0.45), (unit(th), 0.38, 0.9))
-        out = mix((out, 0), (to_stereo(one * (0.9 - 0.03 * k), 0.8 - 1.6 * k / (N - 1)), t), length=secs(D))
-    rum = sub_rumble(D, 70, 0.4, 2420)
-    rum = shape(rum, [(0, 0), (0.4, 1), (3.8, 1), (D, 0)])
-    y = mix((out, 0), (to_stereo(unit(rum) * 0.3), 0))
-    files.append(("SFX_Stairs_Lower", norm_lufs(fade(y, 0.01, 0.6), -18), "整段"))
-    for k in range(4):
-        g = shape(heavy_grind(0.45, st=-5, seed_=2440 + k, hi=2500), [(0, 0), (0.05, 1), (0.4, 0.6), (0.45, 0)])
-        th = stone_thud(-3, k + 2, 0.6, lpf=1600)
-        y = mix((g, 0, 0.45), (unit(th), 0.38, 0.9))
-        files.append((f"SFX_Stairs_Lower_Step_{k + 1:02d}", norm_lufs(fade(y, 0.003, 0.3), -21), "单级"))
+    times = [0.15 + 3.6 * (k / (N - 1)) ** 1.25 for k in range(N)]
+    pans = [0.8 - 1.6 * k / (N - 1) for k in range(N)]
+    gains = [0.9 - 0.03 * k for k in range(N)]
+    y = stairs_cascade(5.0, times, pans, gains)
+    files = [("SFX_Stairs_Lower", norm_lufs(fade(y, 0.01, 0.6), -18), "整段")]
+    for name, windows, seed0 in [("TS", 3, 2460), ("TR", 2, 2480)]:
+        # 窗里的石块：从上往下，0.25 s 一块；封石：从一开始就往下沉，约 2.2 s 落定
+        t_w = [0.1 + 0.25 * k for k in range(windows)]
+        pans_w = [0.5 - 0.5 * k for k in range(windows)]
+        D = 3.4
+        y = stairs_cascade(D, t_w, pans_w, [0.7] * windows, seed0=seed0, rumble=(60, 0.4, seed0 + 9, 2.4), st0=-4.0, dk=0.4)
+        seal = shape(heavy_grind(2.2, st=-6, seed_=seed0 + 7, hi=2200), [(0, 0), (0.2, 0.8), (1.9, 1), (2.2, 0.4)])
+        land = stone_thud(-4, windows + 2, 0.9, lpf=1400)
+        y = mix((y, 0), (to_stereo(seal * 0.5, -0.2), 0.05), (to_stereo(unit(land) * 0.95, -0.2), 2.2), length=secs(D))
+        y = eq(lp(y, 2400), "peak", 320, 2.0, 0.8)           # 在墙里面：闷一点、腔一点
+        files.append((f"SFX_WallStairs_Reveal_{name}", norm_lufs(fade(y, 0.01, 0.5), -19.5), "墙里楼梯显现"))
     return files
 
 
@@ -1031,10 +1111,13 @@ def b_shadow():
     return [("SFX_ShadowBridge_Join", norm_lufs(fade(y, 0.01, 0.8), -22), "接上")]
 
 
-@sound(27, "Apple_Place", "放上金苹果",
-       "结局动作。金苹果轻轻落进浑天仪的铜托：一声软的金属碰金属（HenKonen 的金属轻碰，低通抹软），铜托本身“嗡”一下（铜盘的真实振动比例）；"
-       "接着苹果从金色变成月白、光一点点亮起来（0.5–3 秒）：颂钵 D4、水晶杯 A5 和 D6 慢慢长起来，最后停在一个很安静的 D 上。",
-       "放上苹果那一刻播，放在小亭的浑天仪上。不要和结局音乐（13）抢：结局音乐最好在 3 秒以后进来。", 2)
+@sound(27, "Apple_Place", "放上金苹果、取下金苹果",
+       "放上（结局动作）：金苹果轻轻落进浑天仪的铜托：一声软的金属碰金属（HenKonen 的金属轻碰，低通抹软），铜托本身“嗡”一下（铜盘的真实振动比例）；"
+       "接着苹果从金色变成月白、光一点点亮起来（0.5–3 秒）：颂钵 D4、水晶杯 A5 和 D6 慢慢长起来，最后停在一个很安静的 D 上。"
+       "取下（第二版新加）：在屋顶的浑天仪上把发光的金苹果拿起来、接住最后一缕阳光。是“放上”的反面：同一下金属轻碰更轻、更低（金苹果离开铜托），"
+       "铜托空了“嗡”一下，然后是暖的日光——水晶杯 D5、A5 很快亮起来再慢慢收住，几颗闪光；不到 3 秒，给以后的接光主题（7）留出位置。",
+       "Apple_Place：放上苹果那一刻播，放在小亭的浑天仪上；结局音乐（13）最好在 3 秒以后进来。"
+       "Apple_Take：在屋顶浑天仪前按 E“取下金苹果”（灰盒 catchLight）那一刻播，放在浑天仪上；接光主题（7）做好以后可以在 0.3 s 左右叠进来。", 2)
 def b_apple():
     dsp.seed(27)
     D = 6.0
@@ -1047,19 +1130,30 @@ def b_apple():
     sp = sparkle(D, 12, env=[0, 0.3, 0.8, 1, 0.4, 0], pitch=4, level=0.06, seed_=2701)
     y = mix((to_stereo(unit(tink) * 0.55), 0), (to_stereo(unit(holder) * 0.25), 0.005), (widen(unit(h) * 0.35), 0.5),
             (widen(unit(g1) * 0.25, 0.6), 0.6), (widen(unit(g2) * 0.15, 0.7), 1.0), (sp, 0.5), length=secs(D))
-    return [("SFX_Apple_Place", norm_lufs(fade(y, 0.002, 1.5), -21), "放上")]
+    files = [("SFX_Apple_Place", norm_lufs(fade(y, 0.002, 1.5), -21), "放上")]
+    # 取下：金苹果离开屋顶浑天仪的铜托，接住最后一缕阳光
+    dsp.seed(2702)
+    D = 2.9
+    lift = fade(lp(seg("682154", 0.08, 0.9, -8), 3000), 0.001, 0.4)
+    empty = bronze_ring(hz("A4"), 1.8, 1.2, 0.35)
+    w1 = glass_swell(hz("D5"), D - 0.2, attack=0.25, release=1.6, start=2.0)
+    w2 = glass_swell(hz("A5"), D - 0.4, attack=0.4, release=1.5, start=3.0)
+    sp = sparkle(D, 7, env=[0.3, 1, 0.6, 0.2, 0], pitch=6, level=0.06, seed_=2703)
+    y = mix((to_stereo(unit(lift) * 0.4), 0), (to_stereo(unit(empty) * 0.2), 0.03), (widen(unit(w1) * 0.4, 0.6), 0.02),
+            (widen(unit(w2) * 0.28, 0.7), 0.12), (sp, 0.1), length=secs(D))
+    files.append(("SFX_Apple_Take", norm_lufs(fade(y, 0.002, 0.8), -22.5), "取下"))
+    return files
 
 
 def bronze_step(s, f0, seed_, metal=None, metal_gain=0.3):
     dsp.seed(seed_)
-    s = cap(unit(s))
-    ex = s[: secs(0.01)]
-    ring = modal([f0 * r for r in BRONZE_PLATE[:6]], [0.22, 0.15, 0.1, 0.09, 0.07, 0.06], [1, 0.6, 0.45, 0.35, 0.25, 0.2], 0.5, detune=0.004)
+    s = cap(contact(s, seed_))
+    ring = modal([f0 * r for r in BRONZE_PLATE[:6]], [0.18, 0.13, 0.1, 0.09, 0.07, 0.06], [0.7, 0.6, 0.45, 0.35, 0.25, 0.2], 0.5, detune=0.004)
     ring = lp(unit(ring), 5000)
     d = peak_at(s)
-    parts = [(s, 0), (ring, d / SR, 0.22)]
+    parts = [(s, 0), (ring, d / SR, 0.18)]
     if metal is not None:
-        parts.append((lp(unit(metal), 4000) * metal_gain, 0))
+        parts.append((lp(hp(unit(metal), 200), 4000) * metal_gain, 0))   # 金属地面的身体：最低的那截拿掉，不发闷
     y = mix(*parts)
     y = eq(y, "peak", 2500, -2, 1.0)
     y = dsp.limit(unit(y), -4.0)
@@ -1067,8 +1161,8 @@ def bronze_step(s, f0, seed_, metal=None, metal_gain=0.3):
 
 
 @sound(28, "Footstep_Bronze", "脚步：青铜",
-       "凉鞋踩在厚青铜板上（环道、细桥、半桥）：和石头脚步同一双凉鞋，下面的“实”换成青铜——厚铜板的真实振动比例做的短共振（不是薄铁皮那种空响），"
-       "叠一点真实的金属地面脚步（nate_asdfg、gristi 的录音，低通）。走 8 个、快走 6 个、落地 2 个。",
+       "凉鞋踩在厚青铜板上（环道、细桥、半桥）：和石头脚步同一个“接触”，下面的“实”换成青铜——厚铜板的真实振动比例做的短共振（不是薄铁皮那种空响），"
+       "叠一点真实的金属地面脚步（nate_asdfg、gristi 的录音，低通）。第二版跟着脚步改软，铜板的音往上挪、最低的一截拿掉（250 Hz 以下少 7 dB）。走 8 个、快走 6 个、落地 2 个。",
        "和石头脚步同一套触发，脚下是青铜（Physical Material = Bronze）时换这一组。", 2)
 def b_foot_bronze():
     files = []
@@ -1076,16 +1170,16 @@ def b_foot_bronze():
     mp = step_pool([("463811", 0, 3.6, 0.25), ("562195", 0, 3.1, 0.25), ("698697", 0, 10.3, 0.3)], hp_f=80, keep_db=10, post=0.3)
     dsp.seed(28)
     for k in range(8):
-        f0 = dsp.RNG.uniform(180, 260)
+        f0 = dsp.RNG.uniform(230, 320)
         y = bronze_step(walk_s[(k * 3 + 1) % len(walk_s)], f0, 2800 + k, mp[k % len(mp)], 0.3)
         files.append((f"SFX_Footstep_Bronze_Walk_{k + 1:02d}", norm_lufs(y, -28), "走"))
     for k in range(6):
-        f0 = dsp.RNG.uniform(200, 290)
-        y = bronze_step(run_s[(k * 5 + 2) % len(run_s)], f0, 2850 + k, mp[(k + 3) % len(mp)], 0.35)
+        f0 = dsp.RNG.uniform(250, 340)
+        y = bronze_step(run_s[(k * 5 + 2) % len(run_s)], f0, 2850 + k, mp[(k + 3) % len(mp)], 0.3)
         files.append((f"SFX_Footstep_Bronze_Run_{k + 1:02d}", norm_lufs(y, -26), "快走"))
     for k in range(2):
-        a = bronze_step(walk_s[(k * 7 + 3) % len(walk_s)], 170, 2880 + k, mp[(k + 1) % len(mp)], 0.5)
-        b = bronze_step(walk_s[(k * 7 + 5) % len(walk_s)], 210, 2890 + k, None)
+        a = bronze_step(walk_s[(k * 7 + 3) % len(walk_s)], 220, 2880 + k, mp[(k + 1) % len(mp)], 0.4)
+        b = bronze_step(walk_s[(k * 7 + 5) % len(walk_s)], 260, 2890 + k, None)
         y = mix((a, 0), (b, 0.022, 0.8))
         files.append((f"SFX_Land_Bronze_{k + 1:02d}", norm_lufs(y, -21), "落地"))
     return files
@@ -1156,15 +1250,15 @@ REASONS = {
     11: "开场第一声，殿外一直在", 14: "第一个机关，教会玩家“动机关会改变光”", 15: "日5、月1 的主体，音高逐级变化本身就是反馈",
     16: "日2 主线", 17: "日4 的视觉奇观，需要声音撑住", 18: "日5 进门、入夜关门，两个节点", 19: "月2、月3 都要用，转很多次",
     20: "月5 唯一的“找位置”反馈，没有它很难找", 21: "月4 要推很长一段", 22: "月4 的解谜奖励", 23: "月2 的解谜奖励", 24: "月1 入夜后第一条路",
-    25: "月5 的解谜奖励", 26: "通往结局的最后一段路", 27: "结局动作", 28: "环道、细桥、半桥都会踩到", 29: "基础交互",
+    25: "月5 的解谜奖励", 26: "通往结局的最后一段路", 27: "结局动作；取下是接光那一下", 28: "环道、细桥、半桥都会踩到", 29: "基础交互",
     30: "开场第一个“光”的声音，和第 5 条共用素材再加长",
 }
 WHEN = {3: "both", 4: "day", 5: "day", 6: "night", 8: "both", 9: "both", 10: "both", 11: "both", 14: "day", 15: "both", 16: "day",
         17: "day", 18: "day", 19: "both", 20: "night", 21: "night", 22: "night", 23: "night", 24: "night", 25: "night", 26: "night",
-        27: "night", 28: "both", 29: "ui", 30: "day"}
+        27: "both", 28: "both", 29: "ui", 30: "day"}
 # 试听页上“连着播”的按钮：组名 → (按钮文字, 间隔秒, 是否随机顺序)
 SEQUENCES = {"走": ("走一段", 0.5, True), "快走": ("快走一段", 0.33, True), "升起": ("顺序播放 16 级", 0.42, False),
-             "落平": ("顺序播放 16 级", 0.42, False), "单级": ("一级接一级", 0.55, True), "悬停": ("来回悬停", 0.18, True)}
+             "落平": ("顺序播放 16 级", 0.42, False), "悬停": ("来回悬停", 0.18, True)}
 
 
 def write_index(manifest):
