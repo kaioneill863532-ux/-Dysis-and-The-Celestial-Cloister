@@ -476,6 +476,30 @@ def denoise(x, noise_clip=None, amount=1.0, floor=0.08, n_fft=2048):
     return out[:, 0] if mono else out
 
 
+def detone(x, thresh_db=7.0, lo=150, hi=6000, n_fft=2048, width=10, hold=5):
+    """去掉噪声类录音里“有音高的细线”（水泡咕噜声听起来像猫叫、人声），宽带的水声不动。
+    每帧用频率方向的中值当底，高出底 thresh_db 且在时间上持续几帧的窄峰压回到底的水平。"""
+    from scipy.ndimage import median_filter, maximum_filter, uniform_filter1d
+    hop = n_fft // 4
+    mono = x.ndim == 1
+    xs = x[:, None] if mono else x
+    f, _, Zm = signal.stft(xs.mean(axis=1), SR, nperseg=n_fft, noverlap=n_fft - hop)
+    P = np.abs(Zm) ** 2 + 1e-20
+    floor = median_filter(P, size=(2 * width + 1, 1), mode="nearest")
+    R = maximum_filter(P / floor, size=(5, 1))                 # 频率方向放宽两格：滑音也算同一条线
+    R = np.exp(uniform_filter1d(np.log(R), hold, axis=1))      # 时间方向要持续（随机的噪声尖峰会被平均掉）
+    band = ((f > lo) & (f < hi))[:, None]
+    over = np.where(band, R / 10 ** (thresh_db / 10), 1.0)
+    g = np.where(over > 1, np.minimum(1.0, np.sqrt(2.0 * floor / P)), 1.0)
+    g = np.minimum(g, uniform_filter1d(g, 3, axis=1))
+    out = np.zeros_like(xs)
+    for c in range(xs.shape[1]):
+        _, _, Z = signal.stft(xs[:, c], SR, nperseg=n_fft, noverlap=n_fft - hop)
+        _, y = signal.istft(Z * g, SR, nperseg=n_fft, noverlap=n_fft - hop)
+        out[:, c] = y[: len(xs)] if len(y) >= len(xs) else np.pad(y, (0, len(xs) - len(y)))
+    return out[:, 0] if mono else out
+
+
 def onsets(x, thresh_db=-30, min_gap=0.18, hop=0.004):
     """很简单的起音检测：能量包络的上升沿。返回秒。"""
     m = to_mono(x)
