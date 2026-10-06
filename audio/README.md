@@ -499,14 +499,14 @@
 
 ### 42. 浑天仪开始自转（第三梯队）
 
-**怎么做的**：结局里浑天仪自己转起来——“时间交出去了”：只有轴承一格一格的金属轻响（HenKonen 的真实金属轻碰，降调、很小）。一开始一下一下隔得很开，越来越快，到每秒五下就稳住了，接一条一直这样转下去的循环。每一下的音高、轻重、早晚都差一点点，听起来是转动的机件，不是节拍器。没有颂钵、水晶杯，也没有木轮声。
+**怎么做的**：结局里浑天仪自己转起来——“时间交出去了”：一开始是轴承一格一格的轻响（HenKonen 的真实金属轻碰，很小），越来越快，最后连成一片平滑的转动声（KVV_Audio 的真实木轮转动，降调，转得比较慢，速度一路往上滑）。之后接一条一直慢慢转下去的循环。没有颂钵、水晶杯，也没有金属刮擦。
 
-**UE 里怎么用**：Armillary_Start：浑天仪开始自转时播（单声道，放在小亭的浑天仪上，约 3.3 s）；Sound Cue 里用 Concatenator 接 Looping 的 Armillary_Spin_Loop，不要交叉淡化：Start 最后一下和 Loop 第一下正好隔一格（0.2 s）。一直转到结局画面。
+**UE 里怎么用**：Armillary_Start：浑天仪开始自转时播（单声道，放在小亭的浑天仪上，约 6.5 s）；它的最后 1 秒和 Armillary_Spin_Loop 交叉接上（Loop Fade In 1 s），一直转到结局画面。
 
 | 用途 | 文件 | 时长 | 声道 |
 |---|---|---|---|
-| 开始自转 | [`SFX_Armillary_Start`](sfx/42_Armillary_Spin/SFX_Armillary_Start.wav) | 3.33 s | 单 |
-| 持续转动·循环 | [`SFX_Armillary_Spin_Loop`](sfx/42_Armillary_Spin/SFX_Armillary_Spin_Loop.wav)（循环） | 8.00 s | 单 |
+| 开始自转 | [`SFX_Armillary_Start`](sfx/42_Armillary_Spin/SFX_Armillary_Start.wav) | 6.50 s | 单 |
+| 持续转动·循环 | [`SFX_Armillary_Spin_Loop`](sfx/42_Armillary_Spin/SFX_Armillary_Spin_Loop.wav)（循环） | 13.50 s | 单 |
 
 文件夹：[sfx/42_Armillary_Spin/](sfx/42_Armillary_Spin/)
 
