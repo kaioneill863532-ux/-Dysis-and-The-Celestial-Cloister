@@ -1333,9 +1333,8 @@ def b_apple_hold():
         hi = unit(dsp.keep_tones(glass_swell(hz(gn), D, attack=0.05, release=0.05, start=0.5 + k * 0.7, src="419146" if gn == "A5" else "418150")))
         parts.append((widen(lo * e * 0.55 * g, 0.4), t0))
         parts.append((widen(hi * e * (0.2 if gn == "A5" else 0.13) * g, 0.6), t0 + 0.4))
-    y = mix(*parts, length=secs(L + 10))
+    y = lp(mix(*parts, length=secs(L + 10)), 4500)                                         # 先滤波再绕回，接缝才连续
     y = y[: secs(L)] + np.pad(y[secs(L):], ((0, secs(L) - (len(y) - secs(L))), (0, 0)))   # 过了 30 秒的尾巴绕回开头：首尾天然接上
-    y = lp(y, 4500)
     return [("SFX_Apple_Hold_Loop", norm_lufs(y, -34.5, "integrated"), "捧着·循环", True)]
 
 
