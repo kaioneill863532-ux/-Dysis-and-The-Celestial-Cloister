@@ -979,7 +979,8 @@ def b_stairs():
 
 @sound(25, "Selene_Awaken_HalfBridge", "塞勒涅神像亮起、半桥伸出",
        "月光整个落进她怀里的月亮：低音区一声很深的颂钵（D3），20 的长音在这里“解决”——摩擦颂钵 D4、A4 一起长起来，最上面是水晶杯的 D6，"
-       "像整座雕像慢慢亮透。半桥：一段石桥从池沿沿半径伸向水亭（2 秒，比雕像轻的石头摩擦），桥头搅动水面（真实的浪拍礁石里最轻的一段），到头轻轻一顿。",
+       "像整座雕像慢慢亮透。半桥：一段石桥从池沿沿半径伸向水亭（2 秒，比雕像轻的石头摩擦），桥头搅动水面（真实的浪拍礁石里最轻的一段），到头轻轻一顿；"
+       "按试听反馈比第一版轻了 4 dB、最低的隆隆声也去掉了一点。",
        "Selene_Awaken：dwell 满 1 秒、她亮起来时播（接在 20 的 Lock 后面），放在雕像上。HalfBridge_Extend：半桥开始伸出时播，放在池沿的桥头。", 2)
 def b_selene_awaken():
     files = []
@@ -994,13 +995,13 @@ def b_selene_awaken():
     files.append(("SFX_Selene_Awaken", norm_lufs(fade(y, 0.01, 1.0), -20), "神像亮起"))
     D = 2.0
     gr = heavy_grind(D + 0.2, st=-2, seed_=2510, src="352829", hi=3500)
-    gr = shape(gr, [(0, 0), (0.1, 0.9), (D - 0.2, 0.8), (D + 0.2, 0)])
+    gr = hp(shape(gr, [(0, 0), (0.1, 0.9), (D - 0.2, 0.8), (D + 0.2, 0)]), 70)    # 半桥比雕像轻：去掉一点最低的隆隆声
     wat = load("457956", start=40, dur=D + 0.8)
     wat = bp(wat, 300, 6000)
     wat = shape(wat, [(0, 0), (0.4, 1), (D, 0.8), (D + 0.8, 0)])
     end = stone_thud(-2, 4, 0.6, lpf=1800)
-    y = mix((gr, 0, 0.7), (unit(wat), 0, 0.35), (unit(end), D, 0.6), length=secs(D + 1.0))
-    files.append(("SFX_HalfBridge_Extend", norm_lufs(fade(y, 0.01, 0.4), -20), "半桥伸出"))
+    y = mix((gr, 0, 0.7), (unit(wat), 0, 0.35), (unit(end), D, 0.45), length=secs(D + 1.0))
+    files.append(("SFX_HalfBridge_Extend", norm_lufs(fade(y, 0.01, 0.4), -24), "半桥伸出"))   # 试听反馈：再轻一点（原来 -20）
     return files
 
 
@@ -1092,7 +1093,7 @@ def b_foot_bronze():
 
 @sound(29, "UI", "界面：按钮悬停、确认、返回，开始游戏",
        "界面也用游戏里的材料：悬停是一把小锤在石头上轻轻一点（Shamewap 的录音，很短、很轻）；确认是一只小铜钵敲一下（FOSSarts），0.8 秒收住；"
-       "返回是同一只钵、更低更闷、更短；开始游戏是铜钵一声，接着水晶杯 D、A 慢慢亮起来，像走进光里（3.5 秒）。",
+       "返回是同一只钵、更低更闷、更短；开始游戏的第一声就是“确认”那一下（让它多响一会儿），接着水晶杯 D、A 慢慢亮起来，像走进光里（3.5 秒）。",
        "2D（不空间化），放到 UI 的 Sound Class。Hover 两个 Random；Confirm / Back 各一个；StartGame 在点“开始”时播，"
        "可以和第一声海浪（11）重叠。", 2)
 def b_ui():
@@ -1113,7 +1114,7 @@ def b_ui():
     files.append(("SFX_UI_Confirm", norm_lufs(to_stereo(brass(semis(780.5, hz("A5")), 0.8, 9000)), -25), "确认"))
     files.append(("SFX_UI_Back", norm_lufs(to_stereo(brass(semis(780.5, hz("D5")), 0.5, 3500)), -27), "返回"))
     D = 3.6
-    hit = brass(semis(780.5, hz("D5")), 2.5, 8000)
+    hit = brass(semis(780.5, hz("A5")), 2.5, 9000)      # 第一声和“确认”是同一下（A5），只是让它多响一会儿
     g1 = glass_swell(hz("D5"), D - 0.4, attack=1.0, release=1.6)
     g2 = glass_swell(hz("A5"), D - 0.6, attack=1.2, release=1.5)
     sp = sparkle(D, 9, env=[0, 0.5, 1, 0.3, 0], pitch=8, level=0.06, seed_=2901)
