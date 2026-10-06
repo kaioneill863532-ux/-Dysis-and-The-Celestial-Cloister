@@ -2295,34 +2295,6 @@
    ]
   },
   {
-   "num": 42,
-   "tier": 3,
-   "key": "Armillary_Spin",
-   "zh": "浑天仪开始自转",
-   "what": "结局里浑天仪自己转起来——“时间交出去了”：一开始是轴承一格一格的轻响（HenKonen 的真实金属轻碰，很小），越来越快，最后连成一片平滑的转动声（KVV_Audio 的真实木轮转动，降调，转得比较慢，速度一路往上滑）。之后接一条一直慢慢转下去的循环。没有颂钵、水晶杯，也没有金属刮擦。",
-   "ue": "Armillary_Start：浑天仪开始自转时播（单声道，放在小亭的浑天仪上，约 6.5 s）；它的最后 1 秒和 Armillary_Spin_Loop 交叉接上（Loop Fade In 1 s），一直转到结局画面。",
-   "files": [
-    {
-     "path": "sfx/42_Armillary_Spin/SFX_Armillary_Start.wav",
-     "name": "SFX_Armillary_Start",
-     "group": "开始自转",
-     "loop": false,
-     "ch": 1,
-     "dur": 6.5,
-     "lufs": -24.0
-    },
-    {
-     "path": "sfx/42_Armillary_Spin/SFX_Armillary_Spin_Loop.wav",
-     "name": "SFX_Armillary_Spin_Loop",
-     "group": "持续转动·循环",
-     "loop": true,
-     "ch": 1,
-     "dur": 13.5,
-     "lufs": -27.0
-    }
-   ]
-  },
-  {
    "num": 43,
    "tier": 3,
    "key": "Day_Birds",
