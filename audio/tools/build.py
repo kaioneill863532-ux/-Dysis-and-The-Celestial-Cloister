@@ -1309,7 +1309,8 @@ def loop_bed(sid, start, dur, xfade=2.5, hp_f=40, lp_f=None):
 
 @sound(31, "Apple_Hold", "捧着金苹果",
        "整个夜里捧在手里的那点暖：摩擦颂钵的低音（F4）垫底，上面一只摩擦水晶杯（A5 或 C6，一阵换一只）——F、A、C 是一个大三和弦，比月光那一套暖。"
-       "像海浪一样一阵一阵：每一阵慢慢涌上来（约 3.5 秒）、再慢慢退下去，退到很轻以后下一阵才来；四阵的间隔、大小都不一样，30 秒无缝循环，听久了也不吵。",
+       "像海浪一样一阵一阵：每一阵慢慢涌上来（约 3.5 秒）、再慢慢退下去，退到很轻以后下一阵才来；四阵的间隔、大小都不一样，30 秒无缝循环，听久了也不吵。"
+       "颂钵只取录音里摩擦得最稳的中段，颂钵和水晶杯都只留下稳定的分音：摩擦棒的沙沙声、偶尔的碰撞声，和颂钵本身那个不在 F、A、C 上的泛音（约 980 Hz，正好卡在 A5 和 C6 中间）都去掉了。",
        "接住最后一缕光以后一直循环到放下苹果（Looping），2D 跟着玩家，音量很低；放上苹果时 2 秒淡出，接 27 的 Apple_Place。", 3)
 def b_apple_hold():
     dsp.seed(31)
@@ -1321,14 +1322,15 @@ def b_apple_hold():
         down = np.cos(np.pi / 2 * np.clip((t - rise) / fall, 0, 1)) ** (2 * curve)
         return np.where(t < rise, up, down)
 
-    # (开始, 涌上来, 退下去, 这一阵多大, 上面那只水晶杯, 颂钵从录音哪里取)
-    waves = [(0.0, 3.6, 6.4, 1.0, "A5", 4), (7.6, 3.2, 5.8, 0.85, "C6", 14), (14.4, 3.8, 6.6, 1.1, "A5", 22), (22.2, 3.4, 6.2, 1.3, "C6", 30)]
+    # (开始, 涌上来, 退下去, 这一阵多大, 上面那只水晶杯, 颂钵从录音哪里取：只用 5–27 秒摩擦稳定的那段)
+    waves = [(0.0, 3.6, 6.4, 1.0, "A5", 5.5), (7.6, 3.2, 5.8, 0.92, "C6", 15.5), (14.4, 3.8, 6.6, 0.99, "A5", 9.0), (22.2, 3.4, 6.2, 0.78, "C6", 13.0)]
     parts = []
     for k, (t0, rise, fall, g, gn, bst) in enumerate(waves):
         D = rise + fall
         e = swell(secs(D), rise, fall)
-        lo = lp(unit(bowl_hum(hz("F4"), D, start=bst, attack=0.05, release=0.05)), 2500)
-        hi = unit(glass_swell(hz(gn), D, attack=0.05, release=0.05, start=0.5 + k * 0.7, src="419146" if gn == "A5" else "418150"))
+        lo = dsp.keep_tones(bowl_hum(hz("F4"), D, start=bst, attack=0.05, release=0.05), pitch_classes=[5, 9, 0])   # 只留 F、A、C 上的分音
+        lo = lp(unit(lo), 2500)
+        hi = unit(dsp.keep_tones(glass_swell(hz(gn), D, attack=0.05, release=0.05, start=0.5 + k * 0.7, src="419146" if gn == "A5" else "418150")))
         parts.append((widen(lo * e * 0.55 * g, 0.4), t0))
         parts.append((widen(hi * e * (0.2 if gn == "A5" else 0.13) * g, 0.6), t0 + 0.4))
     y = mix(*parts, length=secs(L + 10))
@@ -1533,30 +1535,32 @@ def b_swan_transform():
     return files
 
 
-def vary_rate(x, r0, r1):
-    """播放速度从 r0 慢慢变到 r1（像轮子越转越快：音高和速度一起升）。"""
-    n = len(x)
-    r = np.linspace(r0, r1, n)
-    idx = np.cumsum(r)
-    idx = idx[idx < n - 1]
-    return np.interp(idx, np.arange(n), x)
-
-
 @sound(42, "Armillary_Spin", "浑天仪开始自转",
-       "结局里浑天仪自己转起来——“时间交出去了”：只有平滑的转动声（真实的木轮转动降调），从很慢、很轻开始，速度和音高一路往上滑，转顺了以后接一条持续转动的循环。"
-       "没有颂钵、水晶杯，也没有一格一格的轴承声和金属刮擦。",
-       "Armillary_Start：浑天仪开始自转时播（放在小亭的浑天仪上，约 6.5 s）；它的最后 1 秒和 Armillary_Spin_Loop 交叉接上（Loop Fade In 1 s），一直转到结局画面。", 3)
+       "结局里浑天仪自己转起来——“时间交出去了”：只有轴承一格一格的金属轻响（HenKonen 的真实金属轻碰，降调、很小）。一开始一下一下隔得很开，越来越快，"
+       "到每秒五下就稳住了，接一条一直这样转下去的循环。每一下的音高、轻重、早晚都差一点点，听起来是转动的机件，不是节拍器。没有颂钵、水晶杯，也没有木轮声。",
+       "Armillary_Start：浑天仪开始自转时播（单声道，放在小亭的浑天仪上，约 3.3 s）；Sound Cue 里用 Concatenator 接 Looping 的 Armillary_Spin_Loop，"
+       "不要交叉淡化：Start 最后一下和 Loop 第一下正好隔一格（0.2 s）。一直转到结局画面。", 3)
 def b_armillary():
     dsp.seed(42)
-    files = []
-    D = 6.5
-    whirr = vary_rate(lp(hp(seg("715478", 20, D + 0.3, -6), 50), 1400), 0.45, 1.0)[: secs(D)]
-    whirr = shape(unit(whirr), [(0, 0), (1.5, 0.3), (4.5, 0.8), (D, 1)])
-    files.append(("SFX_Armillary_Start", norm_lufs(fade(widen(whirr, 0.3), 0.01, 1.0), -24), "开始自转"))
-    L = 16.0
-    w = lp(hp(seg("715478", 44, L, -6), 50), 1400)
-    files.append(("SFX_Armillary_Spin_Loop", norm_lufs(loopify(widen(w, 0.3)[secs(0.5):], 2.0), -27, "integrated"), "持续转动·循环", True))
-    return files
+    G = 0.2                                    # 稳住以后一格的间隔（每秒五下）
+    base = lp(seg("682154", 0.08, 0.25, -4), 5000)
+
+    def tick(level):
+        x = resample_pitch(base, dsp.RNG.uniform(-0.3, 0.3))[: secs(G - 0.01)]      # 每一下都在下一格之前收完
+        return fade(x, 0.001, 0.12) * level * db(dsp.RNG.uniform(-1.2, 1.2))
+
+    # 起转：间隔从 0.55 s 一下一下缩短到 0.2 s，再稳稳地走五格
+    ts, t, gap = [], 0.1, 0.55
+    while gap > G:
+        ts.append(t); t += gap; gap = max(G, gap * 0.84)
+    ts += [t + k * G for k in range(5)]
+    end = ts[-1] + G
+    start = mix(*[(tick(0.8 + 0.2 * min(1.0, tt / ts[-6])), tt + (dsp.RNG.uniform(0, 0.004) if tt >= ts[-6] else 0)) for tt in ts], length=secs(end))
+    # 一直转：40 格 = 8 秒，每一下早晚差几毫秒
+    N = 40
+    loop = mix(*[(tick(1.0), k * G + dsp.RNG.uniform(0, 0.004)) for k in range(N)], length=secs(N * G))
+    gain = db(-27 - dsp.lufs(start, "max"))   # 两条用同一个增益：接上的时候一格也不跳
+    return [("SFX_Armillary_Start", start * gain, "开始自转"), ("SFX_Armillary_Spin_Loop", loop * gain, "持续转动·循环", True)]
 
 
 @sound(43, "Day_Birds", "白天鸟鸣",

@@ -500,6 +500,34 @@ def detone(x, thresh_db=7.0, lo=150, hi=6000, n_fft=2048, width=10, hold=5):
     return out[:, 0] if mono else out
 
 
+def keep_tones(x, pitch_classes=None, thresh_db=10.0, n_fft=8192, width=15, hold=9, cents=40, floor_db=-40.0):
+    """反过来的 detone：摩擦颂钵、摩擦水晶杯这种长音，只留下稳定的分音，摩擦的沙沙声、偶尔的碰撞声压到 floor_db。
+    pitch_classes（0=C … 11=B）给了的话，只留落在这些音级上（±cents）的分音——去掉颂钵本身那几个不协和的泛音。"""
+    from scipy.ndimage import median_filter, maximum_filter, uniform_filter1d
+    hop = n_fft // 8
+    mono = x.ndim == 1
+    xs = x[:, None] if mono else x
+    f, _, Zm = signal.stft(xs.mean(axis=1), SR, nperseg=n_fft, noverlap=n_fft - hop)
+    P = np.abs(Zm) ** 2 + 1e-20
+    floor = median_filter(P, size=(2 * width + 1, 1), mode="nearest")
+    R = median_filter(P / floor, size=(1, hold), mode="nearest")    # 要持续 ~0.2 s 才算分音：碰撞、沙沙声都过不了
+    keep = R > 10 ** (thresh_db / 10)
+    if pitch_classes is not None:
+        with np.errstate(divide="ignore"):
+            pc = (12 * np.log2(np.maximum(f, 1.0) / 440.0) + 9) % 12   # 0 = C
+        d = np.min([np.minimum(np.abs(pc - p), 12 - np.abs(pc - p)) for p in pitch_classes], axis=0) * 100
+        keep &= (d <= cents)[:, None]
+    keep = maximum_filter(keep, size=(5, 1))                           # 分音左右各留两格（窗的主瓣、轻微的颤音）
+    g = np.where(keep, 1.0, 10 ** (floor_db / 20))
+    g = uniform_filter1d(g, 3, axis=1)
+    out = np.zeros_like(xs)
+    for c in range(xs.shape[1]):
+        _, _, Z = signal.stft(xs[:, c], SR, nperseg=n_fft, noverlap=n_fft - hop)
+        _, y = signal.istft(Z * g, SR, nperseg=n_fft, noverlap=n_fft - hop)
+        out[:, c] = y[: len(xs)] if len(y) >= len(xs) else np.pad(y, (0, len(xs) - len(y)))
+    return out[:, 0] if mono else out
+
+
 def onsets(x, thresh_db=-30, min_gap=0.18, hop=0.004):
     """很简单的起音检测：能量包络的上升沿。返回秒。"""
     m = to_mono(x)
