@@ -1,11 +1,11 @@
-# 音效 · 第一、第二梯队
+# 音效 · 第一到第四梯队
 
-日落回廊的音效：第一梯队里除了 1、2、7、12、13（时间和声、接光主题、主界面音乐、结局音乐，之后单独做）以外的全部，加上第二梯队全部（14–30）。
-共 25 条、160 个文件。**试听：用浏览器打开 [index.html](index.html)**（按编号分组，可以切“殿内混响”听放进圆殿以后的样子）。
+日落回廊的音效：第一梯队里除了 1、2、7、12、13（时间和声、接光主题、主界面音乐、结局音乐，之后单独做）以外的全部，第二梯队全部（14–30），第三、四梯队除了 34（岛影逼近）以外的全部（31–58）。
+共 52 条、309 个文件。**试听：用浏览器打开 [index.html](index.html)**（按编号分组，可以切“殿内混响”听放进圆殿以后的样子）。
 
 ## 怎么做的
 
-**要真实**，所以能用真实录音的地方都用真实录音：48 段 Freesound 上的 CC0 录音（凉鞋、石地面、石板门、铁链、铜钵、水晶杯、瀑布、海浪……，出处在最后），切、降调、叠层、滤波、对齐响度。
+**要真实**，所以能用真实录音的地方都用真实录音：60 段 Freesound 上的 CC0 录音（凉鞋、石地面、石板门、铁链、铜钵、水晶杯、瀑布、海浪……，出处在最后），切、降调、叠层、滤波、对齐响度。
 光、月光这些“现实里不发声”的东西，也用真实的材料来发声：
 
 - **日光 = 玻璃**：摩擦的水晶杯（有真实的颤动）、玻璃轻碰的闪光、被照亮的水雾（瀑布录音里最高的那一段）。
@@ -368,6 +368,351 @@
 
 文件夹：[sfx/30_LightPath_Reveal_Opening/](sfx/30_LightPath_Reveal_Opening/)
 
+### 31. 捧着金苹果（第三梯队）
+
+**怎么做的**：整个夜里捧在手里的那点暖：一只摩擦颂钵的低音（F4）垫底，上面两只摩擦水晶杯（A5、C6）——F、A、C 是一个大三和弦，比月光那一套暖；很轻、很慢地起伏（像苹果里的光在呼吸），12 秒无缝循环。
+
+**UE 里怎么用**：接住最后一缕光以后一直循环到放下苹果（Looping），2D 跟着玩家，音量很低（这条本身就很轻，-32 LUFS）；放上苹果时 2 秒淡出，接 27 的 Apple_Place。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 捧着·循环 | [`SFX_Apple_Hold_Loop`](sfx/31_Apple_Hold/SFX_Apple_Hold_Loop.wav)（循环） | 10.00 s | 立体 |
+
+文件夹：[sfx/31_Apple_Hold/](sfx/31_Apple_Hold/)
+
+### 32. 脚步：月石、月桥、影桥（第三梯队）
+
+**怎么做的**：夜里的两种特殊路面。月石（月桥也是月石做的）：和石头脚步同一个“接触”，脚下激起一点颂钵的余振（模态合成的钵 + 真实的颂钵敲击，月光的低音区 A3–A4），比光路的水晶低、冷。影桥（水面上的月影）：同一个接触，脚下是一小下真实的水波拍岸（TheyLook_Here），上面一点很轻的高音颂钵。
+
+**UE 里怎么用**：和石头脚步同一套触发：脚下是月石、月桥时用 Moonstone，影桥（Zone shadowbr）用ShadowBridge。Random 不重复。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 月石·走 | `SFX_Footstep_Moonstone_Walk_01` … `08`（8 个） | 0.40–0.46 s | 单 |
+| 月石·快走 | `SFX_Footstep_Moonstone_Run_01` … `06`（6 个） | 0.26–0.34 s | 单 |
+| 影桥·走 | `SFX_Footstep_ShadowBridge_Walk_01` … `08`（8 个） | 0.59–0.60 s | 单 |
+| 影桥·快走 | `SFX_Footstep_ShadowBridge_Run_01` … `06`（6 个） | 0.51–0.52 s | 单 |
+
+文件夹：[sfx/32_Footstep_Moon_Shadow/](sfx/32_Footstep_Moon_Shadow/)
+
+### 33. 拾取碎片 ×3（第三梯队）
+
+**怎么做的**：三片碎片各有自己的材料：日之碎片（正四面体，火）是小铜钵一声（和“确认”同一只）接着三只水晶杯很快往上走（D5、A5、D6），暖、亮；月之碎片（正二十面体，水）是两声颂钵（D4、A4）和几滴往下落的玻璃水珠；虹之碎片（正八面体，气）是七只水晶杯一口气从低到高（七种颜色），带一点被照亮的水雾。都在 3 秒以内，最后落在一个长一点的音上，给“获得感”。
+
+**UE 里怎么用**：拿到碎片的那一刻播，2D（不空间化）。三片各用各的。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 日之碎片 | [`SFX_Shard_Pickup_Sun`](sfx/33_Shard_Pickup/SFX_Shard_Pickup_Sun.wav) | 3.30 s | 立体 |
+| 月之碎片 | [`SFX_Shard_Pickup_Moon`](sfx/33_Shard_Pickup/SFX_Shard_Pickup_Moon.wav) | 3.35 s | 立体 |
+| 虹之碎片 | [`SFX_Shard_Pickup_Rainbow`](sfx/33_Shard_Pickup/SFX_Shard_Pickup_Rainbow.wav) | 3.40 s | 立体 |
+
+文件夹：[sfx/33_Shard_Pickup/](sfx/33_Shard_Pickup/)
+
+### 35. 关卡标题短乐句（第三梯队）
+
+**怎么做的**：每关标题出现时的一句短乐句（2–4 秒），用游戏里已有的“乐器”：白天是石磬（屋顶台阶那种调过音的石头）一级级往上、最后落在一只水晶杯上；夜里是颂钵一声声往下。白天一关比一关结束得高（日1 落在 A5，日5 落在铜钵和 D6），夜里一关比一关结束得低（月1 落在 D4，月5 落到 D3）——跟着太阳往上爬、跟着月亮往下走。序是两只水晶杯的空五度；“日落之后 · 入夜”是水晶往下交给颂钵。全部在 d 小调五声里。
+
+**UE 里怎么用**：关卡标题出现时播（灰盒 showTitle），2D。文件名对应：Prologue=序，Day1–5=日1–日5，Dusk=日落之后·入夜，Night1–5=月1–月5。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 标题 | `SFX_Title_Prologue` … `t5`（12 个） | 3.80–4.40 s | 立体 |
+
+文件夹：[sfx/35_Level_Title/](sfx/35_Level_Title/)
+
+### 36. 互动提示出现、提示文字出现（第三梯队）
+
+**怎么做的**：提示出现：一颗很小的玻璃闪光（真实的玻璃轻碰）加一点很短的高音水晶，很轻；提示文字出现：一口很轻的“气”（被照亮的水雾那一段）托着一只很远的水晶杯，像一行字从光里浮出来。两样都轻到不打扰，但不看屏幕也能听见“有东西可以按了”。
+
+**UE 里怎么用**：Prompt_Appear：互动提示（按 E）从无到有的那一刻；Text_Appear：提示文字（toast）出现时。2D，各两个 Random。同一秒里只播一个。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 提示出现 | [`SFX_UI_Prompt_Appear_01`](sfx/36_UI_Prompt/SFX_UI_Prompt_Appear_01.wav) | 0.51 s | 立体 |
+| 提示出现 | [`SFX_UI_Prompt_Appear_02`](sfx/36_UI_Prompt/SFX_UI_Prompt_Appear_02.wav) | 0.51 s | 立体 |
+| 文字出现 | [`SFX_UI_Text_Appear_01`](sfx/36_UI_Prompt/SFX_UI_Text_Appear_01.wav) | 0.73 s | 立体 |
+| 文字出现 | [`SFX_UI_Text_Appear_02`](sfx/36_UI_Prompt/SFX_UI_Text_Appear_02.wav) | 0.73 s | 立体 |
+
+文件夹：[sfx/36_UI_Prompt/](sfx/36_UI_Prompt/)
+
+### 37. 对话推进音（第三梯队）
+
+**怎么做的**：翻到下一句：一把小锤在石头上轻轻一点（Shamewap 的录音，比“悬停”低、更圆），后面跟一点很短的颂钵余音。三个版本轮着用，听很多次也不烦。
+
+**UE 里怎么用**：对话框翻页/下一句时播，2D，Random 不重复。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 下一句 | `SFX_UI_Dialogue_Next_01` … `03`（3 个） | 0.41–0.50 s | 立体 |
+
+文件夹：[sfx/37_UI_Dialogue_Advance/](sfx/37_UI_Dialogue_Advance/)
+
+### 38. 海风（第三梯队）
+
+**怎么做的**：屋顶的高度感：真实的海边悬崖小路上的强风（bruno.auzet），有一阵一阵的起伏，去掉最低的隆隆声，22 秒无缝循环。
+
+**UE 里怎么用**：屋顶（和四层外沿）循环播放，2D 或很大的衰减半径；越高越响，进殿以后用 Audio Volume 压低 10–15 dB、低通到 600 Hz。和 11 的远处海浪叠着用。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 海风·循环 | [`SFX_Roof_Wind_Loop`](sfx/38_Roof_Wind/SFX_Roof_Wind_Loop.wav)（循环） | 19.00 s | 立体 |
+
+文件夹：[sfx/38_Roof_Wind/](sfx/38_Roof_Wind/)
+
+### 39. 殿内空间底噪（第三梯队）
+
+**怎么做的**：殿里“安静”的声音：不是真的没声音，而是一座大石头圆殿里的空气——很轻的粉噪声经过圆殿的脉冲响应（和 ir/ 里给 UE 的是同一个），墙外的海隔着石墙只剩最低的一层（bruno.auzet 的崖上听海，低通到 350 Hz），殿里的瀑布在远处只剩闷闷的一点（低通到 250 Hz）。20 秒无缝循环，很轻。
+
+**UE 里怎么用**：殿内的 Audio Volume 里一直循环（2D）；出殿 2 秒淡出、换成 11 的海浪。瀑布没开的时候（日1 开闸前）也可以用，瀑布那一层很低。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 殿内·循环 | [`SFX_Interior_RoomTone_Loop`](sfx/39_Interior_RoomTone/SFX_Interior_RoomTone_Loop.wav)（循环） | 19.00 s | 立体 |
+
+文件夹：[sfx/39_Interior_RoomTone/](sfx/39_Interior_RoomTone/)
+
+### 40. 水池水面（第三梯队）
+
+**怎么做的**：水庭的黑石镜池：真实的轻轻拍着岩岸的水（TheyLook_Here），一下一下、很稀，20 秒无缝循环。
+
+**UE 里怎么用**：放在水池边几处（或池心，衰减半径约 3–15 m），Looping。夜里潮水涨起来时可以把音量提高 3 dB。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 水面·循环 | [`SFX_Pool_Water_Loop`](sfx/40_Pool_Water/SFX_Pool_Water_Loop.wav)（循环） | 20.00 s | 立体 |
+
+文件夹：[sfx/40_Pool_Water/](sfx/40_Pool_Water/)
+
+### 41. 女神像变天鹅（第三梯队）
+
+**怎么做的**：月光照满女神像，她变成天鹅：月光的颂钵长音（D4）和水晶杯（A5）慢慢亮起来，中间一对大翅膀展开、扇了几下（Lsoundaccount 的真实扇翅声），羽毛落定。另有反过来的一条：月光离开，天鹅收起翅膀、变回女神像。
+
+**UE 里怎么用**：Swan_Transform：天鹅形态从 0 往 1 走时播（SWAN.form），放在女神像上；Swan_Revert：从 1 往 0 走时播。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 变天鹅 | [`SFX_Swan_Transform`](sfx/41_Swan_Transform/SFX_Swan_Transform.wav) | 4.20 s | 立体 |
+| 变回女神像 | [`SFX_Swan_Revert`](sfx/41_Swan_Transform/SFX_Swan_Revert.wav) | 2.80 s | 立体 |
+
+文件夹：[sfx/41_Swan_Transform/](sfx/41_Swan_Transform/)
+
+### 42. 浑天仪开始自转（第三梯队）
+
+**怎么做的**：结局里浑天仪自己转起来——“时间交出去了”：一开始是轴承一格一格的轻响（真实的金属轻碰，很小），越来越快，最后连成一片平滑的转动声（真实的木轮转动降调，速度一路往上滑）；同时颂钵 D4 和水晶杯 A5、D6 慢慢长起来。之后接一条持续转动的循环。没有金属刮擦。
+
+**UE 里怎么用**：Armillary_Start：浑天仪开始自转时播（放在小亭的浑天仪上，约 6.5 s）；它的最后 1 秒和 Armillary_Spin_Loop 交叉接上（Loop Fade In 1 s），一直转到结局画面。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 开始自转 | [`SFX_Armillary_Start`](sfx/42_Armillary_Spin/SFX_Armillary_Start.wav) | 6.50 s | 立体 |
+| 持续转动·循环 | [`SFX_Armillary_Spin_Loop`](sfx/42_Armillary_Spin/SFX_Armillary_Spin_Loop.wav)（循环） | 6.50 s | 立体 |
+
+文件夹：[sfx/42_Armillary_Spin/](sfx/42_Armillary_Spin/)
+
+### 43. 白天鸟鸣（第三梯队）
+
+**怎么做的**：开场画面里的海边早晨：马耳他的晨间鸟鸣（musicradiocreative）打底，偶尔几声燕子（SamuelGremaud、bruno.auzet），远处一点海鸥（Ambientsoundapp），都在地中海海边。24 秒无缝循环，低频去掉（和海浪不打架）。
+
+**UE 里怎么用**：开场的岛上和殿外的白天循环（2D 或大衰减半径），和 11 的海浪叠着用；日5 太阳落下去时 5–10 秒淡出，夜里换成 55 的虫鸣。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 鸟鸣·循环 | [`SFX_Day_Birds_Loop`](sfx/43_Day_Birds/SFX_Day_Birds_Loop.wav)（循环） | 23.50 s | 立体 |
+
+文件夹：[sfx/43_Day_Birds/](sfx/43_Day_Birds/)
+
+### 44. 脚步：浅水、湿石（第三梯队）
+
+**怎么做的**：浅水：真实的踩水脚步（aglinder、ChristopherJngs 的录音），一步一步切出来，只留一次水花。湿石：和石头脚步同一个“接触”，下面叠一层真实的赤脚踩湿瓷砖（SpliceSound）的“湿”声，石头的“实”换成更软的一点。
+
+**UE 里怎么用**：和石头脚步同一套触发：脚下是浅水（潮沟、水庭边的浅水）用 Water，湿的石面（瀑布、水闸石台附近）用 WetStone。Random 不重复。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 浅水·走 | `SFX_Footstep_Water_Walk_01` … `08`（8 个） | 0.32–0.39 s | 单 |
+| 浅水·快走 | `SFX_Footstep_Water_Run_01` … `04`（4 个） | 0.31–0.38 s | 单 |
+| 湿石·走 | `SFX_Footstep_WetStone_Walk_01` … `08`（8 个） | 0.21–0.23 s | 单 |
+
+文件夹：[sfx/44_Footstep_Water_Wet/](sfx/44_Footstep_Water_Wet/)
+
+### 45. 瀑布水帘透开（第三梯队）
+
+**怎么做的**：镜子反射的月光打到瀑布上，那一块水帘透开：瀑布那一块的轰鸣变薄（低频一路被抽掉，只剩细的水声），上面是月光的颂钵（A4）和水晶（D6）轻轻亮起来、几颗水珠的闪光。另有合上的一条（月光离开，那一块又变回厚水帘）。
+
+**UE 里怎么用**：Hole_Open：瀑布上透开那一块从 0 往 1 走时（FALLHOLE.k），放在透开处；Hole_Close：从 1 往 0 走时。瀑布的循环照常播，这两条叠在上面。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 透开 | [`SFX_Waterfall_Hole_Open`](sfx/45_Waterfall_Hole/SFX_Waterfall_Hole_Open.wav) | 2.80 s | 立体 |
+| 合上 | [`SFX_Waterfall_Hole_Close`](sfx/45_Waterfall_Hole/SFX_Waterfall_Hole_Close.wav) | 1.80 s | 立体 |
+
+文件夹：[sfx/45_Waterfall_Hole/](sfx/45_Waterfall_Hole/)
+
+### 46. 彩虹桥出现、伊莉丝浮雕醒来（第四梯队）
+
+**怎么做的**：伊莉丝浮雕醒来：浮雕上沿的铜唇里流下一层细水帘（真实的小水流，kyles），刻在浮雕上的那圈虹亮起来——三只水晶杯（D5、A5、D6）慢慢长起来。彩虹桥出现：七只水晶杯从低到高（红到紫），声像从浮雕这边一路拱到对面窗台（左到右），下面是被照亮的水雾和闪光，最后七色一起停在一个长音上。
+
+**UE 里怎么用**：IrisRelief_Awaken：影子的头落进人形、虹醒过来时，放在浮雕上；RainbowBridge_Appear：虹桥开始从浮雕上走下来时播，立体声，放在虹桥中点。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 浮雕醒来 | [`SFX_IrisRelief_Awaken`](sfx/46_Rainbow_Bridge_IrisRelief/SFX_IrisRelief_Awaken.wav) | 3.20 s | 立体 |
+| 彩虹桥出现 | [`SFX_RainbowBridge_Appear`](sfx/46_Rainbow_Bridge_IrisRelief/SFX_RainbowBridge_Appear.wav) | 4.20 s | 立体 |
+
+文件夹：[sfx/46_Rainbow_Bridge_IrisRelief/](sfx/46_Rainbow_Bridge_IrisRelief/)
+
+### 47. 棱镜转台转一格（7 个音高）（第四梯队）
+
+**怎么做的**：转棱镜的铜轮转一格：轮子“咔”一声（真实的石头碰撞 + 金属轻碰，很小），接着一只水晶杯响一下——七格七个音，从红（D5）到紫（F6），颜色的频率越高音越高。第六格是靛色（D6），也就是落进塞勒涅眼睛的那一色。
+
+**UE 里怎么用**：转到第几格播第几个（_1_Red … _7_Violet）。棱镜在窗下石沿上，单声道放在棱镜上。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 转一格 | `SFX_Prism_Turn_1_Red` … `et`（7 个） | 1.43–1.43 s | 单 |
+
+文件夹：[sfx/47_Prism_Turn/](sfx/47_Prism_Turn/)
+
+### 48. 塞勒涅眼睛点亮（第四梯队）
+
+**怎么做的**：靛色的光落进塞勒涅浮雕的青金石眼睛：先是一声很亮的水晶“叮”（D6，像宝石里点着了光），接着月亮的颂钵（D4）低低地应一声，摩擦颂钵 A4 慢慢亮起来，几颗闪光。
+
+**UE 里怎么用**：眼睛亮起来那一刻播，放在浮雕的眼睛上；对话（58）在这条播到 2 秒左右以后再开始。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 眼睛点亮 | [`SFX_Selene_Eyes_Light`](sfx/48_Selene_Eyes/SFX_Selene_Eyes_Light.wav) | 3.80 s | 立体 |
+
+文件夹：[sfx/48_Selene_Eyes/](sfx/48_Selene_Eyes/)
+
+### 49. 窗下石沿伸出、虹之龛铜门、棱镜铜柱升起（第四梯队）
+
+**怎么做的**：彩虹支线的三个小机关：窗下石沿伸出（16 的石板滑动，更短、更轻：0.9 m 的石沿从墙里滑出来）；虹之龛的两扇小铜门（两声小的门轴吱呀，一前一后，最后轻轻一靠）；托着棱镜的铜柱从石沿里升起来（轻的石头摩擦，升到顶一声小的铜响）。
+
+**UE 里怎么用**：Sill_Ledge_Extend：虹桥快落到对岸、石沿开始伸出时；Niche_Doors_Open：打开虹之龛；Prism_Column_Rise：铜柱开始升起时。都放在机关上，单声道。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 石沿伸出 | [`SFX_Sill_Ledge_Extend`](sfx/49_Rainbow_Small_Mechs/SFX_Sill_Ledge_Extend.wav) | 1.50 s | 单 |
+| 虹之龛铜门 | [`SFX_Niche_Doors_Open`](sfx/49_Rainbow_Small_Mechs/SFX_Niche_Doors_Open.wav) | 1.20 s | 单 |
+| 铜柱升起 | [`SFX_Prism_Column_Rise`](sfx/49_Rainbow_Small_Mechs/SFX_Prism_Column_Rise.wav) | 2.00 s | 单 |
+
+文件夹：[sfx/49_Rainbow_Small_Mechs/](sfx/49_Rainbow_Small_Mechs/)
+
+### 50. 三相像镜子醒来、日之龛开盖（第四梯队）
+
+**怎么做的**：三相像醒来（日相）：石像在台座上轻轻一动（短的石头摩擦），铜镜迎着太阳亮起来——两只水晶杯（D5、A5）很快亮起来，铜镜本身轻轻一声共振。日之龛开盖：铜匣的盖子绕后沿翻开（一声短的门轴吱呀、盖子靠住的一下），里面的光一下透出来（水晶杯 A5），碎片升起时几颗闪光往上走。
+
+**UE 里怎么用**：Mirror_Awaken：三相像变成日相时（灰盒 updateMirrors 里 form 变成 sun），放在像上；SunNiche_Open：打开日之龛时，放在铜匣上。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 镜子醒来 | [`SFX_Mirror_Awaken`](sfx/50_Mirror_SunNiche/SFX_Mirror_Awaken.wav) | 2.80 s | 立体 |
+| 日之龛开盖 | [`SFX_SunNiche_Open`](sfx/50_Mirror_SunNiche/SFX_SunNiche_Open.wav) | 2.90 s | 立体 |
+
+文件夹：[sfx/50_Mirror_SunNiche/](sfx/50_Mirror_SunNiche/)
+
+### 51. 碎片放入凹槽 ×3（第四梯队）
+
+**怎么做的**：把碎片放进凹槽：碎片落进石头凹槽“嗒”的一声（真实的石头碰撞，很轻），接着这片碎片自己的音：日是一只水晶杯（A5），月是一声颂钵（A4），虹是三只水晶杯很快往上（F5、A5、D6）。
+
+**UE 里怎么用**：放进对应的凹槽时播，放在凹槽上。三片放齐以后接 52。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 放入凹槽 | `SFX_Shard_Slot_Sun` … `ow`（3 个） | 2.00–2.00 s | 立体 |
+
+文件夹：[sfx/51_Shard_Slots/](sfx/51_Shard_Slots/)
+
+### 52. 正十二面体与星座亮起（第四梯队）
+
+**怎么做的**：三片碎片合成正十二面体（柏拉图说它是宇宙的形状）：很深的一声颂钵（D3）托底，水晶杯 D5、A5、D6、F6 一层层长上去；星座一颗一颗亮起来——三十多颗玻璃闪光从中间往两边散开，越来越多。6.5 秒。
+
+**UE 里怎么用**：正十二面体合成、星座开始亮时播，2D 或放在合成的位置（立体声）。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 亮起 | [`SFX_Dodecahedron_Stars`](sfx/52_Dodecahedron_Stars/SFX_Dodecahedron_Stars.wav) | 6.50 s | 立体 |
+
+文件夹：[sfx/52_Dodecahedron_Stars/](sfx/52_Dodecahedron_Stars/)
+
+### 53. 虹门彩虹（第四梯队）
+
+**怎么做的**：屋顶虹门里的那道小彩虹：背对夕阳穿过虹门时，三只水晶杯（F5、A5、C6）很轻地亮一下，带一点被照亮的水雾——比 46 的彩虹桥小得多，只是一个细节。
+
+**UE 里怎么用**：穿过虹门、彩虹出现时播（每次经过最多播一次），放在虹门上，很轻。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 虹门彩虹 | [`SFX_RainbowGate_Rainbow`](sfx/53_RainbowGate_Rainbow/SFX_RainbowGate_Rainbow.wav) | 3.20 s | 立体 |
+
+文件夹：[sfx/53_RainbowGate_Rainbow/](sfx/53_RainbowGate_Rainbow/)
+
+### 54. 墙里楼梯的窗打开（第四梯队）
+
+**怎么做的**：墙里楼梯朝外的小窗里堵着的石块，一块一块被推出去：每块是 24 里墙里楼梯显现用的同一种石块（短的摩擦 + 落定），一样闷一点（在墙里面）。三个版本。
+
+**UE 里怎么用**：要逐扇同步的话（灰盒 TUNWIN：从上往下 0.25 s 一块），每块开始动时播一个，Random；已经用了 24 的 WallStairs_Reveal 就不用再播这个。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 一扇窗 | `SFX_WallStairs_Window_01` … `03`（3 个） | 0.91–0.93 s | 单 |
+
+文件夹：[sfx/54_WallStairs_Windows/](sfx/54_WallStairs_Windows/)
+
+### 55. 水雾、海峡水沫、夜间虫鸣（第四梯队）
+
+**怎么做的**：三条氛围层，都是无缝循环：水雾——瀑布录音里最高的那一段细嘶声（开闸以后中庭里的雾）；海峡水沫——浪拍礁石录音（emainta）里高频的那层泡沫声；夜间虫鸣——墨西哥海边夜里的蟋蟀（felix.blume），去掉了最尖的那一段，很远、很轻。
+
+**UE 里怎么用**：Mist_Loop：开闸以后中庭里一直在（和雾的浓度一起淡入淡出）；StraitFoam_Loop：岛和崖脚的海浪上面叠一层（11 的 Close 旁边）；NightInsects_Loop：入夜以后殿外和屋顶（白天的 43 淡出以后），殿内压低 12 dB。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 水雾·循环 | [`SFX_Mist_Loop`](sfx/55_Ambience_Layers/SFX_Mist_Loop.wav)（循环） | 16.00 s | 立体 |
+| 海峡水沫·循环 | [`SFX_StraitFoam_Loop`](sfx/55_Ambience_Layers/SFX_StraitFoam_Loop.wav)（循环） | 16.00 s | 立体 |
+| 夜间虫鸣·循环 | [`SFX_NightInsects_Loop`](sfx/55_Ambience_Layers/SFX_NightInsects_Loop.wav)（循环） | 19.50 s | 立体 |
+
+文件夹：[sfx/55_Ambience_Layers/](sfx/55_Ambience_Layers/)
+
+### 56. 塞勒涅梦话（第四梯队）
+
+**怎么做的**：塞勒涅在梦里说话：用 58 里她的“声音”（颂钵），但慢得多、含糊得多——几个音节拖长、音高往下滑，中间停很久，最后一声很轻的叹气（一小口带通的气声）。三段。
+
+**UE 里怎么用**：彩虹支线里靠近她的浮雕、她还没醒的时候，隔一会儿随机播一段（放在浮雕上，很轻）。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 梦话 | `SFX_Selene_SleepTalk_01` … `03`（3 个） | 3.62–4.43 s | 立体 |
+
+文件夹：[sfx/56_Selene_SleepTalk/](sfx/56_Selene_SleepTalk/)
+
+### 57. 界面：碰到已获得的日月虹碎片（第四梯队）
+
+**怎么做的**：鼠标碰到界面里已经拿到的碎片时，那片碎片轻轻响一下，和 33 拾取时同一种材料，只是小得多：日是一只很短的水晶杯（D6），月是一声很短的颂钵（A5），虹是三只水晶杯一闪（D6、F6、A6）。
+
+**UE 里怎么用**：2D，放到 UI 的 Sound Class；同一片碎片 0.3 秒内只播一次。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 悬停 | `SFX_UI_Shard_Hover_Sun` … `ow`（3 个） | 0.45–0.50 s | 立体 |
+
+文件夹：[sfx/57_UI_Shard_Hover/](sfx/57_UI_Shard_Hover/)
+
+### 58. 对话配音（先用乐器音色代替）（第四梯队）
+
+**怎么做的**：不配音的时候，每个角色用一种乐器“说话”：一句话里每个字（或每个词）播一个很短的音节，音高在 d 小调五声里取几个、在音节里稍微往上或往下滑，听起来有说话的抑扬。伊莉丝（虹的信使）是水晶杯，高、快、亮；塞勒涅（月神）是颂钵，低、慢、柔；狄西斯是石磬（屋顶台阶那种调过音的石头），在中间、清楚。每人 12 个音节，最后两个是往下收的“句尾”。
+
+**UE 里怎么用**：对话框逐字显示时，每 2–3 个字播一个这个角色的音节（Random 不重复，音高 0.97–1.03），句号前改用 _11、_12（句尾）。2D，音量比环境声低。
+
+| 用途 | 文件 | 时长 | 声道 |
+|---|---|---|---|
+| 伊莉丝 | `SFX_Voice_Iris_01` … `12`（12 个） | 0.06–0.12 s | 立体 |
+| 塞勒涅 | `SFX_Voice_Selene_01` … `12`（12 个） | 0.15–0.33 s | 立体 |
+| 狄西斯 | `SFX_Voice_Dysis_01` … `12`（12 个） | 0.08–0.16 s | 立体 |
+
+文件夹：[sfx/58_Dialogue_Voices/](sfx/58_Dialogue_Voices/)
+
 
 ## 重新生成
 
@@ -383,7 +728,7 @@ python audio/tools/build.py           # 全部重新生成；build.py 5 15 只�
 ## 还没做
 
 - 第一梯队的 1、2（时间和声）、7（接光主题）、12（主界面音乐）、13（结局音乐）。
-- 第三、四梯队（31–58）。其中不少可以直接复用这里的素材：脚步（月石、月桥、影桥）用 4 的光路脚步换成 6 的颂钵；墙里楼梯的窗、石块用 16、23 的石头；碎片放入凹槽用 27。
+- 第三梯队的 34（岛影逼近）。
 - 这些声音是按频谱、波形、响度一条条检查过的，但还需要真人戴耳机在游戏里听一遍：哪条太响、太长、太“假”，告诉我改哪个函数的哪几个参数。
 
 ## 素材出处
@@ -399,13 +744,16 @@ python audio/tools/build.py           # 全部重新生成；build.py 5 15 只�
 | [119911](https://freesound.org/people/ftpalad/sounds/119911/) | ftpalad | Footsteps Sandals Going Up Concrete Steps.aif |
 | [119912](https://freesound.org/people/ftpalad/sounds/119912/) | ftpalad | Footsteps Sandals on Concrete.aif |
 | [193823](https://freesound.org/people/jhumbucker/sounds/193823/) | jhumbucker | Wine glass tinkles |
+| [197102](https://freesound.org/people/musicradiocreative/sounds/197102/) | musicradiocreative | Morning Chorus In Malta |
 | [197404](https://freesound.org/people/SpliceSound/sounds/197404/) | SpliceSound | 01-14 Footsteps, Tile, Male Barefoot, Scuffs.wav |
 | [198403](https://freesound.org/people/ani_music/sounds/198403/) | ani_music | ANI - Wine glass - Rubbing 1a |
 | [202004](https://freesound.org/people/ryancacophony/sounds/202004/) | ryancacophony | singing bowl sing.wav |
 | [255762](https://freesound.org/people/Squidocto/sounds/255762/) | Squidocto | bell-bowl G-ish.wav |
 | [256251](https://freesound.org/people/spectral9/sounds/256251/) | spectral9 | Wine Glass Sustained Note F#6 |
+| [265582](https://freesound.org/people/aglinder/sounds/265582/) | aglinder | Footsteps Water 01 |
 | [271668](https://freesound.org/people/HonorHunter/sounds/271668/) | HonorHunter | Water gush; full.wav |
 | [274767](https://freesound.org/people/launemax/sounds/274767/) | launemax | Open and Close an iron gate |
+| [338106](https://freesound.org/people/SpliceSound/sounds/338106/) | SpliceSound | Footsteps, barefoot on wet tile.wav |
 | [352829](https://freesound.org/people/Kinoton/sounds/352829/) | Kinoton | Tomb Door Open, Stone Scrape |
 | [389692](https://freesound.org/people/Shamewap/sounds/389692/) | Shamewap | Tiny Hammer on Stone.wav |
 | [391448](https://freesound.org/people/saturdaysoundguy/sounds/391448/) | saturdaysoundguy | Shirt Whoosh 1.wav |
@@ -415,29 +763,38 @@ python audio/tools/build.py           # 全部重新生成；build.py 5 15 只�
 | [419147](https://freesound.org/people/PappaBert/sounds/419147/) | PappaBert | Ringing sound from crystal glass. Tune: G |
 | [448418](https://freesound.org/people/LordForklift/sounds/448418/) | LordForklift | Metal Slide 2 |
 | [454148](https://freesound.org/people/kyles/sounds/454148/) | kyles | ratchet pulley winch pull metal plastic junk slide rattle.flac |
+| [454340](https://freesound.org/people/kyles/sounds/454340/) | kyles | waterfall small or water fountain splashy close stream into water.flac |
 | [457956](https://freesound.org/people/dan.pugsley/sounds/457956/) | dan.pugsley | Waves lapping on rocks |
 | [463811](https://freesound.org/people/nate_asdfg/sounds/463811/) | nate_asdfg | Footsteps on Metal Floor |
 | [465807](https://freesound.org/people/PaceHeart/sounds/465807/) | PaceHeart | big stone door suddenly slamming shut |
+| [479041](https://freesound.org/people/felix.blume/sounds/479041/) | felix.blume | Crickets during the night, close to the beach in Mexico |
 | [495390](https://freesound.org/people/Nox_Sound/sounds/495390/) | Nox_Sound | Foley_Whoosh_Clothes.wav |
 | [508178](https://freesound.org/people/Breviceps/sounds/508178/) | Breviceps | Water Pouring Out of Bucket |
 | [525029](https://freesound.org/people/bruno.auzet/sounds/525029/) | bruno.auzet | sea from cliff.wav |
 | [530987](https://freesound.org/people/patchytherat/sounds/530987/) | patchytherat | stone door close.wav |
+| [537854](https://freesound.org/people/Ambientsoundapp/sounds/537854/) | Ambientsoundapp | Seagulls distant.wav |
+| [543683](https://freesound.org/people/SamuelGremaud/sounds/543683/) | SamuelGremaud | SWALLOWS |
 | [559203](https://freesound.org/people/saralana/sounds/559203/) | saralana | Waterfall |
 | [562195](https://freesound.org/people/gristi/sounds/562195/) | gristi | snd_footsteps_metal_floor_inside.wav |
 | [573805](https://freesound.org/people/hollandm/sounds/573805/) | hollandm | Singing Bowl, long without reverb |
 | [578491](https://freesound.org/people/PostProdDog/sounds/578491/) | PostProdDog | Heavy stone door opens 2 |
 | [627070](https://freesound.org/people/nicoproson/sounds/627070/) | nicoproson | SAND POUR.wav |
 | [637583](https://freesound.org/people/kyles/sounds/637583/) | kyles | gate big rusty metal door garage open heavy creak rattle.flac |
+| [648860](https://freesound.org/people/emainta/sounds/648860/) | emainta | Sea Waves Against Rocks |
 | [669719](https://freesound.org/people/vestibule-door/sounds/669719/) | vestibule-door | heavy thumps on stone.wav |
 | [682154](https://freesound.org/people/HenKonen/sounds/682154/) | HenKonen | Metallic Clink 3.wav |
 | [682776](https://freesound.org/people/thomasanthony321/sounds/682776/) | thomasanthony321 | Metal gate opening.WAV |
 | [696746](https://freesound.org/people/Krokulator/sounds/696746/) | Krokulator | lever.wav |
 | [698306](https://freesound.org/people/Nox_Sound/sounds/698306/) | Nox_Sound | Ambiance_Waterfall_Small_Close_Loop_Stereo.wav |
 | [698697](https://freesound.org/people/IENBA/sounds/698697/) | IENBA | Footsteps on Metal |
+| [706471](https://freesound.org/people/bruno.auzet/sounds/706471/) | bruno.auzet | strong wind on coastal path.wav |
 | [715478](https://freesound.org/people/KVV_Audio/sounds/715478/) | KVV_Audio | MECHRolr_Turning A Wooden Wheel 01_KVV_FREE |
 | [734632](https://freesound.org/people/Vrymaa/sounds/734632/) | Vrymaa | Footsteps Sandals - Walk & run |
+| [753219](https://freesound.org/people/Lsoundaccount/sounds/753219/) | Lsoundaccount | 1. Wings Flapping |
 | [762646](https://freesound.org/people/FOSSarts/sounds/762646/) | FOSSarts | small brass sound bowl strike and ring - 3 |
 | [791907](https://freesound.org/people/LePainMaudit/sounds/791907/) | LePainMaudit | Heavy chain |
 | [813622](https://freesound.org/people/SecureSubset/sounds/813622/) | SecureSubset | Footsteps - Stone, Rock, Concrete, Cement |
 | [844329](https://freesound.org/people/NahuelMartinez/sounds/844329/) | NahuelMartinez | Stone Slab Door Grinding - Heavy Rock Scrape (Mono) |
 | [858891](https://freesound.org/people/xtra1/sounds/858891/) | xtra1 | Stone on Stone Hit |
+| [861369](https://freesound.org/people/ChristopherJngs/sounds/861369/) | ChristopherJngs | Splashing Footsteps Shallow Water |
+| [866205](https://freesound.org/people/TheyLook_Here/sounds/866205/) | TheyLook_Here | Gentle water ripples lapping against a rocky shore. |

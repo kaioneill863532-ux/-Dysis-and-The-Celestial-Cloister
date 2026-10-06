@@ -1689,6 +1689,1617 @@
      "lufs": -23.0
     }
    ]
+  },
+  {
+   "num": 31,
+   "tier": 3,
+   "key": "Apple_Hold",
+   "zh": "捧着金苹果",
+   "what": "整个夜里捧在手里的那点暖：一只摩擦颂钵的低音（F4）垫底，上面两只摩擦水晶杯（A5、C6）——F、A、C 是一个大三和弦，比月光那一套暖；很轻、很慢地起伏（像苹果里的光在呼吸），12 秒无缝循环。",
+   "ue": "接住最后一缕光以后一直循环到放下苹果（Looping），2D 跟着玩家，音量很低（这条本身就很轻，-32 LUFS）；放上苹果时 2 秒淡出，接 27 的 Apple_Place。",
+   "files": [
+    {
+     "path": "sfx/31_Apple_Hold/SFX_Apple_Hold_Loop.wav",
+     "name": "SFX_Apple_Hold_Loop",
+     "group": "捧着·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 10.0,
+     "lufs": -32.0
+    }
+   ]
+  },
+  {
+   "num": 32,
+   "tier": 3,
+   "key": "Footstep_Moon_Shadow",
+   "zh": "脚步：月石、月桥、影桥",
+   "what": "夜里的两种特殊路面。月石（月桥也是月石做的）：和石头脚步同一个“接触”，脚下激起一点颂钵的余振（模态合成的钵 + 真实的颂钵敲击，月光的低音区 A3–A4），比光路的水晶低、冷。影桥（水面上的月影）：同一个接触，脚下是一小下真实的水波拍岸（TheyLook_Here），上面一点很轻的高音颂钵。",
+   "ue": "和石头脚步同一套触发：脚下是月石、月桥时用 Moonstone，影桥（Zone shadowbr）用ShadowBridge。Random 不重复。",
+   "files": [
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Walk_01.wav",
+     "name": "SFX_Footstep_Moonstone_Walk_01",
+     "group": "月石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.44,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Walk_02.wav",
+     "name": "SFX_Footstep_Moonstone_Walk_02",
+     "group": "月石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.4,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Walk_03.wav",
+     "name": "SFX_Footstep_Moonstone_Walk_03",
+     "group": "月石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.46,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Walk_04.wav",
+     "name": "SFX_Footstep_Moonstone_Walk_04",
+     "group": "月石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.44,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Walk_05.wav",
+     "name": "SFX_Footstep_Moonstone_Walk_05",
+     "group": "月石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.4,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Walk_06.wav",
+     "name": "SFX_Footstep_Moonstone_Walk_06",
+     "group": "月石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.43,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Walk_07.wav",
+     "name": "SFX_Footstep_Moonstone_Walk_07",
+     "group": "月石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.43,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Walk_08.wav",
+     "name": "SFX_Footstep_Moonstone_Walk_08",
+     "group": "月石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.46,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Run_01.wav",
+     "name": "SFX_Footstep_Moonstone_Run_01",
+     "group": "月石·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.34,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Run_02.wav",
+     "name": "SFX_Footstep_Moonstone_Run_02",
+     "group": "月石·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.31,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Run_03.wav",
+     "name": "SFX_Footstep_Moonstone_Run_03",
+     "group": "月石·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.26,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Run_04.wav",
+     "name": "SFX_Footstep_Moonstone_Run_04",
+     "group": "月石·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.32,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Run_05.wav",
+     "name": "SFX_Footstep_Moonstone_Run_05",
+     "group": "月石·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.33,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_Moonstone_Run_06.wav",
+     "name": "SFX_Footstep_Moonstone_Run_06",
+     "group": "月石·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.27,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Walk_01.wav",
+     "name": "SFX_Footstep_ShadowBridge_Walk_01",
+     "group": "影桥·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.59,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Walk_02.wav",
+     "name": "SFX_Footstep_ShadowBridge_Walk_02",
+     "group": "影桥·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.6,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Walk_03.wav",
+     "name": "SFX_Footstep_ShadowBridge_Walk_03",
+     "group": "影桥·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.59,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Walk_04.wav",
+     "name": "SFX_Footstep_ShadowBridge_Walk_04",
+     "group": "影桥·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.6,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Walk_05.wav",
+     "name": "SFX_Footstep_ShadowBridge_Walk_05",
+     "group": "影桥·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.6,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Walk_06.wav",
+     "name": "SFX_Footstep_ShadowBridge_Walk_06",
+     "group": "影桥·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.6,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Walk_07.wav",
+     "name": "SFX_Footstep_ShadowBridge_Walk_07",
+     "group": "影桥·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.6,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Walk_08.wav",
+     "name": "SFX_Footstep_ShadowBridge_Walk_08",
+     "group": "影桥·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.6,
+     "lufs": -29.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Run_01.wav",
+     "name": "SFX_Footstep_ShadowBridge_Run_01",
+     "group": "影桥·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.51,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Run_02.wav",
+     "name": "SFX_Footstep_ShadowBridge_Run_02",
+     "group": "影桥·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.52,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Run_03.wav",
+     "name": "SFX_Footstep_ShadowBridge_Run_03",
+     "group": "影桥·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.51,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Run_04.wav",
+     "name": "SFX_Footstep_ShadowBridge_Run_04",
+     "group": "影桥·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.51,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Run_05.wav",
+     "name": "SFX_Footstep_ShadowBridge_Run_05",
+     "group": "影桥·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.52,
+     "lufs": -27.0
+    },
+    {
+     "path": "sfx/32_Footstep_Moon_Shadow/SFX_Footstep_ShadowBridge_Run_06.wav",
+     "name": "SFX_Footstep_ShadowBridge_Run_06",
+     "group": "影桥·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.51,
+     "lufs": -27.0
+    }
+   ]
+  },
+  {
+   "num": 33,
+   "tier": 3,
+   "key": "Shard_Pickup",
+   "zh": "拾取碎片 ×3",
+   "what": "三片碎片各有自己的材料：日之碎片（正四面体，火）是小铜钵一声（和“确认”同一只）接着三只水晶杯很快往上走（D5、A5、D6），暖、亮；月之碎片（正二十面体，水）是两声颂钵（D4、A4）和几滴往下落的玻璃水珠；虹之碎片（正八面体，气）是七只水晶杯一口气从低到高（七种颜色），带一点被照亮的水雾。都在 3 秒以内，最后落在一个长一点的音上，给“获得感”。",
+   "ue": "拿到碎片的那一刻播，2D（不空间化）。三片各用各的。",
+   "files": [
+    {
+     "path": "sfx/33_Shard_Pickup/SFX_Shard_Pickup_Sun.wav",
+     "name": "SFX_Shard_Pickup_Sun",
+     "group": "日之碎片",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.3,
+     "lufs": -20.0
+    },
+    {
+     "path": "sfx/33_Shard_Pickup/SFX_Shard_Pickup_Moon.wav",
+     "name": "SFX_Shard_Pickup_Moon",
+     "group": "月之碎片",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.35,
+     "lufs": -20.0
+    },
+    {
+     "path": "sfx/33_Shard_Pickup/SFX_Shard_Pickup_Rainbow.wav",
+     "name": "SFX_Shard_Pickup_Rainbow",
+     "group": "虹之碎片",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.4,
+     "lufs": -20.0
+    }
+   ]
+  },
+  {
+   "num": 35,
+   "tier": 3,
+   "key": "Level_Title",
+   "zh": "关卡标题短乐句",
+   "what": "每关标题出现时的一句短乐句（2–4 秒），用游戏里已有的“乐器”：白天是石磬（屋顶台阶那种调过音的石头）一级级往上、最后落在一只水晶杯上；夜里是颂钵一声声往下。白天一关比一关结束得高（日1 落在 A5，日5 落在铜钵和 D6），夜里一关比一关结束得低（月1 落在 D4，月5 落到 D3）——跟着太阳往上爬、跟着月亮往下走。序是两只水晶杯的空五度；“日落之后 · 入夜”是水晶往下交给颂钵。全部在 d 小调五声里。",
+   "ue": "关卡标题出现时播（灰盒 showTitle），2D。文件名对应：Prologue=序，Day1–5=日1–日5，Dusk=日落之后·入夜，Night1–5=月1–月5。",
+   "files": [
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Prologue.wav",
+     "name": "SFX_Title_Prologue",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.85,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Day1.wav",
+     "name": "SFX_Title_Day1",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.0,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Day2.wav",
+     "name": "SFX_Title_Day2",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.0,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Day3.wav",
+     "name": "SFX_Title_Day3",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.2,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Day4.wav",
+     "name": "SFX_Title_Day4",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.2,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Day5.wav",
+     "name": "SFX_Title_Day5",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.12,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Dusk.wav",
+     "name": "SFX_Title_Dusk",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.15,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Night1.wav",
+     "name": "SFX_Title_Night1",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.8,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Night2.wav",
+     "name": "SFX_Title_Night2",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.1,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Night3.wav",
+     "name": "SFX_Title_Night3",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.1,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Night4.wav",
+     "name": "SFX_Title_Night4",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.3,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/35_Level_Title/SFX_Title_Night5.wav",
+     "name": "SFX_Title_Night5",
+     "group": "标题",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.4,
+     "lufs": -22.0
+    }
+   ]
+  },
+  {
+   "num": 36,
+   "tier": 3,
+   "key": "UI_Prompt",
+   "zh": "互动提示出现、提示文字出现",
+   "what": "提示出现：一颗很小的玻璃闪光（真实的玻璃轻碰）加一点很短的高音水晶，很轻；提示文字出现：一口很轻的“气”（被照亮的水雾那一段）托着一只很远的水晶杯，像一行字从光里浮出来。两样都轻到不打扰，但不看屏幕也能听见“有东西可以按了”。",
+   "ue": "Prompt_Appear：互动提示（按 E）从无到有的那一刻；Text_Appear：提示文字（toast）出现时。2D，各两个 Random。同一秒里只播一个。",
+   "files": [
+    {
+     "path": "sfx/36_UI_Prompt/SFX_UI_Prompt_Appear_01.wav",
+     "name": "SFX_UI_Prompt_Appear_01",
+     "group": "提示出现",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.51,
+     "lufs": -31.0
+    },
+    {
+     "path": "sfx/36_UI_Prompt/SFX_UI_Prompt_Appear_02.wav",
+     "name": "SFX_UI_Prompt_Appear_02",
+     "group": "提示出现",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.51,
+     "lufs": -31.0
+    },
+    {
+     "path": "sfx/36_UI_Prompt/SFX_UI_Text_Appear_01.wav",
+     "name": "SFX_UI_Text_Appear_01",
+     "group": "文字出现",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.73,
+     "lufs": -33.0
+    },
+    {
+     "path": "sfx/36_UI_Prompt/SFX_UI_Text_Appear_02.wav",
+     "name": "SFX_UI_Text_Appear_02",
+     "group": "文字出现",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.73,
+     "lufs": -33.0
+    }
+   ]
+  },
+  {
+   "num": 37,
+   "tier": 3,
+   "key": "UI_Dialogue_Advance",
+   "zh": "对话推进音",
+   "what": "翻到下一句：一把小锤在石头上轻轻一点（Shamewap 的录音，比“悬停”低、更圆），后面跟一点很短的颂钵余音。三个版本轮着用，听很多次也不烦。",
+   "ue": "对话框翻页/下一句时播，2D，Random 不重复。",
+   "files": [
+    {
+     "path": "sfx/37_UI_Dialogue_Advance/SFX_UI_Dialogue_Next_01.wav",
+     "name": "SFX_UI_Dialogue_Next_01",
+     "group": "下一句",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.5,
+     "lufs": -30.0
+    },
+    {
+     "path": "sfx/37_UI_Dialogue_Advance/SFX_UI_Dialogue_Next_02.wav",
+     "name": "SFX_UI_Dialogue_Next_02",
+     "group": "下一句",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.5,
+     "lufs": -30.0
+    },
+    {
+     "path": "sfx/37_UI_Dialogue_Advance/SFX_UI_Dialogue_Next_03.wav",
+     "name": "SFX_UI_Dialogue_Next_03",
+     "group": "下一句",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.41,
+     "lufs": -30.0
+    }
+   ]
+  },
+  {
+   "num": 38,
+   "tier": 3,
+   "key": "Roof_Wind",
+   "zh": "海风",
+   "what": "屋顶的高度感：真实的海边悬崖小路上的强风（bruno.auzet），有一阵一阵的起伏，去掉最低的隆隆声，22 秒无缝循环。",
+   "ue": "屋顶（和四层外沿）循环播放，2D 或很大的衰减半径；越高越响，进殿以后用 Audio Volume 压低 10–15 dB、低通到 600 Hz。和 11 的远处海浪叠着用。",
+   "files": [
+    {
+     "path": "sfx/38_Roof_Wind/SFX_Roof_Wind_Loop.wav",
+     "name": "SFX_Roof_Wind_Loop",
+     "group": "海风·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 19.0,
+     "lufs": -25.0
+    }
+   ]
+  },
+  {
+   "num": 39,
+   "tier": 3,
+   "key": "Interior_RoomTone",
+   "zh": "殿内空间底噪",
+   "what": "殿里“安静”的声音：不是真的没声音，而是一座大石头圆殿里的空气——很轻的粉噪声经过圆殿的脉冲响应（和 ir/ 里给 UE 的是同一个），墙外的海隔着石墙只剩最低的一层（bruno.auzet 的崖上听海，低通到 350 Hz），殿里的瀑布在远处只剩闷闷的一点（低通到 250 Hz）。20 秒无缝循环，很轻。",
+   "ue": "殿内的 Audio Volume 里一直循环（2D）；出殿 2 秒淡出、换成 11 的海浪。瀑布没开的时候（日1 开闸前）也可以用，瀑布那一层很低。",
+   "files": [
+    {
+     "path": "sfx/39_Interior_RoomTone/SFX_Interior_RoomTone_Loop.wav",
+     "name": "SFX_Interior_RoomTone_Loop",
+     "group": "殿内·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 19.0,
+     "lufs": -38.0
+    }
+   ]
+  },
+  {
+   "num": 40,
+   "tier": 3,
+   "key": "Pool_Water",
+   "zh": "水池水面",
+   "what": "水庭的黑石镜池：真实的轻轻拍着岩岸的水（TheyLook_Here），一下一下、很稀，20 秒无缝循环。",
+   "ue": "放在水池边几处（或池心，衰减半径约 3–15 m），Looping。夜里潮水涨起来时可以把音量提高 3 dB。",
+   "files": [
+    {
+     "path": "sfx/40_Pool_Water/SFX_Pool_Water_Loop.wav",
+     "name": "SFX_Pool_Water_Loop",
+     "group": "水面·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 20.0,
+     "lufs": -28.0
+    }
+   ]
+  },
+  {
+   "num": 41,
+   "tier": 3,
+   "key": "Swan_Transform",
+   "zh": "女神像变天鹅",
+   "what": "月光照满女神像，她变成天鹅：月光的颂钵长音（D4）和水晶杯（A5）慢慢亮起来，中间一对大翅膀展开、扇了几下（Lsoundaccount 的真实扇翅声），羽毛落定。另有反过来的一条：月光离开，天鹅收起翅膀、变回女神像。",
+   "ue": "Swan_Transform：天鹅形态从 0 往 1 走时播（SWAN.form），放在女神像上；Swan_Revert：从 1 往 0 走时播。",
+   "files": [
+    {
+     "path": "sfx/41_Swan_Transform/SFX_Swan_Transform.wav",
+     "name": "SFX_Swan_Transform",
+     "group": "变天鹅",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.2,
+     "lufs": -21.0
+    },
+    {
+     "path": "sfx/41_Swan_Transform/SFX_Swan_Revert.wav",
+     "name": "SFX_Swan_Revert",
+     "group": "变回女神像",
+     "loop": false,
+     "ch": 2,
+     "dur": 2.8,
+     "lufs": -23.0
+    }
+   ]
+  },
+  {
+   "num": 42,
+   "tier": 3,
+   "key": "Armillary_Spin",
+   "zh": "浑天仪开始自转",
+   "what": "结局里浑天仪自己转起来——“时间交出去了”：一开始是轴承一格一格的轻响（真实的金属轻碰，很小），越来越快，最后连成一片平滑的转动声（真实的木轮转动降调，速度一路往上滑）；同时颂钵 D4 和水晶杯 A5、D6 慢慢长起来。之后接一条持续转动的循环。没有金属刮擦。",
+   "ue": "Armillary_Start：浑天仪开始自转时播（放在小亭的浑天仪上，约 6.5 s）；它的最后 1 秒和 Armillary_Spin_Loop 交叉接上（Loop Fade In 1 s），一直转到结局画面。",
+   "files": [
+    {
+     "path": "sfx/42_Armillary_Spin/SFX_Armillary_Start.wav",
+     "name": "SFX_Armillary_Start",
+     "group": "开始自转",
+     "loop": false,
+     "ch": 2,
+     "dur": 6.5,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/42_Armillary_Spin/SFX_Armillary_Spin_Loop.wav",
+     "name": "SFX_Armillary_Spin_Loop",
+     "group": "持续转动·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 6.5,
+     "lufs": -25.0
+    }
+   ]
+  },
+  {
+   "num": 43,
+   "tier": 3,
+   "key": "Day_Birds",
+   "zh": "白天鸟鸣",
+   "what": "开场画面里的海边早晨：马耳他的晨间鸟鸣（musicradiocreative）打底，偶尔几声燕子（SamuelGremaud、bruno.auzet），远处一点海鸥（Ambientsoundapp），都在地中海海边。24 秒无缝循环，低频去掉（和海浪不打架）。",
+   "ue": "开场的岛上和殿外的白天循环（2D 或大衰减半径），和 11 的海浪叠着用；日5 太阳落下去时 5–10 秒淡出，夜里换成 55 的虫鸣。",
+   "files": [
+    {
+     "path": "sfx/43_Day_Birds/SFX_Day_Birds_Loop.wav",
+     "name": "SFX_Day_Birds_Loop",
+     "group": "鸟鸣·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 23.5,
+     "lufs": -30.0
+    }
+   ]
+  },
+  {
+   "num": 44,
+   "tier": 3,
+   "key": "Footstep_Water_Wet",
+   "zh": "脚步：浅水、湿石",
+   "what": "浅水：真实的踩水脚步（aglinder、ChristopherJngs 的录音），一步一步切出来，只留一次水花。湿石：和石头脚步同一个“接触”，下面叠一层真实的赤脚踩湿瓷砖（SpliceSound）的“湿”声，石头的“实”换成更软的一点。",
+   "ue": "和石头脚步同一套触发：脚下是浅水（潮沟、水庭边的浅水）用 Water，湿的石面（瀑布、水闸石台附近）用 WetStone。Random 不重复。",
+   "files": [
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Walk_01.wav",
+     "name": "SFX_Footstep_Water_Walk_01",
+     "group": "浅水·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.33,
+     "lufs": -26.3
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Walk_02.wav",
+     "name": "SFX_Footstep_Water_Walk_02",
+     "group": "浅水·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.32,
+     "lufs": -26.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Walk_03.wav",
+     "name": "SFX_Footstep_Water_Walk_03",
+     "group": "浅水·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.38,
+     "lufs": -26.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Walk_04.wav",
+     "name": "SFX_Footstep_Water_Walk_04",
+     "group": "浅水·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.37,
+     "lufs": -26.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Walk_05.wav",
+     "name": "SFX_Footstep_Water_Walk_05",
+     "group": "浅水·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.39,
+     "lufs": -26.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Walk_06.wav",
+     "name": "SFX_Footstep_Water_Walk_06",
+     "group": "浅水·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.36,
+     "lufs": -26.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Walk_07.wav",
+     "name": "SFX_Footstep_Water_Walk_07",
+     "group": "浅水·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.36,
+     "lufs": -26.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Walk_08.wav",
+     "name": "SFX_Footstep_Water_Walk_08",
+     "group": "浅水·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.36,
+     "lufs": -26.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Run_01.wav",
+     "name": "SFX_Footstep_Water_Run_01",
+     "group": "浅水·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.35,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Run_02.wav",
+     "name": "SFX_Footstep_Water_Run_02",
+     "group": "浅水·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.38,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Run_03.wav",
+     "name": "SFX_Footstep_Water_Run_03",
+     "group": "浅水·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.31,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_Water_Run_04.wav",
+     "name": "SFX_Footstep_Water_Run_04",
+     "group": "浅水·快走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.33,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_WetStone_Walk_01.wav",
+     "name": "SFX_Footstep_WetStone_Walk_01",
+     "group": "湿石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.22,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_WetStone_Walk_02.wav",
+     "name": "SFX_Footstep_WetStone_Walk_02",
+     "group": "湿石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.21,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_WetStone_Walk_03.wav",
+     "name": "SFX_Footstep_WetStone_Walk_03",
+     "group": "湿石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.23,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_WetStone_Walk_04.wav",
+     "name": "SFX_Footstep_WetStone_Walk_04",
+     "group": "湿石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.22,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_WetStone_Walk_05.wav",
+     "name": "SFX_Footstep_WetStone_Walk_05",
+     "group": "湿石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.21,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_WetStone_Walk_06.wav",
+     "name": "SFX_Footstep_WetStone_Walk_06",
+     "group": "湿石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.21,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_WetStone_Walk_07.wav",
+     "name": "SFX_Footstep_WetStone_Walk_07",
+     "group": "湿石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.23,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/44_Footstep_Water_Wet/SFX_Footstep_WetStone_Walk_08.wav",
+     "name": "SFX_Footstep_WetStone_Walk_08",
+     "group": "湿石·走",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.22,
+     "lufs": -28.0
+    }
+   ]
+  },
+  {
+   "num": 45,
+   "tier": 3,
+   "key": "Waterfall_Hole",
+   "zh": "瀑布水帘透开",
+   "what": "镜子反射的月光打到瀑布上，那一块水帘透开：瀑布那一块的轰鸣变薄（低频一路被抽掉，只剩细的水声），上面是月光的颂钵（A4）和水晶（D6）轻轻亮起来、几颗水珠的闪光。另有合上的一条（月光离开，那一块又变回厚水帘）。",
+   "ue": "Hole_Open：瀑布上透开那一块从 0 往 1 走时（FALLHOLE.k），放在透开处；Hole_Close：从 1 往 0 走时。瀑布的循环照常播，这两条叠在上面。",
+   "files": [
+    {
+     "path": "sfx/45_Waterfall_Hole/SFX_Waterfall_Hole_Open.wav",
+     "name": "SFX_Waterfall_Hole_Open",
+     "group": "透开",
+     "loop": false,
+     "ch": 2,
+     "dur": 2.8,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/45_Waterfall_Hole/SFX_Waterfall_Hole_Close.wav",
+     "name": "SFX_Waterfall_Hole_Close",
+     "group": "合上",
+     "loop": false,
+     "ch": 2,
+     "dur": 1.8,
+     "lufs": -26.0
+    }
+   ]
+  },
+  {
+   "num": 46,
+   "tier": 4,
+   "key": "Rainbow_Bridge_IrisRelief",
+   "zh": "彩虹桥出现、伊莉丝浮雕醒来",
+   "what": "伊莉丝浮雕醒来：浮雕上沿的铜唇里流下一层细水帘（真实的小水流，kyles），刻在浮雕上的那圈虹亮起来——三只水晶杯（D5、A5、D6）慢慢长起来。彩虹桥出现：七只水晶杯从低到高（红到紫），声像从浮雕这边一路拱到对面窗台（左到右），下面是被照亮的水雾和闪光，最后七色一起停在一个长音上。",
+   "ue": "IrisRelief_Awaken：影子的头落进人形、虹醒过来时，放在浮雕上；RainbowBridge_Appear：虹桥开始从浮雕上走下来时播，立体声，放在虹桥中点。",
+   "files": [
+    {
+     "path": "sfx/46_Rainbow_Bridge_IrisRelief/SFX_IrisRelief_Awaken.wav",
+     "name": "SFX_IrisRelief_Awaken",
+     "group": "浮雕醒来",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.2,
+     "lufs": -23.0
+    },
+    {
+     "path": "sfx/46_Rainbow_Bridge_IrisRelief/SFX_RainbowBridge_Appear.wav",
+     "name": "SFX_RainbowBridge_Appear",
+     "group": "彩虹桥出现",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.2,
+     "lufs": -21.0
+    }
+   ]
+  },
+  {
+   "num": 47,
+   "tier": 4,
+   "key": "Prism_Turn",
+   "zh": "棱镜转台转一格（7 个音高）",
+   "what": "转棱镜的铜轮转一格：轮子“咔”一声（真实的石头碰撞 + 金属轻碰，很小），接着一只水晶杯响一下——七格七个音，从红（D5）到紫（F6），颜色的频率越高音越高。第六格是靛色（D6），也就是落进塞勒涅眼睛的那一色。",
+   "ue": "转到第几格播第几个（_1_Red … _7_Violet）。棱镜在窗下石沿上，单声道放在棱镜上。",
+   "files": [
+    {
+     "path": "sfx/47_Prism_Turn/SFX_Prism_Turn_1_Red.wav",
+     "name": "SFX_Prism_Turn_1_Red",
+     "group": "转一格",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.43,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/47_Prism_Turn/SFX_Prism_Turn_2_Orange.wav",
+     "name": "SFX_Prism_Turn_2_Orange",
+     "group": "转一格",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.43,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/47_Prism_Turn/SFX_Prism_Turn_3_Yellow.wav",
+     "name": "SFX_Prism_Turn_3_Yellow",
+     "group": "转一格",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.43,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/47_Prism_Turn/SFX_Prism_Turn_4_Green.wav",
+     "name": "SFX_Prism_Turn_4_Green",
+     "group": "转一格",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.43,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/47_Prism_Turn/SFX_Prism_Turn_5_Blue.wav",
+     "name": "SFX_Prism_Turn_5_Blue",
+     "group": "转一格",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.43,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/47_Prism_Turn/SFX_Prism_Turn_6_Indigo.wav",
+     "name": "SFX_Prism_Turn_6_Indigo",
+     "group": "转一格",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.43,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/47_Prism_Turn/SFX_Prism_Turn_7_Violet.wav",
+     "name": "SFX_Prism_Turn_7_Violet",
+     "group": "转一格",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.43,
+     "lufs": -24.0
+    }
+   ]
+  },
+  {
+   "num": 48,
+   "tier": 4,
+   "key": "Selene_Eyes",
+   "zh": "塞勒涅眼睛点亮",
+   "what": "靛色的光落进塞勒涅浮雕的青金石眼睛：先是一声很亮的水晶“叮”（D6，像宝石里点着了光），接着月亮的颂钵（D4）低低地应一声，摩擦颂钵 A4 慢慢亮起来，几颗闪光。",
+   "ue": "眼睛亮起来那一刻播，放在浮雕的眼睛上；对话（58）在这条播到 2 秒左右以后再开始。",
+   "files": [
+    {
+     "path": "sfx/48_Selene_Eyes/SFX_Selene_Eyes_Light.wav",
+     "name": "SFX_Selene_Eyes_Light",
+     "group": "眼睛点亮",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.8,
+     "lufs": -21.0
+    }
+   ]
+  },
+  {
+   "num": 49,
+   "tier": 4,
+   "key": "Rainbow_Small_Mechs",
+   "zh": "窗下石沿伸出、虹之龛铜门、棱镜铜柱升起",
+   "what": "彩虹支线的三个小机关：窗下石沿伸出（16 的石板滑动，更短、更轻：0.9 m 的石沿从墙里滑出来）；虹之龛的两扇小铜门（两声小的门轴吱呀，一前一后，最后轻轻一靠）；托着棱镜的铜柱从石沿里升起来（轻的石头摩擦，升到顶一声小的铜响）。",
+   "ue": "Sill_Ledge_Extend：虹桥快落到对岸、石沿开始伸出时；Niche_Doors_Open：打开虹之龛；Prism_Column_Rise：铜柱开始升起时。都放在机关上，单声道。",
+   "files": [
+    {
+     "path": "sfx/49_Rainbow_Small_Mechs/SFX_Sill_Ledge_Extend.wav",
+     "name": "SFX_Sill_Ledge_Extend",
+     "group": "石沿伸出",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.5,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/49_Rainbow_Small_Mechs/SFX_Niche_Doors_Open.wav",
+     "name": "SFX_Niche_Doors_Open",
+     "group": "虹之龛铜门",
+     "loop": false,
+     "ch": 1,
+     "dur": 1.2,
+     "lufs": -24.0
+    },
+    {
+     "path": "sfx/49_Rainbow_Small_Mechs/SFX_Prism_Column_Rise.wav",
+     "name": "SFX_Prism_Column_Rise",
+     "group": "铜柱升起",
+     "loop": false,
+     "ch": 1,
+     "dur": 2.0,
+     "lufs": -23.0
+    }
+   ]
+  },
+  {
+   "num": 50,
+   "tier": 4,
+   "key": "Mirror_SunNiche",
+   "zh": "三相像镜子醒来、日之龛开盖",
+   "what": "三相像醒来（日相）：石像在台座上轻轻一动（短的石头摩擦），铜镜迎着太阳亮起来——两只水晶杯（D5、A5）很快亮起来，铜镜本身轻轻一声共振。日之龛开盖：铜匣的盖子绕后沿翻开（一声短的门轴吱呀、盖子靠住的一下），里面的光一下透出来（水晶杯 A5），碎片升起时几颗闪光往上走。",
+   "ue": "Mirror_Awaken：三相像变成日相时（灰盒 updateMirrors 里 form 变成 sun），放在像上；SunNiche_Open：打开日之龛时，放在铜匣上。",
+   "files": [
+    {
+     "path": "sfx/50_Mirror_SunNiche/SFX_Mirror_Awaken.wav",
+     "name": "SFX_Mirror_Awaken",
+     "group": "镜子醒来",
+     "loop": false,
+     "ch": 2,
+     "dur": 2.8,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/50_Mirror_SunNiche/SFX_SunNiche_Open.wav",
+     "name": "SFX_SunNiche_Open",
+     "group": "日之龛开盖",
+     "loop": false,
+     "ch": 2,
+     "dur": 2.9,
+     "lufs": -22.0
+    }
+   ]
+  },
+  {
+   "num": 51,
+   "tier": 4,
+   "key": "Shard_Slots",
+   "zh": "碎片放入凹槽 ×3",
+   "what": "把碎片放进凹槽：碎片落进石头凹槽“嗒”的一声（真实的石头碰撞，很轻），接着这片碎片自己的音：日是一只水晶杯（A5），月是一声颂钵（A4），虹是三只水晶杯很快往上（F5、A5、D6）。",
+   "ue": "放进对应的凹槽时播，放在凹槽上。三片放齐以后接 52。",
+   "files": [
+    {
+     "path": "sfx/51_Shard_Slots/SFX_Shard_Slot_Sun.wav",
+     "name": "SFX_Shard_Slot_Sun",
+     "group": "放入凹槽",
+     "loop": false,
+     "ch": 2,
+     "dur": 2.0,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/51_Shard_Slots/SFX_Shard_Slot_Moon.wav",
+     "name": "SFX_Shard_Slot_Moon",
+     "group": "放入凹槽",
+     "loop": false,
+     "ch": 2,
+     "dur": 2.0,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/51_Shard_Slots/SFX_Shard_Slot_Rainbow.wav",
+     "name": "SFX_Shard_Slot_Rainbow",
+     "group": "放入凹槽",
+     "loop": false,
+     "ch": 2,
+     "dur": 2.0,
+     "lufs": -22.0
+    }
+   ]
+  },
+  {
+   "num": 52,
+   "tier": 4,
+   "key": "Dodecahedron_Stars",
+   "zh": "正十二面体与星座亮起",
+   "what": "三片碎片合成正十二面体（柏拉图说它是宇宙的形状）：很深的一声颂钵（D3）托底，水晶杯 D5、A5、D6、F6 一层层长上去；星座一颗一颗亮起来——三十多颗玻璃闪光从中间往两边散开，越来越多。6.5 秒。",
+   "ue": "正十二面体合成、星座开始亮时播，2D 或放在合成的位置（立体声）。",
+   "files": [
+    {
+     "path": "sfx/52_Dodecahedron_Stars/SFX_Dodecahedron_Stars.wav",
+     "name": "SFX_Dodecahedron_Stars",
+     "group": "亮起",
+     "loop": false,
+     "ch": 2,
+     "dur": 6.5,
+     "lufs": -19.0
+    }
+   ]
+  },
+  {
+   "num": 53,
+   "tier": 4,
+   "key": "RainbowGate_Rainbow",
+   "zh": "虹门彩虹",
+   "what": "屋顶虹门里的那道小彩虹：背对夕阳穿过虹门时，三只水晶杯（F5、A5、C6）很轻地亮一下，带一点被照亮的水雾——比 46 的彩虹桥小得多，只是一个细节。",
+   "ue": "穿过虹门、彩虹出现时播（每次经过最多播一次），放在虹门上，很轻。",
+   "files": [
+    {
+     "path": "sfx/53_RainbowGate_Rainbow/SFX_RainbowGate_Rainbow.wav",
+     "name": "SFX_RainbowGate_Rainbow",
+     "group": "虹门彩虹",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.2,
+     "lufs": -27.0
+    }
+   ]
+  },
+  {
+   "num": 54,
+   "tier": 4,
+   "key": "WallStairs_Windows",
+   "zh": "墙里楼梯的窗打开",
+   "what": "墙里楼梯朝外的小窗里堵着的石块，一块一块被推出去：每块是 24 里墙里楼梯显现用的同一种石块（短的摩擦 + 落定），一样闷一点（在墙里面）。三个版本。",
+   "ue": "要逐扇同步的话（灰盒 TUNWIN：从上往下 0.25 s 一块），每块开始动时播一个，Random；已经用了 24 的 WallStairs_Reveal 就不用再播这个。",
+   "files": [
+    {
+     "path": "sfx/54_WallStairs_Windows/SFX_WallStairs_Window_01.wav",
+     "name": "SFX_WallStairs_Window_01",
+     "group": "一扇窗",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.93,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/54_WallStairs_Windows/SFX_WallStairs_Window_02.wav",
+     "name": "SFX_WallStairs_Window_02",
+     "group": "一扇窗",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.92,
+     "lufs": -22.0
+    },
+    {
+     "path": "sfx/54_WallStairs_Windows/SFX_WallStairs_Window_03.wav",
+     "name": "SFX_WallStairs_Window_03",
+     "group": "一扇窗",
+     "loop": false,
+     "ch": 1,
+     "dur": 0.91,
+     "lufs": -22.0
+    }
+   ]
+  },
+  {
+   "num": 55,
+   "tier": 4,
+   "key": "Ambience_Layers",
+   "zh": "水雾、海峡水沫、夜间虫鸣",
+   "what": "三条氛围层，都是无缝循环：水雾——瀑布录音里最高的那一段细嘶声（开闸以后中庭里的雾）；海峡水沫——浪拍礁石录音（emainta）里高频的那层泡沫声；夜间虫鸣——墨西哥海边夜里的蟋蟀（felix.blume），去掉了最尖的那一段，很远、很轻。",
+   "ue": "Mist_Loop：开闸以后中庭里一直在（和雾的浓度一起淡入淡出）；StraitFoam_Loop：岛和崖脚的海浪上面叠一层（11 的 Close 旁边）；NightInsects_Loop：入夜以后殿外和屋顶（白天的 43 淡出以后），殿内压低 12 dB。",
+   "files": [
+    {
+     "path": "sfx/55_Ambience_Layers/SFX_Mist_Loop.wav",
+     "name": "SFX_Mist_Loop",
+     "group": "水雾·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 16.0,
+     "lufs": -36.0
+    },
+    {
+     "path": "sfx/55_Ambience_Layers/SFX_StraitFoam_Loop.wav",
+     "name": "SFX_StraitFoam_Loop",
+     "group": "海峡水沫·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 16.0,
+     "lufs": -32.0
+    },
+    {
+     "path": "sfx/55_Ambience_Layers/SFX_NightInsects_Loop.wav",
+     "name": "SFX_NightInsects_Loop",
+     "group": "夜间虫鸣·循环",
+     "loop": true,
+     "ch": 2,
+     "dur": 19.5,
+     "lufs": -34.0
+    }
+   ]
+  },
+  {
+   "num": 56,
+   "tier": 4,
+   "key": "Selene_SleepTalk",
+   "zh": "塞勒涅梦话",
+   "what": "塞勒涅在梦里说话：用 58 里她的“声音”（颂钵），但慢得多、含糊得多——几个音节拖长、音高往下滑，中间停很久，最后一声很轻的叹气（一小口带通的气声）。三段。",
+   "ue": "彩虹支线里靠近她的浮雕、她还没醒的时候，隔一会儿随机播一段（放在浮雕上，很轻）。",
+   "files": [
+    {
+     "path": "sfx/56_Selene_SleepTalk/SFX_Selene_SleepTalk_01.wav",
+     "name": "SFX_Selene_SleepTalk_01",
+     "group": "梦话",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.06,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/56_Selene_SleepTalk/SFX_Selene_SleepTalk_02.wav",
+     "name": "SFX_Selene_SleepTalk_02",
+     "group": "梦话",
+     "loop": false,
+     "ch": 2,
+     "dur": 3.62,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/56_Selene_SleepTalk/SFX_Selene_SleepTalk_03.wav",
+     "name": "SFX_Selene_SleepTalk_03",
+     "group": "梦话",
+     "loop": false,
+     "ch": 2,
+     "dur": 4.43,
+     "lufs": -28.0
+    }
+   ]
+  },
+  {
+   "num": 57,
+   "tier": 4,
+   "key": "UI_Shard_Hover",
+   "zh": "界面：碰到已获得的日月虹碎片",
+   "what": "鼠标碰到界面里已经拿到的碎片时，那片碎片轻轻响一下，和 33 拾取时同一种材料，只是小得多：日是一只很短的水晶杯（D6），月是一声很短的颂钵（A5），虹是三只水晶杯一闪（D6、F6、A6）。",
+   "ue": "2D，放到 UI 的 Sound Class；同一片碎片 0.3 秒内只播一次。",
+   "files": [
+    {
+     "path": "sfx/57_UI_Shard_Hover/SFX_UI_Shard_Hover_Sun.wav",
+     "name": "SFX_UI_Shard_Hover_Sun",
+     "group": "悬停",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.45,
+     "lufs": -30.0
+    },
+    {
+     "path": "sfx/57_UI_Shard_Hover/SFX_UI_Shard_Hover_Moon.wav",
+     "name": "SFX_UI_Shard_Hover_Moon",
+     "group": "悬停",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.5,
+     "lufs": -30.0
+    },
+    {
+     "path": "sfx/57_UI_Shard_Hover/SFX_UI_Shard_Hover_Rainbow.wav",
+     "name": "SFX_UI_Shard_Hover_Rainbow",
+     "group": "悬停",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.47,
+     "lufs": -30.0
+    }
+   ]
+  },
+  {
+   "num": 58,
+   "tier": 4,
+   "key": "Dialogue_Voices",
+   "zh": "对话配音（先用乐器音色代替）",
+   "what": "不配音的时候，每个角色用一种乐器“说话”：一句话里每个字（或每个词）播一个很短的音节，音高在 d 小调五声里取几个、在音节里稍微往上或往下滑，听起来有说话的抑扬。伊莉丝（虹的信使）是水晶杯，高、快、亮；塞勒涅（月神）是颂钵，低、慢、柔；狄西斯是石磬（屋顶台阶那种调过音的石头），在中间、清楚。每人 12 个音节，最后两个是往下收的“句尾”。",
+   "ue": "对话框逐字显示时，每 2–3 个字播一个这个角色的音节（Random 不重复，音高 0.97–1.03），句号前改用 _11、_12（句尾）。2D，音量比环境声低。",
+   "files": [
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_01.wav",
+     "name": "SFX_Voice_Iris_01",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.07,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_02.wav",
+     "name": "SFX_Voice_Iris_02",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.11,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_03.wav",
+     "name": "SFX_Voice_Iris_03",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.11,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_04.wav",
+     "name": "SFX_Voice_Iris_04",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.06,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_05.wav",
+     "name": "SFX_Voice_Iris_05",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.07,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_06.wav",
+     "name": "SFX_Voice_Iris_06",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.07,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_07.wav",
+     "name": "SFX_Voice_Iris_07",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.1,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_08.wav",
+     "name": "SFX_Voice_Iris_08",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.1,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_09.wav",
+     "name": "SFX_Voice_Iris_09",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.09,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_10.wav",
+     "name": "SFX_Voice_Iris_10",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.09,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_11.wav",
+     "name": "SFX_Voice_Iris_11",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.1,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Iris_12.wav",
+     "name": "SFX_Voice_Iris_12",
+     "group": "伊莉丝",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.12,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_01.wav",
+     "name": "SFX_Voice_Selene_01",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.2,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_02.wav",
+     "name": "SFX_Voice_Selene_02",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.2,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_03.wav",
+     "name": "SFX_Voice_Selene_03",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.22,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_04.wav",
+     "name": "SFX_Voice_Selene_04",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.21,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_05.wav",
+     "name": "SFX_Voice_Selene_05",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.19,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_06.wav",
+     "name": "SFX_Voice_Selene_06",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.18,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_07.wav",
+     "name": "SFX_Voice_Selene_07",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.18,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_08.wav",
+     "name": "SFX_Voice_Selene_08",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.15,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_09.wav",
+     "name": "SFX_Voice_Selene_09",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.22,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_10.wav",
+     "name": "SFX_Voice_Selene_10",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.18,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_11.wav",
+     "name": "SFX_Voice_Selene_11",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.22,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Selene_12.wav",
+     "name": "SFX_Voice_Selene_12",
+     "group": "塞勒涅",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.33,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_01.wav",
+     "name": "SFX_Voice_Dysis_01",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.08,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_02.wav",
+     "name": "SFX_Voice_Dysis_02",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.11,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_03.wav",
+     "name": "SFX_Voice_Dysis_03",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.13,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_04.wav",
+     "name": "SFX_Voice_Dysis_04",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.13,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_05.wav",
+     "name": "SFX_Voice_Dysis_05",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.08,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_06.wav",
+     "name": "SFX_Voice_Dysis_06",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.11,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_07.wav",
+     "name": "SFX_Voice_Dysis_07",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.11,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_08.wav",
+     "name": "SFX_Voice_Dysis_08",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.1,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_09.wav",
+     "name": "SFX_Voice_Dysis_09",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.11,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_10.wav",
+     "name": "SFX_Voice_Dysis_10",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.11,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_11.wav",
+     "name": "SFX_Voice_Dysis_11",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.16,
+     "lufs": -28.0
+    },
+    {
+     "path": "sfx/58_Dialogue_Voices/SFX_Voice_Dysis_12.wav",
+     "name": "SFX_Voice_Dysis_12",
+     "group": "狄西斯",
+     "loop": false,
+     "ch": 2,
+     "dur": 0.16,
+     "lufs": -28.0
+    }
+   ]
   }
  ],
  "credits": {
@@ -1722,6 +3333,11 @@
    "user": "jhumbucker",
    "url": "https://freesound.org/people/jhumbucker/sounds/193823/"
   },
+  "197102": {
+   "title": "Morning Chorus In Malta",
+   "user": "musicradiocreative",
+   "url": "https://freesound.org/people/musicradiocreative/sounds/197102/"
+  },
   "197404": {
    "title": "01-14 Footsteps, Tile, Male Barefoot, Scuffs.wav",
    "user": "SpliceSound",
@@ -1747,6 +3363,11 @@
    "user": "spectral9",
    "url": "https://freesound.org/people/spectral9/sounds/256251/"
   },
+  "265582": {
+   "title": "Footsteps Water 01",
+   "user": "aglinder",
+   "url": "https://freesound.org/people/aglinder/sounds/265582/"
+  },
   "271668": {
    "title": "Water gush; full.wav",
    "user": "HonorHunter",
@@ -1756,6 +3377,11 @@
    "title": "Open and Close an iron gate",
    "user": "launemax",
    "url": "https://freesound.org/people/launemax/sounds/274767/"
+  },
+  "338106": {
+   "title": "Footsteps, barefoot on wet tile.wav",
+   "user": "SpliceSound",
+   "url": "https://freesound.org/people/SpliceSound/sounds/338106/"
   },
   "352829": {
    "title": "Tomb Door Open, Stone Scrape",
@@ -1802,6 +3428,11 @@
    "user": "kyles",
    "url": "https://freesound.org/people/kyles/sounds/454148/"
   },
+  "454340": {
+   "title": "waterfall small or water fountain splashy close stream into water.flac",
+   "user": "kyles",
+   "url": "https://freesound.org/people/kyles/sounds/454340/"
+  },
   "457956": {
    "title": "Waves lapping on rocks",
    "user": "dan.pugsley",
@@ -1816,6 +3447,11 @@
    "title": "big stone door suddenly slamming shut",
    "user": "PaceHeart",
    "url": "https://freesound.org/people/PaceHeart/sounds/465807/"
+  },
+  "479041": {
+   "title": "Crickets during the night, close to the beach in Mexico",
+   "user": "felix.blume",
+   "url": "https://freesound.org/people/felix.blume/sounds/479041/"
   },
   "495390": {
    "title": "Foley_Whoosh_Clothes.wav",
@@ -1836,6 +3472,16 @@
    "title": "stone door close.wav",
    "user": "patchytherat",
    "url": "https://freesound.org/people/patchytherat/sounds/530987/"
+  },
+  "537854": {
+   "title": "Seagulls distant.wav",
+   "user": "Ambientsoundapp",
+   "url": "https://freesound.org/people/Ambientsoundapp/sounds/537854/"
+  },
+  "543683": {
+   "title": "SWALLOWS",
+   "user": "SamuelGremaud",
+   "url": "https://freesound.org/people/SamuelGremaud/sounds/543683/"
   },
   "559203": {
    "title": "Waterfall",
@@ -1867,6 +3513,11 @@
    "user": "kyles",
    "url": "https://freesound.org/people/kyles/sounds/637583/"
   },
+  "648860": {
+   "title": "Sea Waves Against Rocks",
+   "user": "emainta",
+   "url": "https://freesound.org/people/emainta/sounds/648860/"
+  },
   "669719": {
    "title": "heavy thumps on stone.wav",
    "user": "vestibule-door",
@@ -1897,6 +3548,11 @@
    "user": "IENBA",
    "url": "https://freesound.org/people/IENBA/sounds/698697/"
   },
+  "706471": {
+   "title": "strong wind on coastal path.wav",
+   "user": "bruno.auzet",
+   "url": "https://freesound.org/people/bruno.auzet/sounds/706471/"
+  },
   "715478": {
    "title": "MECHRolr_Turning A Wooden Wheel 01_KVV_FREE",
    "user": "KVV_Audio",
@@ -1906,6 +3562,11 @@
    "title": "Footsteps Sandals - Walk & run",
    "user": "Vrymaa",
    "url": "https://freesound.org/people/Vrymaa/sounds/734632/"
+  },
+  "753219": {
+   "title": "1. Wings Flapping",
+   "user": "Lsoundaccount",
+   "url": "https://freesound.org/people/Lsoundaccount/sounds/753219/"
   },
   "762646": {
    "title": "small brass sound bowl strike and ring - 3",
@@ -1931,6 +3592,16 @@
    "title": "Stone on Stone Hit",
    "user": "xtra1",
    "url": "https://freesound.org/people/xtra1/sounds/858891/"
+  },
+  "861369": {
+   "title": "Splashing Footsteps Shallow Water",
+   "user": "ChristopherJngs",
+   "url": "https://freesound.org/people/ChristopherJngs/sounds/861369/"
+  },
+  "866205": {
+   "title": "Gentle water ripples lapping against a rocky shore.",
+   "user": "TheyLook_Here",
+   "url": "https://freesound.org/people/TheyLook_Here/sounds/866205/"
   }
  }
 }

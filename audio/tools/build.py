@@ -1243,6 +1243,645 @@ def b_opening():
 
 
 
+# ═════════════════════════ 第三、四梯队：共用零件 ═════════════════════════
+def brass_strike(f, dur, lpf=9000):
+    """小铜钵敲一下（FOSSarts），变到目标音高（按它的基音 780.5 Hz 算）。"""
+    y = seg("762646", 0.0, dur + 0.5, semis(780.5, f))
+    i = int(np.argmax(np.abs(y[: secs(0.6)])))
+    y = y[max(0, i - secs(0.003)):][: secs(dur)]
+    return fade(lp(hp(y, 150), lpf), 0.001, dur * 0.6)
+
+
+def decayed(x, t60):
+    """按 x 自己的长度乘一条指数衰减（有的素材变调以后比要的短一点）。"""
+    return x * expdecay(len(x), t60)
+
+
+def note(inst, n, dur=1.6, seed_=0):
+    """一个音：glass 敲水晶杯、bowl 颂钵、stone 石磬、brass 小铜钵。"""
+    f = hz(n) if isinstance(n, str) else n
+    if inst == "glass":
+        return glass_tone(f, dur, attack=0.003, t60=dur * 0.6, start=1.0 + (seed_ % 5))
+    if inst == "bowl":
+        return lp(bowl_strike(f, dur, soft=0.008), 5000)
+    if inst == "stone":
+        return lithophone(f, dur, seed_)
+    return brass_strike(f, dur)
+
+
+def phrase(D, notes, seed_=0):
+    """一串音：[(时间, 乐器, 音名, 力度, 声像[, 长度])]，立体声。"""
+    out = np.zeros((secs(D), 2))
+    for k, n in enumerate(notes):
+        t, inst, nm, v, pan = n[:5]
+        dur = n[5] if len(n) > 5 else 1.6
+        x = unit(note(inst, nm, dur, seed_ + k)) * v
+        out = mix((out, 0), (to_stereo(x, pan), t), length=secs(D))
+    return out
+
+
+def bend(x, cents0, cents1):
+    """音高从 cents0 滑到 cents1（变调连带变速，很短的音听不出来变速）。"""
+    n = len(x)
+    r = 2 ** (np.linspace(cents0, cents1, n) / 1200)
+    idx = np.cumsum(r)
+    idx = idx[idx < n - 1]
+    return np.interp(idx, np.arange(n), x)
+
+
+def ring_step(s, ring, seed_, ring_db=-14, hp_f=260):
+    """一步 + 脚下材质的共振（月石、影桥）。"""
+    c = hp(cap(contact(s, seed_), 0.15), hp_f)
+    d = peak_at(c)
+    y = mix((c, 0), (unit(ring), d / SR + 0.002, db(ring_db)))
+    y = dsp.limit(unit(y), -4.0)
+    return fade(trim_tail(y, -50, 0.08), 0.0015, 0.08)
+
+
+def loop_bed(sid, start, dur, xfade=2.5, hp_f=40, lp_f=None):
+    x = hp(load(sid, mono=False, start=start, dur=dur), hp_f)
+    if lp_f:
+        x = lp(x, lp_f)
+    return loopify(x, xfade)
+
+
+# ═════════════════════════ 第三梯队 ═════════════════════════
+
+@sound(31, "Apple_Hold", "捧着金苹果",
+       "整个夜里捧在手里的那点暖：一只摩擦颂钵的低音（F4）垫底，上面两只摩擦水晶杯（A5、C6）——F、A、C 是一个大三和弦，比月光那一套暖；"
+       "很轻、很慢地起伏（像苹果里的光在呼吸），12 秒无缝循环。",
+       "接住最后一缕光以后一直循环到放下苹果（Looping），2D 跟着玩家，音量很低（这条本身就很轻，-32 LUFS）；放上苹果时 2 秒淡出，接 27 的 Apple_Place。", 3)
+def b_apple_hold():
+    dsp.seed(31)
+    D = 13.0
+    lo = bowl_hum(hz("F4"), D, start=12, attack=1.0, release=1.0)
+    a = glass_swell(hz("A5"), D, attack=1.0, release=1.0, start=0.5, src="419146")
+    c = glass_swell(hz("C6"), D, attack=1.0, release=1.0, start=0.5, src="418150")
+    y = mix((widen(lp(unit(lo), 3000) * 0.55, 0.4), 0), (widen(unit(a) * 0.3, 0.6), 0), (widen(unit(c) * 0.18, 0.7), 0))
+    breathe = 0.8 + 0.2 * np.sin(2 * np.pi * np.arange(len(y)) / SR / 6.5)
+    y = lp(y * breathe[:, None], 6000)
+    return [("SFX_Apple_Hold_Loop", norm_lufs(loopify(y[secs(0.5):], 2.5), -32, "integrated"), "捧着·循环", True)]
+
+
+@sound(32, "Footstep_Moon_Shadow", "脚步：月石、月桥、影桥",
+       "夜里的两种特殊路面。月石（月桥也是月石做的）：和石头脚步同一个“接触”，脚下激起一点颂钵的余振（模态合成的钵 + 真实的颂钵敲击，月光的低音区 A3–A4），"
+       "比光路的水晶低、冷。影桥（水面上的月影）：同一个接触，脚下是一小下真实的水波拍岸（TheyLook_Here），上面一点很轻的高音颂钵。",
+       "和石头脚步同一套触发：脚下是月石、月桥时用 Moonstone，影桥（Zone shadowbr）用ShadowBridge。Random 不重复。", 3)
+def b_foot_moon():
+    files = []
+    walk_s, run_s = sandal_pool(), sandal_run_pool()
+    notes = [hz(n) for n in MOON_NOTES]
+    for k in range(8):
+        dsp.seed(3200 + k)
+        f = notes[(k * 2) % len(notes)]
+        ring = mix((unit(modal([f * r for r in BOWL], [0.6, 0.25, 0.12, 0.07, 0.05], [1, 0.3, 0.12, 0.05, 0.02], 1.0)), 0, 0.5),
+                   (unit(bowl_strike(f, 1.0, soft=0.004)), 0, 0.7))
+        y = ring_step(walk_s[(k * 3 + 2) % len(walk_s)], lp(ring, 5000) * expdecay(len(ring), 0.55), 3200 + k, -14)
+        files.append((f"SFX_Footstep_Moonstone_Walk_{k + 1:02d}", norm_lufs(y, -29), "月石·走"))
+    for k in range(6):
+        dsp.seed(3220 + k)
+        f = notes[(k * 2 + 1) % len(notes)]
+        ring = unit(bowl_strike(f, 0.8, soft=0.004))
+        y = ring_step(run_s[(k * 3 + 1) % len(run_s)], lp(ring, 5000) * expdecay(len(ring), 0.4), 3220 + k, -15)
+        files.append((f"SFX_Footstep_Moonstone_Run_{k + 1:02d}", norm_lufs(y, -27), "月石·快走"))
+    laps = hp(load("866205"), 250)
+    ev = [e for e in events(laps, min_dist=0.6, post=0.35, prom_db=14)]
+    lapsl = [trim_tail(laps[secs(a):secs(b)], -40) for a, b, p in ev]
+    for k in range(8):
+        dsp.seed(3240 + k)
+        w = lapsl[(k * 3) % len(lapsl)]
+        hi = unit(bowl_strike(hz("A5") * 2 ** (dsp.RNG.choice([0, 3, 5]) / 12), 0.6, soft=0.004)) * 0.25
+        ring = mix((unit(w), 0), (hi, 0.01))
+        y = ring_step(walk_s[(k * 5 + 1) % len(walk_s)], ring, 3240 + k, -10, hp_f=300)
+        files.append((f"SFX_Footstep_ShadowBridge_Walk_{k + 1:02d}", norm_lufs(y, -29), "影桥·走"))
+    for k in range(6):
+        dsp.seed(3260 + k)
+        w = lapsl[(k * 5 + 2) % len(lapsl)]
+        y = ring_step(run_s[(k * 5 + 3) % len(run_s)], unit(w), 3260 + k, -11, hp_f=300)
+        files.append((f"SFX_Footstep_ShadowBridge_Run_{k + 1:02d}", norm_lufs(y, -27), "影桥·快走"))
+    return files
+
+
+@sound(33, "Shard_Pickup", "拾取碎片 ×3",
+       "三片碎片各有自己的材料：日之碎片（正四面体，火）是小铜钵一声（和“确认”同一只）接着三只水晶杯很快往上走（D5、A5、D6），暖、亮；"
+       "月之碎片（正二十面体，水）是两声颂钵（D4、A4）和几滴往下落的玻璃水珠；虹之碎片（正八面体，气）是七只水晶杯一口气从低到高（七种颜色），带一点被照亮的水雾。"
+       "都在 3 秒以内，最后落在一个长一点的音上，给“获得感”。",
+       "拿到碎片的那一刻播，2D（不空间化）。三片各用各的。", 3)
+def b_shard_pickup():
+    dsp.seed(33)
+    files = []
+    sun = phrase(3.0, [(0, "brass", "A5", 0.7, 0, 2.2), (0.12, "glass", "D5", 0.55, -0.3), (0.24, "glass", "A5", 0.55, 0.0), (0.36, "glass", "D6", 0.6, 0.3, 2.2)], 3300)
+    sun = mix((sun, 0), (sparkle(3.0, 8, env=[0.2, 1, 0.5, 0], pitch=9, level=0.08, seed_=3301), 0.3))
+    files.append(("SFX_Shard_Pickup_Sun", norm_lufs(fade(sun, 0.001, 0.8), -20), "日之碎片"))
+    moon = phrase(3.0, [(0, "bowl", "D4", 0.7, -0.2, 2.6), (0.18, "bowl", "A4", 0.6, 0.2, 2.6)], 3310)
+    drops = sparkle(3.0, 6, env=[0.3, 1, 0.6, 0.2], pitch=-4, level=0.12, seed_=3311)
+    moon = mix((moon, 0), (lp(drops, 6000), 0.35), (widen(unit(bowl_hum(hz("D4"), 2.6, start=20, attack=0.3, release=1.6)) * 0.3), 0.1))
+    files.append(("SFX_Shard_Pickup_Moon", norm_lufs(fade(moon, 0.001, 0.8), -20), "月之碎片"))
+    seven = ["D5", "F5", "G5", "A5", "C6", "D6", "F6"]
+    rb = phrase(3.2, [(0.07 * k, "glass", n, 0.5 + 0.03 * k, -0.8 + 1.6 * k / 6, 2.4 if k == 6 else 1.4) for k, n in enumerate(seven)], 3320)
+    rb = mix((rb, 0), (shape(mist(3.2) * 0.07, [(0, 0), (0.4, 1), (3.2, 0)]), 0), (sparkle(3.2, 10, env=[0.5, 1, 0.4, 0], pitch=8, level=0.08, seed_=3321), 0.2))
+    files.append(("SFX_Shard_Pickup_Rainbow", norm_lufs(fade(rb, 0.001, 0.8), -20), "虹之碎片"))
+    return files
+
+
+# 关卡标题：白天往上走（台阶、水晶），夜里往下走（颂钵），结尾的音一关比一关高（白天）/低（夜里）
+TITLE_PHRASES = [
+    ("Prologue", "序 · 登殿", [(0, "glass", "D5", 0.6, -0.2, 2.6), (0.45, "glass", "A5", 0.55, 0.2, 2.8)]),
+    ("Day1", "日1", [(0, "stone", "D4", 0.6, -0.3), (0.3, "stone", "F4", 0.5, 0), (0.6, "glass", "A5", 0.55, 0.3, 2.4)]),
+    ("Day2", "日2", [(0, "stone", "F4", 0.6, -0.3), (0.3, "stone", "G4", 0.5, 0), (0.6, "glass", "C6", 0.55, 0.3, 2.4)]),
+    ("Day3", "日3", [(0, "stone", "G4", 0.6, -0.3), (0.25, "stone", "A4", 0.5, -0.1), (0.5, "stone", "C5", 0.5, 0.1), (0.8, "glass", "D6", 0.55, 0.3, 2.4)]),
+    ("Day4", "日4", [(0, "stone", "A4", 0.6, -0.3), (0.25, "stone", "C5", 0.5, -0.1), (0.5, "stone", "D5", 0.5, 0.1), (0.8, "glass", "F6", 0.5, 0.3, 2.4)]),
+    ("Day5", "日5", [(0, "stone", "C5", 0.6, -0.3), (0.22, "stone", "D5", 0.5, -0.1), (0.44, "stone", "F5", 0.5, 0.1), (0.7, "brass", "A5", 0.5, 0, 2.6), (0.72, "glass", "D6", 0.5, 0.3, 2.6)]),
+    ("Dusk", "日落之后 · 入夜", [(0, "glass", "D6", 0.55, 0.3, 1.8), (0.35, "glass", "A5", 0.5, 0.1, 1.8), (0.75, "bowl", "D4", 0.7, -0.2, 3.2)]),
+    ("Night1", "月1", [(0, "bowl", "A4", 0.6, 0.3, 2.2), (0.4, "bowl", "D4", 0.6, -0.2, 2.8)]),
+    ("Night2", "月2", [(0, "bowl", "A4", 0.6, 0.3, 2.0), (0.35, "bowl", "G4", 0.5, 0, 2.0), (0.7, "bowl", "C4", 0.6, -0.2, 2.8)]),
+    ("Night3", "月3", [(0, "bowl", "G4", 0.6, 0.3, 2.0), (0.35, "bowl", "F4", 0.5, 0, 2.0), (0.7, "bowl", "A3", 0.6, -0.2, 2.8)]),
+    ("Night4", "月4", [(0, "bowl", "F4", 0.6, 0.3, 2.0), (0.3, "bowl", "D4", 0.5, 0.1, 2.0), (0.6, "bowl", "C4", 0.5, -0.1, 2.0), (0.9, "bowl", "G3", 0.6, -0.2, 2.8)]),
+    ("Night5", "月5", [(0, "bowl", "D4", 0.6, 0.3, 2.0), (0.3, "bowl", "C4", 0.5, 0.1, 2.0), (0.6, "bowl", "A3", 0.5, -0.1, 2.0), (0.95, "bowl", "D3", 0.7, -0.2, 3.4), (1.0, "glass", "A5", 0.25, 0.2, 2.6)]),
+]
+
+
+@sound(35, "Level_Title", "关卡标题短乐句",
+       "每关标题出现时的一句短乐句（2–4 秒），用游戏里已有的“乐器”：白天是石磬（屋顶台阶那种调过音的石头）一级级往上、最后落在一只水晶杯上；"
+       "夜里是颂钵一声声往下。白天一关比一关结束得高（日1 落在 A5，日5 落在铜钵和 D6），夜里一关比一关结束得低（月1 落在 D4，月5 落到 D3）——跟着太阳往上爬、跟着月亮往下走。"
+       "序是两只水晶杯的空五度；“日落之后 · 入夜”是水晶往下交给颂钵。全部在 d 小调五声里。",
+       "关卡标题出现时播（灰盒 showTitle），2D。文件名对应：Prologue=序，Day1–5=日1–日5，Dusk=日落之后·入夜，Night1–5=月1–月5。", 3)
+def b_titles():
+    files = []
+    for k, (key, zh, notes) in enumerate(TITLE_PHRASES):
+        D = max(t for t, *_ in notes) + 3.4
+        y = phrase(D, notes, 3500 + 10 * k)
+        files.append((f"SFX_Title_{key}", norm_lufs(fade(y, 0.001, 1.0), -22), "标题"))
+    return files
+
+
+@sound(36, "UI_Prompt", "互动提示出现、提示文字出现",
+       "提示出现：一颗很小的玻璃闪光（真实的玻璃轻碰）加一点很短的高音水晶，很轻；提示文字出现：一口很轻的“气”（被照亮的水雾那一段）托着一只很远的水晶杯，像一行字从光里浮出来。"
+       "两样都轻到不打扰，但不看屏幕也能听见“有东西可以按了”。",
+       "Prompt_Appear：互动提示（按 E）从无到有的那一刻；Text_Appear：提示文字（toast）出现时。2D，各两个 Random。同一秒里只播一个。", 3)
+def b_ui_prompt():
+    dsp.seed(36)
+    files = []
+    pool = tinkles()
+    for k in range(2):
+        g = resample_pitch(pool[(k * 7 + 3) % len(pool)], 5 + 2 * k)
+        t = decayed(note("glass", ["D6", "A5"][k], 0.5, 3600 + k), 0.3)
+        y = mix((to_stereo(lp(unit(g), 9000) * 0.5), 0), (to_stereo(unit(t) * 0.35), 0.005))
+        files.append((f"SFX_UI_Prompt_Appear_{k + 1:02d}", norm_lufs(fade(y, 0.001, 0.15), -31), "提示出现"))
+    for k in range(2):
+        air = shape(mist(0.6) * 1.0, [(0, 0), (0.12, 1), (0.6, 0)])
+        t = glass_swell(hz(["A5", "F5"][k]), 0.7, attack=0.08, release=0.5, start=2 + k)
+        y = mix((air, 0, 0.6), (widen(unit(t) * 0.35, 0.6), 0.03))
+        files.append((f"SFX_UI_Text_Appear_{k + 1:02d}", norm_lufs(fade(y, 0.005, 0.25), -33), "文字出现"))
+    return files
+
+
+@sound(37, "UI_Dialogue_Advance", "对话推进音",
+       "翻到下一句：一把小锤在石头上轻轻一点（Shamewap 的录音，比“悬停”低、更圆），后面跟一点很短的颂钵余音。三个版本轮着用，听很多次也不烦。",
+       "对话框翻页/下一句时播，2D，Random 不重复。", 3)
+def b_dialogue_advance():
+    dsp.seed(37)
+    x = hp(load("389692"), 200)
+    ev = sorted(events(x, min_dist=0.12, post=0.15, prom_db=12), key=lambda e: -e[2])
+    files = []
+    for k in range(3):
+        a, b, p = ev[1 + 3 * k]
+        y = x[secs(a):secs(b)]
+        i = int(np.argmax(np.abs(y)))
+        y = lp(resample_pitch(y[max(0, i - secs(0.002)):][: secs(0.1)], -4), 6000)
+        r = decayed(bowl_strike(hz(["A4", "D5", "G4"][k]), 0.5, soft=0.003), 0.25)
+        y = mix((unit(y), 0, 0.7), (unit(lp(r, 4000)), 0.004, 0.18))
+        files.append((f"SFX_UI_Dialogue_Next_{k + 1:02d}", norm_lufs(to_stereo(fade(y, 0.001, 0.12)), -30), "下一句"))
+    return files
+
+
+@sound(38, "Roof_Wind", "海风",
+       "屋顶的高度感：真实的海边悬崖小路上的强风（bruno.auzet），有一阵一阵的起伏，去掉最低的隆隆声，22 秒无缝循环。",
+       "屋顶（和四层外沿）循环播放，2D 或很大的衰减半径；越高越响，进殿以后用 Audio Volume 压低 10–15 dB、低通到 600 Hz。和 11 的远处海浪叠着用。", 3)
+def b_roof_wind():
+    y = loop_bed("706471", 60, 22, 3.0, hp_f=70, lp_f=9000)
+    return [("SFX_Roof_Wind_Loop", norm_lufs(y, -25, "integrated"), "海风·循环", True)]
+
+
+@sound(39, "Interior_RoomTone", "殿内空间底噪",
+       "殿里“安静”的声音：不是真的没声音，而是一座大石头圆殿里的空气——很轻的粉噪声经过圆殿的脉冲响应（和 ir/ 里给 UE 的是同一个），"
+       "墙外的海隔着石墙只剩最低的一层（bruno.auzet 的崖上听海，低通到 350 Hz），殿里的瀑布在远处只剩闷闷的一点（低通到 250 Hz）。20 秒无缝循环，很轻。",
+       "殿内的 Audio Volume 里一直循环（2D）；出殿 2 秒淡出、换成 11 的海浪。瀑布没开的时候（日1 开闸前）也可以用，瀑布那一层很低。", 3)
+def b_room_tone():
+    dsp.seed(39)
+    D = 22
+    ir = make_ir()
+    pn = np.stack([noise(D, "pink"), noise(D, "pink")], axis=1) * 0.02
+    air = np.stack([signal_fftconvolve(pn[:, c], ir[:, c])[: secs(D)] for c in range(2)], axis=1)
+    air = lp(hp(air, 60), 3000)
+    sea = lp(hp(load("525029", mono=False, start=90, dur=D), 30), 350)
+    fall = lp(hp(load("559203", mono=False, start=100, dur=D), 30), 250)
+    y = mix((unit(air) * 0.5, 0), (unit(sea) * 0.7, 0), (unit(fall) * 0.35, 0))
+    return [("SFX_Interior_RoomTone_Loop", norm_lufs(loopify(y, 3.0), -38, "integrated"), "殿内·循环", True)]
+
+
+def signal_fftconvolve(a, b):
+    from scipy.signal import fftconvolve
+    return fftconvolve(a, b)
+
+
+@sound(40, "Pool_Water", "水池水面",
+       "水庭的黑石镜池：真实的轻轻拍着岩岸的水（TheyLook_Here），一下一下、很稀，20 秒无缝循环。",
+       "放在水池边几处（或池心，衰减半径约 3–15 m），Looping。夜里潮水涨起来时可以把音量提高 3 dB。", 3)
+def b_pool():
+    y = loop_bed("866205", 0, 22, 2.0, hp_f=70)
+    return [("SFX_Pool_Water_Loop", norm_lufs(y, -28, "integrated"), "水面·循环", True)]
+
+
+@sound(41, "Swan_Transform", "女神像变天鹅",
+       "月光照满女神像，她变成天鹅：月光的颂钵长音（D4）和水晶杯（A5）慢慢亮起来，中间一对大翅膀展开、扇了几下（Lsoundaccount 的真实扇翅声），羽毛落定。"
+       "另有反过来的一条：月光离开，天鹅收起翅膀、变回女神像。",
+       "Swan_Transform：天鹅形态从 0 往 1 走时播（SWAN.form），放在女神像上；Swan_Revert：从 1 往 0 走时播。", 3)
+def b_swan_transform():
+    dsp.seed(41)
+    files = []
+    D = 3.8
+    hum = bowl_hum(hz("D4"), D, start=40, attack=0.8, release=1.6)
+    gl = glass_swell(hz("A5"), D - 0.4, attack=1.0, release=1.4)
+    flaps = lp(hp(seg("753219", 3.0, 2.4), 120), 7000)
+    flaps = shape(unit(flaps), [(0, 0), (0.2, 0.6), (1.0, 1), (2.0, 0.6), (2.4, 0)])
+    cl = cloth_pool()
+    rustle = lp(unit(cl[2]), 6000) * 0.3
+    y = mix((widen(unit(hum) * 0.45), 0), (widen(unit(gl) * 0.3, 0.6), 0.2), (to_stereo(flaps * 0.7), 0.7), (to_stereo(rustle), 3.0), length=secs(D + 0.4))
+    files.append(("SFX_Swan_Transform", norm_lufs(fade(y, 0.01, 0.8), -21), "变天鹅"))
+    D = 2.8
+    hum = moon_vanish(hz("A4"), D, 4101, dust=0.4)
+    fold = lp(hp(seg("753219", 8.0, 1.2), 120), 6000)
+    fold = shape(unit(fold), [(0, 0), (0.1, 0.8), (0.8, 0.5), (1.2, 0)])
+    y = mix((to_stereo(unit(hum) * 0.5), 0), (to_stereo(fold * 0.6), 0.1), (to_stereo(lp(unit(cl[5]), 6000) * 0.25), 1.2), length=secs(D))
+    files.append(("SFX_Swan_Revert", norm_lufs(fade(y, 0.01, 0.6), -23), "变回女神像"))
+    return files
+
+
+def vary_rate(x, r0, r1):
+    """播放速度从 r0 慢慢变到 r1（像轮子越转越快：音高和速度一起升）。"""
+    n = len(x)
+    r = np.linspace(r0, r1, n)
+    idx = np.cumsum(r)
+    idx = idx[idx < n - 1]
+    return np.interp(idx, np.arange(n), x)
+
+
+@sound(42, "Armillary_Spin", "浑天仪开始自转",
+       "结局里浑天仪自己转起来——“时间交出去了”：一开始是轴承一格一格的轻响（真实的金属轻碰，很小），越来越快，最后连成一片平滑的转动声"
+       "（真实的木轮转动降调，速度一路往上滑）；同时颂钵 D4 和水晶杯 A5、D6 慢慢长起来。之后接一条持续转动的循环。没有金属刮擦。",
+       "Armillary_Start：浑天仪开始自转时播（放在小亭的浑天仪上，约 6.5 s）；它的最后 1 秒和 Armillary_Spin_Loop 交叉接上（Loop Fade In 1 s），一直转到结局画面。", 3)
+def b_armillary():
+    dsp.seed(42)
+    files = []
+    D = 6.5
+    whirr = vary_rate(lp(hp(seg("715478", 20, D * 0.8 + 0.5, -6), 50), 1400), 0.45, 1.0)[: secs(D)]
+    whirr = shape(unit(whirr), [(0, 0), (1.0, 0.3), (4.0, 0.8), (D, 1)])
+    tick = fade(lp(seg("682154", 0.08, 0.25, -4), 5000), 0.001, 0.15)
+    ts, t, gap = [], 0.1, 0.55
+    while t < 4.2:
+        ts.append(t); t += gap; gap = max(0.06, gap * 0.82)
+    ticks = mix(*[(unit(tick) * (0.5 - 0.35 * tt / 4.2), tt) for tt in ts], length=secs(D))
+    hum = bowl_hum(hz("D4"), D, start=30, attack=2.5, release=0.6)
+    g1 = glass_swell(hz("A5"), D - 1.0, attack=2.5, release=0.5)
+    g2 = glass_swell(hz("D6"), D - 2.0, attack=2.0, release=0.5)
+    y = mix((to_stereo(whirr * 0.55), 0), (to_stereo(ticks * 0.6), 0), (widen(unit(hum) * 0.35), 0), (widen(unit(g1) * 0.22, 0.6), 1.0), (widen(unit(g2) * 0.14, 0.7), 2.0), length=secs(D))
+    files.append(("SFX_Armillary_Start", norm_lufs(fade(y, 0.01, 1.0), -22), "开始自转"))
+    L = 9.0
+    w = lp(hp(seg("715478", 45, L, -6), 50), 1400)
+    hum = bowl_hum(hz("D4"), L, start=60, attack=0.5, release=0.5)
+    g = glass_swell(hz("A5"), L, attack=0.5, release=0.5, src="419146", start=0.6)
+    y = mix((to_stereo(unit(w) * 0.55), 0), (widen(unit(hum) * 0.35), 0), (widen(unit(g) * 0.2, 0.6), 0))
+    files.append(("SFX_Armillary_Spin_Loop", norm_lufs(loopify(y[secs(0.5):], 2.0), -25, "integrated"), "持续转动·循环", True))
+    return files
+
+
+@sound(43, "Day_Birds", "白天鸟鸣",
+       "开场画面里的海边早晨：马耳他的晨间鸟鸣（musicradiocreative）打底，偶尔几声燕子（SamuelGremaud、bruno.auzet），远处一点海鸥（Ambientsoundapp），"
+       "都在地中海海边。24 秒无缝循环，低频去掉（和海浪不打架）。",
+       "开场的岛上和殿外的白天循环（2D 或大衰减半径），和 11 的海浪叠着用；日5 太阳落下去时 5–10 秒淡出，夜里换成 55 的虫鸣。", 3)
+def b_birds():
+    dsp.seed(43)
+    D = 26
+    bed = hp(lp(load("197102", mono=False, start=8, dur=D), 12000), 350)
+    sw = hp(load("543683"), 800)
+    calls = [fade(sw[secs(1.05):secs(1.75)], 0.005, 0.1), fade(sw[secs(1.75):secs(2.6)], 0.005, 0.15)]
+    gull = hp(load("537854", mono=False, start=4, dur=D), 500)
+    parts = [(unit(bed) * 0.8, 0), (unit(gull) * 0.35, 0)]
+    for t in [3.2, 9.5, 15.8, 21.0]:
+        c = calls[dsp.RNG.integers(2)] * dsp.RNG.uniform(0.15, 0.3)
+        parts.append((to_stereo(c, dsp.RNG.uniform(-0.8, 0.8)), t))
+    y = mix(*parts, length=secs(D))
+    return [("SFX_Day_Birds_Loop", norm_lufs(loopify(y, 2.5), -30, "integrated"), "鸟鸣·循环", True)]
+
+
+@sound(44, "Footstep_Water_Wet", "脚步：浅水、湿石",
+       "浅水：真实的踩水脚步（aglinder、ChristopherJngs 的录音），一步一步切出来，只留一次水花。湿石：和石头脚步同一个“接触”，下面叠一层真实的赤脚踩湿瓷砖（SpliceSound）的“湿”声，石头的“实”换成更软的一点。",
+       "和石头脚步同一套触发：脚下是浅水（潮沟、水庭边的浅水）用 Water，湿的石面（瀑布、水闸石台附近）用 WetStone。Random 不重复。", 3)
+def b_foot_water():
+    files = []
+    dsp.seed(44)
+    wp = step_pool([("265582", 0, 52.8, 0.35)], hp_f=100, keep_db=10, post=0.5, max_crest=32)
+    wr = step_pool([("861369", 0, 8.9, 0.3)], hp_f=100, keep_db=10, post=0.45, max_crest=32)
+    def splash(x, after):
+        x = x[max(0, onset_at(x, 0.15) - secs(0.005)):]                 # 从脚碰到水的那一下开始（和脚落地对齐）
+        x = eq(eq(cap(x, after, 0.1), "peak", 3500, -4.0, 0.8), "highshelf", 7000, -3.0)   # 和石头脚步一样收一点刺耳的高频
+        return fade(trim_tail(dsp.limit(unit(x), -4.0)), 0.0015, 0.1)
+    for k in range(8):
+        files.append((f"SFX_Footstep_Water_Walk_{k + 1:02d}", norm_lufs(splash(wp[(k * 3 + 1) % len(wp)], 0.35), -26), "浅水·走"))
+    for k in range(4):
+        files.append((f"SFX_Footstep_Water_Run_{k + 1:02d}", norm_lufs(splash(wr[(k * 2 + 1) % len(wr)], 0.3), -24), "浅水·快走"))
+    walk_s, body = sandal_pool(), stone_body_pool()
+    wet = step_pool([("338106", 0, 18.7, 0.3)], hp_f=120, keep_db=10, post=0.3)
+    for k in range(8):
+        c = footstep(walk_s[(k * 3 + 4) % len(walk_s)], body[k % len(body)], db(-14), low=-2.0, k=k)
+        w = cap(unit(wet[(k * 2) % len(wet)]), 0.2)
+        y = align_add(c, match_level(lp(hp(w, 250), 9000), c, -4.0), 1.0, off=0.006)
+        y = eq(y, "lowshelf", 200, -3.0)                                  # 湿石不比干石头更沉
+        y = fade(trim_tail(dsp.limit(unit(y), -4.0)), 0.0015, 0.05)
+        files.append((f"SFX_Footstep_WetStone_Walk_{k + 1:02d}", norm_lufs(y, -28), "湿石·走"))
+    return files
+
+
+@sound(45, "Waterfall_Hole", "瀑布水帘透开",
+       "镜子反射的月光打到瀑布上，那一块水帘透开：瀑布那一块的轰鸣变薄（低频一路被抽掉，只剩细的水声），上面是月光的颂钵（A4）和水晶（D6）轻轻亮起来、几颗水珠的闪光。"
+       "另有合上的一条（月光离开，那一块又变回厚水帘）。",
+       "Hole_Open：瀑布上透开那一块从 0 往 1 走时（FALLHOLE.k），放在透开处；Hole_Close：从 1 往 0 走时。瀑布的循环照常播，这两条叠在上面。", 3)
+def b_waterfall_hole():
+    dsp.seed(45)
+    files = []
+    D = 2.8
+    w = hp(load("559203", mono=False, start=120, dur=D), 40)
+    thin = np.stack([sweep_filter(w[:, c], 150, 2500, kind="highpass") for c in range(2)], axis=1)
+    thin = shape(thin, [(0, 0), (0.3, 0.8), (1.6, 0.6), (D, 0)])
+    hum = bowl_hum(hz("A4"), D, start=50, attack=0.5, release=1.2)
+    g = glass_swell(hz("D6"), D - 0.3, attack=0.6, release=1.2)
+    sp = sparkle(D, 8, env=[0.3, 1, 0.6, 0.1], pitch=-2, level=0.09, seed_=4501)
+    y = mix((thin * 0.35, 0), (widen(unit(hum) * 0.4), 0.05), (widen(unit(g) * 0.22, 0.6), 0.2), (sp, 0.1), length=secs(D))
+    files.append(("SFX_Waterfall_Hole_Open", norm_lufs(fade(y, 0.02, 0.6), -24), "透开"))
+    D = 1.8
+    w = hp(load("559203", mono=False, start=140, dur=D), 40)
+    thick = np.stack([sweep_filter(w[:, c], 2500, 150, kind="highpass") for c in range(2)], axis=1)
+    thick = shape(thick, [(0, 0), (0.2, 0.6), (1.4, 0.5), (D, 0)])
+    hum = moon_vanish(hz("A4"), D, 4502, dust=0.2)
+    y = mix((thick * 0.35, 0), (to_stereo(unit(hum) * 0.35), 0), length=secs(D))
+    files.append(("SFX_Waterfall_Hole_Close", norm_lufs(fade(y, 0.02, 0.5), -26), "合上"))
+    return files
+
+
+# ═════════════════════════ 第四梯队 ═════════════════════════
+SEVEN = ["D5", "F5", "G5", "A5", "C6", "D6", "F6"]          # 红橙黄绿蓝靛紫：颜色的频率越高，音越高
+
+
+@sound(46, "Rainbow_Bridge_IrisRelief", "彩虹桥出现、伊莉丝浮雕醒来",
+       "伊莉丝浮雕醒来：浮雕上沿的铜唇里流下一层细水帘（真实的小水流，kyles），刻在浮雕上的那圈虹亮起来——三只水晶杯（D5、A5、D6）慢慢长起来。"
+       "彩虹桥出现：七只水晶杯从低到高（红到紫），声像从浮雕这边一路拱到对面窗台（左到右），下面是被照亮的水雾和闪光，最后七色一起停在一个长音上。",
+       "IrisRelief_Awaken：影子的头落进人形、虹醒过来时，放在浮雕上；RainbowBridge_Appear：虹桥开始从浮雕上走下来时播，立体声，放在虹桥中点。", 4)
+def b_rainbow_bridge():
+    dsp.seed(46)
+    files = []
+    D = 3.2
+    trickle = shape(lp(hp(load("454340", start=10, dur=D), 300), 7000), [(0, 0), (0.6, 1), (2.4, 0.8), (D, 0)])
+    ch = mix((glass_swell(hz("D5"), D, attack=0.8, release=1.2), 0, 0.6), (glass_swell(hz("A5"), D - 0.2, attack=1.0, release=1.2), 0.15, 0.45),
+             (glass_swell(hz("D6"), D - 0.5, attack=1.0, release=1.0), 0.4, 0.3), length=secs(D))
+    y = mix((to_stereo(unit(trickle) * 0.3), 0), (widen(unit(ch) * 0.6, 0.6), 0))
+    files.append(("SFX_IrisRelief_Awaken", norm_lufs(fade(y, 0.02, 0.6), -23), "浮雕醒来"))
+    D = 4.2
+    arc = phrase(D, [(0.15 + 0.3 * k, "glass", n, 0.45, -0.85 + 1.7 * k / 6, 2.6) for k, n in enumerate(SEVEN)], 4600)
+    held = mix(*[(glass_swell(hz(n), 1.8, attack=0.3, release=1.2, start=1.0 + k % 4), 2.3, 0.12) for k, n in enumerate(SEVEN[::2])], length=secs(D))
+    y = mix((arc, 0), (widen(unit(held) * 0.35, 0.7), 0), (shape(mist(D) * 0.08, [(0, 0), (1.0, 1), (D, 0)]), 0),
+            (sparkle(D, 14, env=[0.2, 0.6, 1, 0.5, 0], pitch=9, level=0.08, seed_=4601), 0))
+    files.append(("SFX_RainbowBridge_Appear", norm_lufs(fade(y, 0.01, 0.8), -21), "彩虹桥出现"))
+    return files
+
+
+@sound(47, "Prism_Turn", "棱镜转台转一格（7 个音高）",
+       "转棱镜的铜轮转一格：轮子“咔”一声（真实的石头碰撞 + 金属轻碰，很小），接着一只水晶杯响一下——七格七个音，从红（D5）到紫（F6），颜色的频率越高音越高。"
+       "第六格是靛色（D6），也就是落进塞勒涅眼睛的那一色。",
+       "转到第几格播第几个（_1_Red … _7_Violet）。棱镜在窗下石沿上，单声道放在棱镜上。", 4)
+def b_prism():
+    dsp.seed(47)
+    names = ["Red", "Orange", "Yellow", "Green", "Blue", "Indigo", "Violet"]
+    files = []
+    for k, (n, nm) in enumerate(zip(SEVEN, names)):
+        click = mix((unit(clack(k, 8, 0.12)) * 0.4, 0), (unit(fade(lp(seg("682154", 0.08, 0.15, 3), 6000), 0.001, 0.08)) * 0.3, 0.003))
+        t = note("glass", n, 1.4, 4700 + k)
+        y = mix((lp(click, 7000), 0), (unit(t) * 0.6, 0.03))
+        files.append((f"SFX_Prism_Turn_{k + 1}_{nm}", norm_lufs(fade(y, 0.001, 0.4), -24), "转一格"))
+    return files
+
+
+@sound(48, "Selene_Eyes", "塞勒涅眼睛点亮",
+       "靛色的光落进塞勒涅浮雕的青金石眼睛：先是一声很亮的水晶“叮”（D6，像宝石里点着了光），接着月亮的颂钵（D4）低低地应一声，摩擦颂钵 A4 慢慢亮起来，几颗闪光。",
+       "眼睛亮起来那一刻播，放在浮雕的眼睛上；对话（58）在这条播到 2 秒左右以后再开始。", 4)
+def b_selene_eyes():
+    dsp.seed(48)
+    D = 3.8
+    ping = note("glass", "D6", 2.2, 4800)
+    low = bowl_strike(hz("D4"), 3.2, soft=0.02)
+    hum = bowl_hum(hz("A4"), D - 0.3, start=55, attack=0.9, release=1.5)
+    y = mix((to_stereo(unit(ping) * 0.55, 0.1), 0), (to_stereo(unit(low) * 0.5, -0.1), 0.15), (widen(unit(hum) * 0.3), 0.3),
+            (sparkle(D, 8, env=[1, 0.6, 0.3, 0], pitch=10, level=0.06, seed_=4801), 0), length=secs(D))
+    return [("SFX_Selene_Eyes_Light", norm_lufs(fade(y, 0.001, 0.8), -21), "眼睛点亮")]
+
+
+@sound(49, "Rainbow_Small_Mechs", "窗下石沿伸出、虹之龛铜门、棱镜铜柱升起",
+       "彩虹支线的三个小机关：窗下石沿伸出（16 的石板滑动，更短、更轻：0.9 m 的石沿从墙里滑出来）；虹之龛的两扇小铜门（两声小的门轴吱呀，一前一后，最后轻轻一靠）；"
+       "托着棱镜的铜柱从石沿里升起来（轻的石头摩擦，升到顶一声小的铜响）。",
+       "Sill_Ledge_Extend：虹桥快落到对岸、石沿开始伸出时；Niche_Doors_Open：打开虹之龛；Prism_Column_Rise：铜柱开始升起时。都放在机关上，单声道。", 4)
+def b_rainbow_mechs():
+    dsp.seed(49)
+    files = []
+    y = slab_slide(1, D=1.0, st=-1.5, start_gain=0.3, end_gain=0.6, end_st=-1, rum_gain=0.1, tail=0.5)
+    files.append(("SFX_Sill_Ledge_Extend", norm_lufs(y, -22), "石沿伸出"))
+    c1 = lp(creak(2, 0.55, 0.8, src="682776"), 5000) * dsp.env_ar(secs(0.55), 0.05, 0.3)
+    c2 = lp(creak(3, 0.5, 1.6, src="682776"), 5000) * dsp.env_ar(secs(0.5), 0.05, 0.3)
+    stop = clack(4, -3, 0.25)
+    y = mix((unit(c1) * 0.4, 0), (unit(c2) * 0.35, 0.14), (unit(stop) * 0.35, 0.62), length=secs(1.2))
+    files.append(("SFX_Niche_Doors_Open", norm_lufs(fade(y, 0.003, 0.3), -24), "虹之龛铜门"))
+    gr = shape(heavy_grind(1.0, st=-1, seed_=4901, hi=3000), [(0, 0), (0.1, 0.7), (0.85, 0.7), (1.0, 0)])
+    ring = bronze_ring(hz("A4"), 1.2, 0.8, 0.3)
+    y = mix((gr * 0.5, 0), (unit(clack(2, -2, 0.2)) * 0.4, 0.95), (unit(ring) * 0.2, 0.97), length=secs(2.0))
+    files.append(("SFX_Prism_Column_Rise", norm_lufs(fade(y, 0.003, 0.4), -23), "铜柱升起"))
+    return files
+
+
+@sound(50, "Mirror_SunNiche", "三相像镜子醒来、日之龛开盖",
+       "三相像醒来（日相）：石像在台座上轻轻一动（短的石头摩擦），铜镜迎着太阳亮起来——两只水晶杯（D5、A5）很快亮起来，铜镜本身轻轻一声共振。"
+       "日之龛开盖：铜匣的盖子绕后沿翻开（一声短的门轴吱呀、盖子靠住的一下），里面的光一下透出来（水晶杯 A5），碎片升起时几颗闪光往上走。",
+       "Mirror_Awaken：三相像变成日相时（灰盒 updateMirrors 里 form 变成 sun），放在像上；SunNiche_Open：打开日之龛时，放在铜匣上。", 4)
+def b_mirror_niche():
+    dsp.seed(50)
+    files = []
+    D = 2.8
+    shift = shape(heavy_grind(0.6, st=-2, seed_=5001, hi=2500), [(0, 0), (0.1, 1), (0.6, 0)])
+    g1 = glass_swell(hz("D5"), D, attack=0.35, release=1.4)
+    g2 = glass_swell(hz("A5"), D - 0.2, attack=0.45, release=1.3)
+    shine = bronze_ring(hz("D5"), 2.0, 1.4, 0.4)
+    y = mix((to_stereo(shift * 0.3), 0), (widen(unit(g1) * 0.45, 0.6), 0.1), (widen(unit(g2) * 0.3, 0.6), 0.2), (to_stereo(unit(shine) * 0.12), 0.25), length=secs(D))
+    files.append(("SFX_Mirror_Awaken", norm_lufs(fade(y, 0.01, 0.7), -22), "镜子醒来"))
+    D = 2.9
+    hinge = lp(creak(0, 0.8, 1.0, src="682776"), 4000) * dsp.env_ar(secs(0.8), 0.05, 0.4)
+    thunk = clack(6, -6, 0.3)
+    light = glass_swell(hz("A5"), D - 0.6, attack=0.3, release=1.3)
+    sp = sparkle(D - 1.0, 9, env=[0.2, 1, 0.8, 0.2], pitch=4, level=0.08, seed_=5002)
+    y = mix((to_stereo(unit(hinge) * 0.35), 0), (to_stereo(unit(thunk) * 0.4), 0.95), (widen(unit(light) * 0.4, 0.6), 0.6), (sp, 1.0), length=secs(D))
+    files.append(("SFX_SunNiche_Open", norm_lufs(fade(y, 0.003, 0.7), -22), "日之龛开盖"))
+    return files
+
+
+@sound(51, "Shard_Slots", "碎片放入凹槽 ×3",
+       "把碎片放进凹槽：碎片落进石头凹槽“嗒”的一声（真实的石头碰撞，很轻），接着这片碎片自己的音：日是一只水晶杯（A5），月是一声颂钵（A4），虹是三只水晶杯很快往上（F5、A5、D6）。",
+       "放进对应的凹槽时播，放在凹槽上。三片放齐以后接 52。", 4)
+def b_shard_slots():
+    dsp.seed(51)
+    files = []
+    for name, notes in [("Sun", [(0.03, "glass", "A5", 0.55, 0, 1.6)]), ("Moon", [(0.03, "bowl", "A4", 0.6, 0, 2.0)]),
+                        ("Rainbow", [(0.03, "glass", "F5", 0.45, -0.3), (0.1, "glass", "A5", 0.45, 0), (0.17, "glass", "D6", 0.5, 0.3, 1.8)])]:
+        click = to_stereo(unit(clack(len(files) + 2, -2, 0.18)) * 0.5)
+        y = mix((click, 0), (phrase(2.0, notes, 5100 + len(files)), 0))
+        files.append((f"SFX_Shard_Slot_{name}", norm_lufs(fade(y, 0.001, 0.5), -22), "放入凹槽"))
+    return files
+
+
+@sound(52, "Dodecahedron_Stars", "正十二面体与星座亮起",
+       "三片碎片合成正十二面体（柏拉图说它是宇宙的形状）：很深的一声颂钵（D3）托底，水晶杯 D5、A5、D6、F6 一层层长上去；"
+       "星座一颗一颗亮起来——三十多颗玻璃闪光从中间往两边散开，越来越多。6.5 秒。",
+       "正十二面体合成、星座开始亮时播，2D 或放在合成的位置（立体声）。", 4)
+def b_dodecahedron():
+    dsp.seed(52)
+    D = 6.5
+    deep = bowl_strike(hz("D3"), D, soft=0.03)
+    layers = [(glass_swell(hz(n), D - t, attack=1.2, release=1.8, start=1.0 + k), t, 0.35 - 0.05 * k) for k, (n, t) in enumerate([("D5", 0.3), ("A5", 0.9), ("D6", 1.5), ("F6", 2.1)])]
+    stars = np.zeros((secs(D), 2))
+    pool = tinkles()
+    for k in range(34):
+        t = 1.2 + 4.6 * (k / 34) ** 0.8 + dsp.RNG.uniform(-0.1, 0.1)
+        g = lp(resample_pitch(pool[dsp.RNG.integers(len(pool))], dsp.RNG.uniform(4, 12)), 11000)
+        pan = np.clip(dsp.RNG.normal(0, 0.15 + 0.6 * k / 34), -1, 1)
+        stars = mix((stars, 0), (to_stereo(unit(g) * dsp.RNG.uniform(0.15, 0.35), pan), t), length=secs(D))
+    y = mix((to_stereo(unit(deep) * 0.6), 0), *[(widen(unit(x) * v, 0.6), t) for x, t, v in layers], (stars * 0.5, 0),
+            (shape(mist(D) * 0.06, [(0, 0), (2.0, 1), (D, 0)]), 0), length=secs(D))
+    return [("SFX_Dodecahedron_Stars", norm_lufs(fade(y, 0.002, 1.2), -19), "亮起")]
+
+
+@sound(53, "RainbowGate_Rainbow", "虹门彩虹",
+       "屋顶虹门里的那道小彩虹：背对夕阳穿过虹门时，三只水晶杯（F5、A5、C6）很轻地亮一下，带一点被照亮的水雾——比 46 的彩虹桥小得多，只是一个细节。",
+       "穿过虹门、彩虹出现时播（每次经过最多播一次），放在虹门上，很轻。", 4)
+def b_rainbow_gate():
+    dsp.seed(53)
+    D = 3.0
+    ch = mix((glass_swell(hz("F5"), D, attack=0.5, release=1.3, start=1.5), 0, 0.5), (glass_swell(hz("A5"), D - 0.2, attack=0.6, release=1.2, start=2.5), 0.1, 0.4),
+             (glass_swell(hz("C6"), D - 0.4, attack=0.7, release=1.1, start=3.5), 0.2, 0.3), length=secs(D))
+    y = mix((widen(unit(ch) * 0.5, 0.6), 0), (shape(mist(D) * 0.06, [(0, 0), (0.6, 1), (D, 0)]), 0), (sparkle(D, 5, pitch=9, level=0.05, seed_=5301), 0.2))
+    return [("SFX_RainbowGate_Rainbow", norm_lufs(fade(y, 0.02, 0.7), -27), "虹门彩虹")]
+
+
+@sound(54, "WallStairs_Windows", "墙里楼梯的窗打开",
+       "墙里楼梯朝外的小窗里堵着的石块，一块一块被推出去：每块是 24 里墙里楼梯显现用的同一种石块（短的摩擦 + 落定），一样闷一点（在墙里面）。三个版本。",
+       "要逐扇同步的话（灰盒 TUNWIN：从上往下 0.25 s 一块），每块开始动时播一个，Random；已经用了 24 的 WallStairs_Reveal 就不用再播这个。", 4)
+def b_wall_windows():
+    files = []
+    for k in range(3):
+        y = stone_block(k, st0=-4.0, dk=0.4, seed0=5400)
+        y = eq(lp(y, 2400), "peak", 320, 2.0, 0.8)
+        files.append((f"SFX_WallStairs_Window_{k + 1:02d}", norm_lufs(fade(y, 0.003, 0.3), -22), "一扇窗"))
+    return files
+
+
+@sound(55, "Ambience_Layers", "水雾、海峡水沫、夜间虫鸣",
+       "三条氛围层，都是无缝循环：水雾——瀑布录音里最高的那一段细嘶声（开闸以后中庭里的雾）；海峡水沫——浪拍礁石录音（emainta）里高频的那层泡沫声；"
+       "夜间虫鸣——墨西哥海边夜里的蟋蟀（felix.blume），去掉了最尖的那一段，很远、很轻。",
+       "Mist_Loop：开闸以后中庭里一直在（和雾的浓度一起淡入淡出）；StraitFoam_Loop：岛和崖脚的海浪上面叠一层（11 的 Close 旁边）；NightInsects_Loop：入夜以后殿外和屋顶（白天的 43 淡出以后），殿内压低 12 dB。", 4)
+def b_ambience_layers():
+    dsp.seed(55)
+    files = []
+    m = mist(18)
+    t = np.arange(len(m)) / SR
+    m = m * (0.8 + 0.2 * np.sin(2 * np.pi * t / 7.0))[:, None]
+    files.append(("SFX_Mist_Loop", norm_lufs(loopify(m, 2.0), -36, "integrated"), "水雾·循环", True))
+    f = loop_bed("648860", 30, 18, 2.0, hp_f=2500, lp_f=11000)
+    files.append(("SFX_StraitFoam_Loop", norm_lufs(f, -32, "integrated"), "海峡水沫·循环", True))
+    c = loop_bed("479041", 60, 22, 2.5, hp_f=1500, lp_f=7500)
+    files.append(("SFX_NightInsects_Loop", norm_lufs(c, -34, "integrated"), "夜间虫鸣·循环", True))
+    return files
+
+
+def voice_syllable(inst, f, dur, rise, seed_):
+    """一个“音节”：一个乐器音截短、起音像说话（6 ms），音高在音节里滑一点（说话的抑扬）。"""
+    dsp.seed(seed_)
+    if inst == "glass":
+        x = glass_tone(f, dur + 0.1, attack=0.006, t60=dur * 1.5, start=1.0 + seed_ % 5)
+    elif inst == "bowl":
+        x = lp(bowl_hum(f, dur + 0.1, start=10 + seed_ % 40, attack=0.02, release=dur * 0.5), 4000)
+    else:
+        x = lithophone(f, dur + 0.1, seed_)
+    x = bend(unit(x), 0, rise)[: secs(dur)]
+    x = x * dsp.env_ar(len(x), 0.006, dur * 0.45, curve=1.5)
+    return fade(x, 0.002, 0.02)
+
+
+VOICES = [
+    # 名字, 乐器, 音（d 小调五声里的几个）, 音节长短, 说话快慢
+    ("Iris", "伊莉丝", "glass", ["A5", "C6", "D6", "F6", "G5"], (0.06, 0.11)),
+    ("Selene", "塞勒涅", "bowl", ["D4", "F4", "G4", "A4", "C4"], (0.13, 0.22)),
+    ("Dysis", "狄西斯", "stone", ["A4", "C5", "D5", "F5", "G5"], (0.08, 0.14)),
+]
+
+
+@sound(56, "Selene_SleepTalk", "塞勒涅梦话",
+       "塞勒涅在梦里说话：用 58 里她的“声音”（颂钵），但慢得多、含糊得多——几个音节拖长、音高往下滑，中间停很久，最后一声很轻的叹气（一小口带通的气声）。三段。",
+       "彩虹支线里靠近她的浮雕、她还没醒的时候，隔一会儿随机播一段（放在浮雕上，很轻）。", 4)
+def b_sleep_talk():
+    files = []
+    for k in range(3):
+        dsp.seed(5600 + k)
+        parts, t = [], 0.1
+        for j in range(dsp.RNG.integers(3, 6)):
+            n = ["D4", "F4", "A3", "C4", "G3"][dsp.RNG.integers(5)]
+            dur = dsp.RNG.uniform(0.25, 0.5)
+            s = voice_syllable("bowl", hz(n), dur, dsp.RNG.uniform(-120, -40), 5610 + 10 * k + j)
+            parts.append((to_stereo(s * dsp.RNG.uniform(0.5, 0.9), dsp.RNG.uniform(-0.2, 0.2)), t))
+            t += dur + dsp.RNG.uniform(0.15, 0.6)
+        sigh = shape(bp(noise(0.9, "pink"), 300, 1500) * 0.3, [(0, 0), (0.25, 1), (0.9, 0)])
+        parts.append((to_stereo(sigh), t + 0.2))
+        y = mix(*parts, length=secs(t + 1.3))
+        files.append((f"SFX_Selene_SleepTalk_{k + 1:02d}", norm_lufs(fade(y, 0.01, 0.4), -28), "梦话"))
+    return files
+
+
+@sound(57, "UI_Shard_Hover", "界面：碰到已获得的日月虹碎片",
+       "鼠标碰到界面里已经拿到的碎片时，那片碎片轻轻响一下，和 33 拾取时同一种材料，只是小得多：日是一只很短的水晶杯（D6），月是一声很短的颂钵（A5），虹是三只水晶杯一闪（D6、F6、A6）。",
+       "2D，放到 UI 的 Sound Class；同一片碎片 0.3 秒内只播一次。", 4)
+def b_ui_shard_hover():
+    dsp.seed(57)
+    files = []
+    sun = decayed(note("glass", "D6", 0.45, 5700), 0.3)
+    moon = decayed(lp(bowl_strike(hz("A5"), 0.5, soft=0.004), 6000), 0.3)
+    rb = mix(*[(unit(decayed(note("glass", n, 0.4, 5710 + k), 0.22)) * 0.5, 0.035 * k) for k, n in enumerate(["D6", "F6", "A6"])])
+    for name, x in [("Sun", sun), ("Moon", moon), ("Rainbow", rb)]:
+        files.append((f"SFX_UI_Shard_Hover_{name}", norm_lufs(to_stereo(fade(unit(x), 0.001, 0.12)), -30), "悬停"))
+    return files
+
+
+@sound(58, "Dialogue_Voices", "对话配音（先用乐器音色代替）",
+       "不配音的时候，每个角色用一种乐器“说话”：一句话里每个字（或每个词）播一个很短的音节，音高在 d 小调五声里取几个、在音节里稍微往上或往下滑，听起来有说话的抑扬。"
+       "伊莉丝（虹的信使）是水晶杯，高、快、亮；塞勒涅（月神）是颂钵，低、慢、柔；狄西斯是石磬（屋顶台阶那种调过音的石头），在中间、清楚。每人 12 个音节，最后两个是往下收的“句尾”。",
+       "对话框逐字显示时，每 2–3 个字播一个这个角色的音节（Random 不重复，音高 0.97–1.03），句号前改用 _11、_12（句尾）。2D，音量比环境声低。", 4)
+def b_voices():
+    files = []
+    for key, zh, inst, notes, (dmin, dmax) in VOICES:
+        for k in range(12):
+            dsp.seed(5800 + 20 * VOICES.index((key, zh, inst, notes, (dmin, dmax))) + k)
+            end = k >= 10
+            n = notes[(k * 2) % len(notes)] if not end else notes[0]
+            dur = dsp.RNG.uniform(dmin, dmax) * (1.6 if end else 1.0)
+            rise = -150 if end else dsp.RNG.uniform(-60, 80)
+            s = voice_syllable(inst, hz(n), dur, rise, 5800 + k)
+            files.append((f"SFX_Voice_{key}_{k + 1:02d}", norm_lufs(to_stereo(s), -28), zh))
+    return files
+
+
 # 每一条的排序理由（照排期表）和它属于白天、夜里还是全程（试听页按这个上色）
 REASONS = {
     3: "全程都在响，频率最高", 4: "踩光是核心操作，要让玩家一听就知道“脚下是光”", 5: "每束光出现都靠它提示“这里能走了”，全程反复出现",
@@ -1252,13 +1891,25 @@ REASONS = {
     20: "月5 唯一的“找位置”反馈，没有它很难找", 21: "月4 要推很长一段", 22: "月4 的解谜奖励", 23: "月2 的解谜奖励", 24: "月1 入夜后第一条路",
     25: "月5 的解谜奖励", 26: "通往结局的最后一段路", 27: "结局动作；取下是接光那一下", 28: "环道、细桥、半桥都会踩到", 29: "基础交互",
     30: "开场第一个“光”的声音，和第 5 条共用素材再加长",
+    31: "整个夜里一直在，给冷色的夜一点温度", 32: "区分夜里的特殊路面", 33: "支线奖励，但很需要“获得感”", 35: "每关一次，节奏感",
+    36: "不看屏幕也知道有东西能交互", 37: "不配音时的替代方案", 38: "屋顶的高度感", 39: "区分殿内外", 40: "水庭的氛围",
+    41: "月2 的奇观", 42: "结局“时间交出去了”的声音表现", 43: "开场画面生动", 44: "局部材质", 45: "月5 的细节",
+    46: "彩虹支线", 47: "彩虹支线", 48: "彩虹支线的奖励", 49: "彩虹支线的小机关", 50: "日3 支线", 51: "集齐碎片的额外内容",
+    52: "集齐碎片的额外内容", 53: "日5 的小细节", 54: "月2 的小细节", 55: "氛围层", 56: "彩虹支线里的彩蛋", 57: "界面小音效",
+    58: "工作量最大，先用乐器音色代替",
 }
 WHEN = {3: "both", 4: "day", 5: "day", 6: "night", 8: "both", 9: "both", 10: "both", 11: "both", 14: "day", 15: "both", 16: "day",
         17: "day", 18: "day", 19: "both", 20: "night", 21: "night", 22: "night", 23: "night", 24: "night", 25: "night", 26: "night",
-        27: "both", 28: "both", 29: "ui", 30: "day"}
+        27: "both", 28: "both", 29: "ui", 30: "day", 31: "night", 32: "night", 33: "both", 35: "both", 36: "ui", 37: "ui",
+        38: "both", 39: "both", 40: "both", 41: "night", 42: "night", 43: "day", 44: "both", 45: "night", 46: "day", 47: "day",
+        48: "day", 49: "day", 50: "day", 51: "both", 52: "both", 53: "day", 54: "night", 55: "both", 56: "day", 57: "ui", 58: "ui"}
 # 试听页上“连着播”的按钮：组名 → (按钮文字, 间隔秒, 是否随机顺序)
 SEQUENCES = {"走": ("走一段", 0.5, True), "快走": ("快走一段", 0.33, True), "升起": ("顺序播放 16 级", 0.42, False),
-             "落平": ("顺序播放 16 级", 0.42, False), "悬停": ("来回悬停", 0.18, True)}
+             "落平": ("顺序播放 16 级", 0.42, False), "悬停": ("来回悬停", 0.18, True),
+             "月石·走": ("走一段", 0.5, True), "月石·快走": ("快走一段", 0.33, True), "影桥·走": ("走一段", 0.5, True), "影桥·快走": ("快走一段", 0.33, True),
+             "浅水·走": ("走一段", 0.55, True), "浅水·快走": ("快走一段", 0.36, True), "湿石·走": ("走一段", 0.5, True),
+             "标题": ("按关卡顺序", 3.6, False), "转一格": ("转一圈", 0.6, False), "一扇窗": ("一扇接一扇", 0.25, False),
+             "伊莉丝": ("说一句", 0.1, True), "塞勒涅": ("说一句", 0.2, True), "狄西斯": ("说一句", 0.13, True)}
 
 
 def write_index(manifest):
@@ -1273,9 +1924,9 @@ def write_index(manifest):
     return page
 
 
-README_HEAD = """# 音效 · 第一、第二梯队
+README_HEAD = """# 音效 · 第一到第四梯队
 
-日落回廊的音效：第一梯队里除了 1、2、7、12、13（时间和声、接光主题、主界面音乐、结局音乐，之后单独做）以外的全部，加上第二梯队全部（14–30）。
+日落回廊的音效：第一梯队里除了 1、2、7、12、13（时间和声、接光主题、主界面音乐、结局音乐，之后单独做）以外的全部，第二梯队全部（14–30），第三、四梯队除了 34（岛影逼近）以外的全部（31–58）。
 共 {n_items} 条、{n_files} 个文件。**试听：用浏览器打开 [index.html](index.html)**（按编号分组，可以切“殿内混响”听放进圆殿以后的样子）。
 
 ## 怎么做的
@@ -1320,7 +1971,7 @@ python audio/tools/build.py           # 全部重新生成；build.py 5 15 只�
 ## 还没做
 
 - 第一梯队的 1、2（时间和声）、7（接光主题）、12（主界面音乐）、13（结局音乐）。
-- 第三、四梯队（31–58）。其中不少可以直接复用这里的素材：脚步（月石、月桥、影桥）用 4 的光路脚步换成 6 的颂钵；墙里楼梯的窗、石块用 16、23 的石头；碎片放入凹槽用 27。
+- 第三梯队的 34（岛影逼近）。
 - 这些声音是按频谱、波形、响度一条条检查过的，但还需要真人戴耳机在游戏里听一遍：哪条太响、太长、太“假”，告诉我改哪个函数的哪几个参数。
 
 ## 素材出处
@@ -1337,7 +1988,7 @@ def write_readme(manifest):
     n_files = sum(len(it["files"]) for it in items)
     out = [README_HEAD.format(n_items=len(items), n_files=n_files, n_src=len(manifest["credits"]))]
     for it in items:
-        tier = {1: "第一梯队", 2: "第二梯队"}[it["tier"]]
+        tier = {1: "第一梯队", 2: "第二梯队", 3: "第三梯队", 4: "第四梯队"}[it["tier"]]
         out.append(f"### {it['num']}. {it['zh']}（{tier}）\n")
         out.append(f"**怎么做的**：{it['what']}\n")
         out.append(f"**UE 里怎么用**：{it['ue']}\n")

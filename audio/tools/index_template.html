@@ -117,7 +117,7 @@ footer h2 { font: 600 16px/1.4 var(--font-head); color: var(--ink); margin: 0; }
 <div class="wrap">
   <header class="top">
     <div class="eyebrow">Dysis and the Celestial Cloister · SFX</div>
-    <h1>日落回廊音效<span class="lat">Tier I–II</span></h1>
+    <h1>日落回廊音效<span class="lat">Tier I–IV</span></h1>
     <p class="lede" id="lede"></p>
     <div class="legend" aria-label="颜色说明">
       <span><i class="dot day"></i>白天（日光）</span>
@@ -145,7 +145,8 @@ footer h2 { font: 600 16px/1.4 var(--font-head); color: var(--ink); margin: 0; }
 <script>
 const DATA = /*MANIFEST*/null;
 const WHEN_LABEL = { day: "白天", night: "夜里", both: "全程", ui: "界面" };
-const TIER_LABEL = { 1: ["第一梯队", "没有它游戏就不成立（1、2、7、12、13 是音乐和时间和声，另外做）"], 2: ["第二梯队", "主线必经的机关和剧情节点"] };
+const TIER_LABEL = { 1: ["第一梯队", "没有它游戏就不成立（1、2、7、12、13 是音乐和时间和声，另外做）"], 2: ["第二梯队", "主线必经的机关和剧情节点"],
+  3: ["第三梯队", "明显加分（34 岛影逼近这次没做）"], 4: ["第四梯队", "可选支线和有余力再做"] };
 
 // ───────── 播放：能读文件就用 Web Audio（循环无缝、能加混响），读不了（本地直接双击打开）就退回 <audio> ─────────
 let ctx = null, master, wet, conv, irLoaded = false, useMedia = location.protocol === "file:";
@@ -259,7 +260,7 @@ function render() {
   document.getElementById("lede").textContent =
     `${items.length} 条、${nFiles} 个文件，48 kHz 16 位 WAV，干声。能用真实录音的地方都用真实录音（${Object.keys(DATA.credits).length} 段 CC0 录音）；有音高的声音都在 d 小调五声里（D F G A C），和灰盒的时间和弦不打架。`;
   const list = document.getElementById("list");
-  for (const tier of [1, 2]) {
+  for (const tier of [1, 2, 3, 4]) {
     const [t, sub] = TIER_LABEL[tier];
     list.append(el("h2", { class: "tier" }, t, el("small", { text: sub })));
     for (const it of items.filter(i => i.tier === tier)) {
